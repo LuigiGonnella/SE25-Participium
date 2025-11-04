@@ -3,9 +3,16 @@ import swaggerUi from "swagger-ui-express";
 import { CONFIG } from "@config";
 import { errorHandler } from "@middlewares/errorMiddleware";
 import cors from "cors";
+import path from 'path';
+import authenticationRouter from '@routes/authRoutes'
 import "reflect-metadata";
 
+
 export const app = express();
+
+// we make the uploads folder public to make sure the client can access to see images in frontend
+app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
+
 
 app.use(express.json());
 app.use(cors({
@@ -30,7 +37,7 @@ app.use(cors({
 // )
 
 // Add routes here
-// e.g., app.use(CONFIG.ROUTES.V1_AUTH, authenticationRouter);
+app.use(CONFIG.ROUTES.V1_AUTH, authenticationRouter);
 
 //This must always be the last middleware added
 app.use(errorHandler);

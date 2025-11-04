@@ -1,11 +1,3 @@
-/* tslint:disable */
-/* eslint-disable */
-/**
- * Participium API - Staff DTO
- * Auto-generated following the project's DTO pattern.
- * Do not edit the DAO-to-DTO mapping logic here — adapt as needed.
- */
-
 /**
  * Staff role enumeration
  * @export
