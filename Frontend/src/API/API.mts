@@ -16,7 +16,7 @@ interface Citizen{
     receive_emails: boolean;
 }
 
-export async function login(credentials: Credentials): Promise<Citizen> {
+const login = async (credentials: Credentials): Promise<Citizen> => {
     const response = await fetch(`${BACKEND_URL}/api/login`, {
         method: 'POST',
         headers: {
@@ -32,3 +32,30 @@ export async function login(credentials: Credentials): Promise<Citizen> {
         throw new Error('Login failed');
     }
 };
+
+const getUserInfo = async (): Promise<Citizen> => {
+    const response = await fetch(`${BACKEND_URL}/api/user`, {
+        credentials: 'include',
+});
+    const user = await response.json();
+    if (response.ok) {
+        return user as Citizen;
+    } else {
+        throw new Error('Failed to fetch user info');
+    }
+};
+
+const logout = async (): Promise<null> => {
+    const response = await fetch(`${BACKEND_URL}/api/logout`, {
+        method: 'DELETE',
+        credentials: 'include',
+    });
+    if (response.ok) {
+        return null;
+    } else {
+        throw new Error('Logout failed');
+    }
+};
+
+const API = { login, getUserInfo, logout };
+export default API;

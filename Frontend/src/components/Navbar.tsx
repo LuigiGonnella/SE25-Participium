@@ -1,28 +1,42 @@
-import {Navbar, Nav, Container} from 'react-bootstrap';
 import { Header, HeaderContent, HeaderBrand, HeaderRightZone, Button, Icon } from 'design-react-kit';
+import { LogoutButton } from './LoginPage';
 
-function NavComponent() {
+interface NavComponentProps {
+    loggedIn: boolean;
+    user: {
+        username?: string;
+        [key: string]: any;
+    };
+    handleLogout: () => Promise<void>;
+}
+
+function NavComponent({ loggedIn, user, handleLogout }: NavComponentProps) {
     return(
         <>
-        {/*
-          <Navbar bg="dark" data-bs-theme="dark">
-            <Container>
-              <Navbar.Brand href="home">Participium</Navbar.Brand>
-              <Nav className="me-auto">
-              <Nav.Link href="login">Login</Nav.Link>
-              </Nav>
-            </Container>
-          </Navbar>*/}
           <Header type="slim">
           <HeaderContent>
             <HeaderBrand responsive>
               Participium
             </HeaderBrand>
             <HeaderRightZone>
-              <Button
-                className="btn-icon btn-full"
-                color="primary"
-                href="\login"
+              {loggedIn ? (
+                <>
+                  <LogoutButton logout={handleLogout} />
+                  <span className="rounded-icon">
+                    <Icon
+                      color="primary"
+                      icon="it-logout"
+                    />
+                  </span>
+                  <span className="d-none d-lg-block">
+                    {user.username} - Logout
+                  </span>
+                </>
+              ) : (
+                <Button
+                  className="btn-icon btn-full"
+                  color="primary"
+                  href="/login"
               >
                 <span className="rounded-icon">
                   <Icon
@@ -34,10 +48,11 @@ function NavComponent() {
                   Login to personal area
                 </span>
               </Button>
+            )}
             </HeaderRightZone>
           </HeaderContent>
         </Header>
-        </>
+      </>
     )
 }
 
