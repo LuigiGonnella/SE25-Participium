@@ -4,6 +4,7 @@ function LoginForm() {
 
     return(
         <>
+        
         <Row className="justify-content-md-center mt-5">
             <Form>
                 <Form.Group className="mb-3">
@@ -20,6 +21,7 @@ function LoginForm() {
                 </Button>
             </Form>
         </Row>
+         
         </>
     )
 }
