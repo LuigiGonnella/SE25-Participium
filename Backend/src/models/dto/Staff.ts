@@ -27,12 +27,6 @@ export interface Staff {
      * @type {string}
      * @memberof Staff
      */
-    email: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof Staff
-     */
     username: string;
     /**
      * 
@@ -65,7 +59,6 @@ export interface Staff {
  */
 export function instanceOfStaff(value: object): value is Staff {
     if (!('id' in value) || value['id'] === undefined) return false;
-    if (!('email' in value) || value['email'] === undefined) return false;
     if (!('username' in value) || value['username'] === undefined) return false;
     if (!('name' in value) || value['name'] === undefined) return false;
     if (!('surname' in value) || value['surname'] === undefined) return false;
@@ -82,7 +75,6 @@ export function StaffFromJSONTyped(json: any, ignoreDiscriminator: boolean): Sta
     }
     return {
         'id': json['id'],
-        'email': json['email'],
         'username': json['username'],
         'name': json['name'],
         'surname': json['surname'],
@@ -102,7 +94,6 @@ export function StaffToJSONTyped(value?: Staff | null, ignoreDiscriminator: bool
 
     return {
         'id': value['id'],
-        'email': value['email'],
         'username': value['username'],
         'name': value['name'],
         'surname': value['surname'],

@@ -15,9 +15,6 @@ export class StaffDAO {
     id: number;
 
     @Column({ unique: true, nullable: false })
-    email: string;
-
-    @Column({ unique: true, nullable: false })
     username: string;
 
     @Column({ nullable: false })

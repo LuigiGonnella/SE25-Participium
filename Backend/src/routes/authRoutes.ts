@@ -1,6 +1,8 @@
-import { uploadProfilePicture, register } from '@controllers/authController';
+import {uploadProfilePicture, register, getToken} from '@controllers/authController';
 import { CitizenToJSON } from '@models/dto/Citizen';
 import {Router} from "express";
+import {authenticateUser} from "@middlewares/authMiddleware";
+import {getLoggedUser} from "@services/authService";
 
 const router = Router();
 
@@ -21,5 +23,26 @@ router.post('/register', uploadProfilePicture.single('profilePicture'), async (r
         next(error);
     }
 });
+
+router.post('/sessions', async (req, res, next) => {
+    try {
+        const rawType = req.query.type;
+        if (rawType !== 'CITIZEN' && rawType !== 'STAFF') {
+            return res.status(400).json({ message: 'Invalid or missing query parameter: type' });
+        }
+        const type = rawType as 'CITIZEN' | 'STAFF';
+        res.status(200).json(await getToken(req.body, type));
+    } catch (error) {
+        next(error);
+    }
+});
+
+router.get('/sessions/current', authenticateUser([]), async (req, res, next) => {
+    try {
+        res.status(200).json(await getLoggedUser(req.headers.authorization));
+    } catch (error) {
+        next(error);
+    }
+})
 
 export default router;

@@ -1,10 +1,15 @@
-import type { Citizen as CitizenDTO } from "@models/dto/Citizen"
+import {Citizen} from "@models/dto/Citizen"
 import { CitizenRepository } from "@repositories/citizenRepository";
 import bcrypt from 'bcrypt';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
-import { mapCitizenDAOToDTO } from "@services/mapperService";
+import {createTokenDTO, mapCitizenDAOToDTO} from "@services/mapperService";
+import {Token as TokenDTO} from "@dto/Token";
+import {UnauthorizedError} from "@errors/UnauthorizedError";
+import {generateCitizenToken, generateStaffToken} from "@services/authService";
+import {Staff} from "@dto/Staff";
+import {StaffRepository} from "@repositories/staffRepository";
 
 // storage configuration
 const storage = multer.diskStorage({
@@ -38,7 +43,6 @@ export const uploadProfilePicture = multer({
 });
 
 
-export const citizenRepo = new CitizenRepository()
 
 export async function register(
     email: string,
@@ -50,6 +54,7 @@ export async function register(
     profilePictureFile?: Express.Multer.File, // uploaded file
     telegram_username?: string
 ) {
+    const citizenRepo = new CitizenRepository();
     const hashedPassword = await bcrypt.hash(password, 10);
     
     // image path
@@ -70,4 +75,28 @@ export async function register(
 
     return mapCitizenDAOToDTO(citizenDAO);
 
+}
+
+export async function getToken(userDto: {username: string, password: string}, type: 'CITIZEN' | 'STAFF'): Promise<TokenDTO> {
+    if(type === 'CITIZEN') {
+        const citizenRepo = new CitizenRepository();
+        const citizenDao = await citizenRepo.getCitizenByUsername(userDto.username) || await citizenRepo.getCitizenByEmail(userDto.username);
+        if (citizenDao === null || !await bcrypt.compare(userDto.password, citizenDao.password)) {
+            throw new UnauthorizedError("Invalid username/password");
+        }
+        return createTokenDTO(
+            generateCitizenToken(citizenDao as Citizen)
+        );
+    } else if (type === 'STAFF') {
+        const staffRepo = new StaffRepository();
+        const staffDao = await staffRepo.getStaffByUsername(userDto.username);
+        if (staffDao === null || !await bcrypt.compare(userDto.password, staffDao.password)) {
+            throw new UnauthorizedError("Invalid username/password");
+        }
+        return createTokenDTO(
+            generateStaffToken(staffDao as Staff)
+        );
+    } else {
+        throw new UnauthorizedError("Invalid user type");
+    }
 }

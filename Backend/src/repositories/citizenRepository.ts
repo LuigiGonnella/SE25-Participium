@@ -1,7 +1,7 @@
-import { AppDataSource } from "@database";
-import { CitizenDAO } from "@models/dao/citizenDAO";
-import { throwConflictIfFound } from "@utils";
-import { Repository } from "typeorm";
+import {AppDataSource} from "@database";
+import {CitizenDAO} from "@models/dao/citizenDAO";
+import {throwConflictIfFound} from "@utils";
+import {Repository} from "typeorm";
 import AppError from "@models/errors/AppError";
 
 export class CitizenRepository {
@@ -64,17 +64,15 @@ export class CitizenRepository {
             `Citizen already exists with username ${username}`,
         );
 
-        const newCitizen = await this.repo.save({ 
-            email, 
-            username, 
-            name, 
-            surname, 
+        return await this.repo.save({
+            email,
+            username,
+            name,
+            surname,
             password,
             receive_emails,
             profilePicture,
             telegram_username
         });
-
-        return newCitizen;
     }
 }
