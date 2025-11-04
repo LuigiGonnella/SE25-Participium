@@ -1,14 +1,16 @@
-import { useState } from 'react'
-import { Routes, Route, Navigate } from 'react-router';
+import { Routes, Route } from 'react-router';
 import './App.css'
 import HomePage from './components/Home';
+import LoginForm from './components/LoginPage';
+import DefaultLayout from './components/DefaultLayout';
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
     <Routes>
-      <Route path="/" element={<HomePage />} />
+      <Route element={<DefaultLayout />}>
+        <Route path="/home" index element={<HomePage />} />
+        <Route path="/login" index element={<LoginForm />} />
+      </Route>
     </Routes>
   )
 }
