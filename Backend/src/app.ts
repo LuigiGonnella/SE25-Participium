@@ -5,6 +5,7 @@ import { errorHandler } from "@middlewares/errorMiddleware";
 import cors from "cors";
 import path from 'path';
 import authenticationRouter from '@routes/authRoutes'
+import citizenRouter from '@routes/citizenRoutes';
 import "reflect-metadata";
 
 
@@ -38,6 +39,7 @@ app.use(cors({
 
 // Add routes here
 app.use(CONFIG.ROUTES.V1_AUTH, authenticationRouter);
+app.use(CONFIG.ROUTES.V1_CITIZENS, citizenRouter);
 
 //This must always be the last middleware added
 app.use(errorHandler);
