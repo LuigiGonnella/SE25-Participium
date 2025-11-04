@@ -4,6 +4,11 @@ import path from "node:path";
 const DB_PATH = path.resolve(__dirname, '../../data/database.sqlite');
 const APP_V1_BASE_URL = "/api/v1";
 const URL_AUTH = "/auth";
+const URL_CITIZENS = "/citizens";
+const URL_OFFICES = "/offices";
+const URL_STAFFS = "/staffs";
+
+
 
 export const CONFIG = {
 	APP_PORT: process.env.PORT || 8080,
@@ -24,6 +29,9 @@ export const CONFIG = {
 	ROUTES: {
 		// V1_SWAGGER: `${APP_V1_BASE_URL}/doc`,
 		V1_AUTH: APP_V1_BASE_URL + URL_AUTH,
+		V1_CITIZENS: APP_V1_BASE_URL + URL_CITIZENS,
+		V1_OFFICES: APP_V1_BASE_URL + URL_OFFICES,
+		V1_STAFFS: APP_V1_BASE_URL + URL_STAFFS,
 	},
 	LOG_LEVEL: process.env.LOG_LEVEL || "info",
 	LOG_PATH: process.env.LOG_PATH || "logs",
