@@ -1,15 +1,16 @@
-export interface Citizen{
+export interface Citizen {
     id: number;
     email: string;
     username: string;
     name: string;
     surname: string;
-    profilePicture: string;
-    telegram_username: string;
+    password: string;
+    profilePicture?: string;
+    telegram_username?: string;
     receive_emails: boolean;
 }
 
-export interface Staff{
+export interface Staff {
     id: number;
     email: string;
     username: string;

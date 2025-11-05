@@ -1,15 +1,44 @@
 import type { Citizen, Credentials } from "../models/Models.ts";
+import { handleAPIError } from "../services/ErrorHandler.ts";
 
 const BACKEND_URL = "http://localhost:8080";
 
-interface NewCitizen {
-    name: string;
-    surname: string;
-    username: string;
-    email: string;
-    receive_emails: boolean;
-    password: string;
-}
+const register = async (newCitizen: Citizen): Promise<Citizen> => {
+    if (!newCitizen.email || !newCitizen.password || !newCitizen.username) {
+        return handleAPIError(
+            new Response(null, { status: 400 }), 
+            'Registration: Missing required fields'
+        );
+    }
+
+    const formData = new FormData();
+    formData.append('email', newCitizen.email);
+    formData.append('username', newCitizen.username);
+    formData.append('name', newCitizen.name);
+    formData.append('surname', newCitizen.surname);
+    formData.append('password', newCitizen.password);
+    formData.append('receive_emails', String(newCitizen.receive_emails));
+
+    if (newCitizen.profilePicture) {
+        formData.append('profilePicture', newCitizen.profilePicture);
+    }
+
+    if (newCitizen.telegram_username) {
+        formData.append('telegram_username', newCitizen.telegram_username);
+    }
+
+    const response = await fetch(`${BACKEND_URL}/api/register`, {
+        method: 'POST',
+        credentials: 'include',
+        body: formData,
+    });
+
+    if (response.ok) {
+        const citizen = await response.json();
+        return citizen;
+    }
+    return handleAPIError(response, 'Registration');
+};
 
 const login = async (credentials: Credentials): Promise<Citizen> => {
     const response = await fetch(`${BACKEND_URL}/api/login`, {
@@ -23,32 +52,8 @@ const login = async (credentials: Credentials): Promise<Citizen> => {
     if(response.ok) {
         const citizen = await response.json();
         return citizen;
-    } else {
-        throw new Error('Login failed');
-    }
-};
-
-const register = async (newCitizen: NewCitizen): Promise<Citizen> => {
-    const formData = new FormData();
-    formData.append('name', newCitizen.name);
-    formData.append('surname', newCitizen.surname);
-    formData.append('username', newCitizen.username);
-    formData.append('email', newCitizen.email);
-    formData.append('receive_emails', String(newCitizen.receive_emails));
-    formData.append('password', newCitizen.password);
-
-    const response = await fetch(`${BACKEND_URL}/api/registration`, {
-        method: 'POST',
-        credentials: 'include',
-        body: formData,
-    });
-
-    if (response.ok) {
-        const citizen = await response.json();
-        return citizen;
-    } else {
-        throw new Error('Registration failed');
-    }
+    } 
+    return handleAPIError(response, 'Login');
 };
 
 const getUserInfo = async (): Promise<Citizen> => {
@@ -58,9 +63,8 @@ const getUserInfo = async (): Promise<Citizen> => {
     const user = await response.json();
     if (response.ok) {
         return user as Citizen;
-    } else {
-        throw new Error('Failed to fetch user info');
-    }
+    } 
+    return handleAPIError(response, 'Get user info');
 };
 
 const logout = async (): Promise<null> => {
@@ -70,9 +74,8 @@ const logout = async (): Promise<null> => {
     });
     if (response.ok) {
         return null;
-    } else {
-        throw new Error('Logout failed');
-    }
+    } 
+    return handleAPIError(response, 'Logout');
 };
 
 const API = { login, register, getUserInfo, logout };
