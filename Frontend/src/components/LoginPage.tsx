@@ -1,6 +1,7 @@
 import { useActionState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { Form, Button, Alert } from 'react-bootstrap';
+import { DiVim } from 'react-icons/di';
 
 interface LoginFormProps {
     handleLogin: (credentials: { username: string, password: string }) => Promise<{ username: string }>;
@@ -46,7 +47,12 @@ function LoginForm({ handleLogin }: LoginFormProps) {
     return(
         <>
            {isPending && <Alert variant="warning">Wait...</Alert>} 
-
+           <div style={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                height: "100vh",
+            }}>
            <Form action={formAction}>
                 <Form.Group className="mb-3" controlId='username'>
                     <Form.Label>Username</Form.Label>
@@ -62,6 +68,7 @@ function LoginForm({ handleLogin }: LoginFormProps) {
                     Login
                 </Button>
            </Form>
+           </div>
         </>
     )
 }
