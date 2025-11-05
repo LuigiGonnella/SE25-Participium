@@ -6,7 +6,9 @@ import cors from "cors";
 import path from 'path';
 import authenticationRouter from '@routes/authRoutes'
 import "reflect-metadata";
-
+import session from 'express-session';
+import passport from 'passport';
+import { configurePassport } from '@config/passport';
 
 export const app = express();
 
@@ -19,6 +21,23 @@ app.use(cors({
     origin: 'http://localhost:5173',
     credentials: true
 }));
+
+// Sessions
+app.use(session({
+    secret: process.env.SESSION_SECRET || 'definitely-not-a-secret-key',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        secure: process.env.NODE_ENV === 'production',
+        httpOnly: true,
+        maxAge: 1000 * 60 * 60 * 24 // 24h
+    }
+}));
+
+// Passport
+app.use(passport.initialize());
+app.use(passport.session());
+configurePassport();
 
 // app.use(
 //   CONFIG.ROUTES.V1_SWAGGER,

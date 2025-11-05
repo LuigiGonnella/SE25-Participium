@@ -58,7 +58,7 @@ export function mapStaffDAOToDTO(staffDAO: StaffDAO): StaffDTO {
     name: staffDAO.name,
     surname: staffDAO.surname,
     role: staffDAO.role,
-    officeId: staffDAO.office.id
+    officeId: staffDAO.office?.id
   }) as StaffDTO;
 }
 

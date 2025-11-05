@@ -8,9 +8,6 @@ const URL_OFFICES = "/offices";
 const URL_STAFFS = "/staffs";
 
 
-export const TOKEN_LIFESPAN = "24h";
-export const SECRET_KEY = "b}2ZzqQ!eQ!t7rFeT[GHs6FZ+*L]2VqR{vnLn>4-V3[5W-V{f^";
-
 export const CONFIG = {
 	APP_PORT: process.env.PORT || 8080,
 
