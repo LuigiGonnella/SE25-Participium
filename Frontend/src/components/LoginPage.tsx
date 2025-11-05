@@ -54,6 +54,10 @@ function LoginForm({ handleLogin }: LoginFormProps) {
                 height: "100vh",
             }}>
            <Form action={formAction}>
+            <h2 className="text-center mb-3">Insert your credentials</h2>
+             <p className="text-center text-muted mb-4">
+            Don't have an account? <br /> <Link to="/registration">Register</Link>
+            </p>
                 <Form.Group className="mb-3" controlId='username'>
                     <Form.Label>Username</Form.Label>
                     <Form.Control type="text" name="username" placeholder="Enter username" required />

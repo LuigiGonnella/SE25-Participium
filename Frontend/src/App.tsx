@@ -9,6 +9,7 @@ import 'bootstrap-italia/dist/css/bootstrap-italia.min.css';
 import 'typeface-titillium-web';
 import 'typeface-roboto-mono';
 import 'typeface-lora';
+import RegistrationForm from './components/RegistrationPage';
 
 interface User {
   username?: string;
@@ -59,6 +60,7 @@ function App() {
           <Navigate replace to="/" /> :
           <LoginForm handleLogin={handleLogin} /> 
         } />
+        <Route path="/registration" index element={<RegistrationForm />} />
       </Route>
     </Routes>
   )
