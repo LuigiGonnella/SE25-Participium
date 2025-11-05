@@ -1,9 +1,6 @@
-const BACKEND_URL = "http://localhost:8080";
+import type { Citizen, Credentials } from "../models/Models.ts";
 
-interface Credentials {
-    username: string;
-    password: string;
-}
+const BACKEND_URL = "http://localhost:8080";
 
 interface NewCitizen {
     name: string;
@@ -12,17 +9,6 @@ interface NewCitizen {
     email: string;
     receive_emails: boolean;
     password: string;
-}
-
-interface Citizen{
-    id: number;
-    email: string;
-    username: string;
-    name: string;
-    surname: string;
-    profilePicture: string;
-    telegram_username: string;
-    receive_emails: boolean;
 }
 
 const login = async (credentials: Credentials): Promise<Citizen> => {
