@@ -53,10 +53,10 @@ function App() {
   return (
     <Routes>
       <Route element={<DefaultLayout loggedIn={loggedIn} user={user} handleLogout={handleLogout} />}>
-        <Route path="/home" index element={<HomePage />} />
+        <Route path="/" index element={<HomePage />} />
         <Route path="/login" index element={
           loggedIn ? 
-          <Navigate replace to="/home" /> :
+          <Navigate replace to="/" /> :
           <LoginForm handleLogin={handleLogin} /> 
         } />
       </Route>

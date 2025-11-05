@@ -28,7 +28,7 @@ function LoginForm({ handleLogin }: LoginFormProps) {
 
             try {
                 await handleLogin(credentials);
-                navigate('/home');
+                navigate('/');
                 return {
                     ...state,
                     success: true
@@ -68,7 +68,7 @@ function LoginForm({ handleLogin }: LoginFormProps) {
 
 function LogoutButton({ logout }: LogoutButtonProps) {
     return (
-        <Link to="/home" onClick={logout}>
+        <Link to="/" onClick={logout}>
             Logout
         </Link>
     )
