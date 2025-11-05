@@ -5,6 +5,15 @@ interface Credentials {
     password: string;
 }
 
+interface NewCitizen {
+    name: string;
+    surname: string;
+    username: string;
+    email: string;
+    receive_emails: boolean;
+    password: string;
+}
+
 interface Citizen{
     id: number;
     email: string;
@@ -33,6 +42,29 @@ const login = async (credentials: Credentials): Promise<Citizen> => {
     }
 };
 
+const register = async (newCitizen: NewCitizen): Promise<Citizen> => {
+    const formData = new FormData();
+    formData.append('name', newCitizen.name);
+    formData.append('surname', newCitizen.surname);
+    formData.append('username', newCitizen.username);
+    formData.append('email', newCitizen.email);
+    formData.append('receive_emails', String(newCitizen.receive_emails));
+    formData.append('password', newCitizen.password);
+
+    const response = await fetch(`${BACKEND_URL}/api/registration`, {
+        method: 'POST',
+        credentials: 'include',
+        body: formData,
+    });
+
+    if (response.ok) {
+        const citizen = await response.json();
+        return citizen;
+    } else {
+        throw new Error('Registration failed');
+    }
+};
+
 const getUserInfo = async (): Promise<Citizen> => {
     const response = await fetch(`${BACKEND_URL}/api/user`, {
         credentials: 'include',
@@ -57,5 +89,5 @@ const logout = async (): Promise<null> => {
     }
 };
 
-const API = { login, getUserInfo, logout };
+const API = { login, register, getUserInfo, logout };
 export default API;

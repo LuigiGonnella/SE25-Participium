@@ -5,11 +5,11 @@ import './App.css'
 import HomePage from './components/Home';
 import { LoginForm } from './components/LoginPage';
 import DefaultLayout from './components/DefaultLayout';
+import RegistrationForm from './components/RegistrationPage';
 import 'bootstrap-italia/dist/css/bootstrap-italia.min.css';
 import 'typeface-titillium-web';
 import 'typeface-roboto-mono';
 import 'typeface-lora';
-import RegistrationForm from './components/RegistrationPage';
 
 interface User {
   username?: string;
@@ -19,6 +19,15 @@ interface User {
 interface Credentials {
   username: string;
   password: string;
+}
+
+interface NewCitizen {
+    name: string;
+    surname: string;
+    username: string;
+    email: string;
+    receive_emails: boolean;
+    password: string;
 }
 
 function App() {
@@ -45,6 +54,17 @@ function App() {
     }
   };
 
+  const handleRegistration = async (newCitizen: NewCitizen): Promise<{ name: string; surname: string; username: string; email: string; receive_emails: boolean }> => {
+    try {
+       const user = await API.register(newCitizen);
+       setLoggedIn(true);
+       setUser(user);
+       return { name: user.name, surname: user.surname, username: user.username, email: user.email, receive_emails: user.receive_emails };
+    } catch (err) {
+        throw err;
+    }
+  };
+
   const handleLogout = async (): Promise<void> => {
     await API.logout();
     setLoggedIn(false);
@@ -60,7 +80,7 @@ function App() {
           <Navigate replace to="/" /> :
           <LoginForm handleLogin={handleLogin} /> 
         } />
-        <Route path="/registration" index element={<RegistrationForm />} />
+        <Route path="/registration" index element={<RegistrationForm handleRegistration={handleRegistration} />} />
       </Route>
     </Routes>
   )

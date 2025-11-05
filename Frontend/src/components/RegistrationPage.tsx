@@ -1,17 +1,80 @@
 import { useState } from 'react';
 import {Form, FormGroup, Row, Col, Button, Alert} from 'react-bootstrap';
+import { useActionState } from 'react';
+import { useNavigate } from 'react-router';
 
-function RegistrationForm(){
+interface RegistrationFormProps {
+    handleRegistration: (newCitizen: {
+        name: string;
+        surname: string;
+        username: string;
+        email: string;
+        receive_emails: boolean;
+        password: string;
+    }) => Promise<{ name: string;
+                    surname: string;
+                    username: string;
+                    email: string;
+                    receive_emails: boolean }>;
+}
+
+interface RegistrationState {
+    name: string;
+    surname: string;
+    username: string;
+    email: string;
+    receive_emails: boolean;
+    password: string;
+    confirmPassword: string;
+    success?: boolean;
+}
+
+function RegistrationForm({ handleRegistration }: RegistrationFormProps){
     const [name, setName] = useState('');
     const [surname, setSurname] = useState('');
     const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
-    const [receiveEmails, setReceiveEmails] = useState(false);
+    const [receive_emails, setReceiveEmails] = useState(false);
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
 
+    const navigate = useNavigate();
+
+    const [, formAction, isPending] = useActionState<RegistrationState>(
+        async (state: RegistrationState) => {
+            const newCitizen = {
+                name: state.name,
+                surname: state.surname,
+                username: state.username,
+                email: state.email,
+                receive_emails: state.receive_emails,
+                password: state.password,
+            };
+            try {
+                await handleRegistration(newCitizen);
+                navigate('/');
+                return {
+                    ...state,
+                    success: true
+                };
+            } catch (err) {
+                return err as RegistrationState;
+            }
+        },
+        {
+            name: '',
+            surname: '',
+            username: '',
+            email: '',
+            receive_emails: false,
+            password: '',
+            confirmPassword: ''
+        }
+    );
+
     return (
     <>
+    {isPending && <Alert variant="warning">Wait...</Alert>} 
     <div style={{
                 display: "flex",
                 flexDirection: "column",
@@ -19,7 +82,7 @@ function RegistrationForm(){
                 alignItems: "center",
                 height: "100vh",
             }}>
-        <Form >
+        <Form action={formAction}>
           <h2 className="text-center mb-3">Registration</h2>
           <Row>
               <Col>
@@ -124,7 +187,7 @@ function RegistrationForm(){
                     type="checkbox"
                     id="terms"
                     label="Receive notifications via email"
-                    checked={receiveEmails}
+                    checked={receive_emails}
                     onChange={(e) => setReceiveEmails(e.target.checked)}
                     />
                 </Form.Group>
