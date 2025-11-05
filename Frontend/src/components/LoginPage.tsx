@@ -1,7 +1,6 @@
 import { useActionState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { Form, Button, Alert } from 'react-bootstrap';
-import { DiVim } from 'react-icons/di';
 
 interface LoginFormProps {
     handleLogin: (credentials: { username: string, password: string }) => Promise<{ username: string }>;

@@ -1,20 +1,6 @@
+import type { Citizen, Credentials } from "../models/Models.ts";
+
 const BACKEND_URL = "http://localhost:8080";
-
-interface Credentials {
-    username: string;
-    password: string;
-}
-
-interface Citizen{
-    id: number;
-    email: string;
-    username: string;
-    name: string;
-    surname: string;
-    profilePicture: string;
-    telegram_username: string;
-    receive_emails: boolean;
-}
 
 const login = async (credentials: Credentials): Promise<Citizen> => {
     const response = await fetch(`${BACKEND_URL}/api/login`, {
