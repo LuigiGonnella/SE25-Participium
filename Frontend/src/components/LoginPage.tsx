@@ -4,7 +4,10 @@ import { Form, Button, Alert } from 'react-bootstrap';
 import {Icon} from "design-react-kit";
 
 interface LoginFormProps {
-    handleLogin: (credentials: { username: string, password: string }) => Promise<{ username: string }>;
+    handleLogin: (credentials: { 
+        username: string, 
+        password: string 
+    }) => Promise<{ username: string }>;
 }
 
 interface LoginState {
