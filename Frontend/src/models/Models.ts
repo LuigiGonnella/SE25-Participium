@@ -23,3 +23,12 @@ export interface Credentials {
     username: string;
     password: string;
 }
+
+export interface NewCitizen {
+    name: string;
+    surname: string;
+    username: string;
+    email: string;
+    receive_emails: boolean;
+    password: string;
+}

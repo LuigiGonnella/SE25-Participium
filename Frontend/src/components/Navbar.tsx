@@ -13,24 +13,18 @@ interface NavComponentProps {
 function NavComponent({ loggedIn, user, handleLogout }: NavComponentProps) {
     return(
         <>
-          <Header type="slim">
+          <Header type="slim" style={{position: 'sticky', top: 0, zIndex: 1000}}>
           <HeaderContent>
-            <HeaderBrand responsive>
+            <HeaderBrand href='/' responsive>
               Participium
             </HeaderBrand>
             <HeaderRightZone>
               {loggedIn ? (
                 <>
+                  <span className="d-none d-lg-block text-white me-3">
+                    {user.username}
+                  </span>
                   <LogoutButton logout={handleLogout} />
-                  <span className="rounded-icon">
-                    <Icon
-                      color="primary"
-                      icon="it-logout"
-                    />
-                  </span>
-                  <span className="d-none d-lg-block">
-                    {user.username} - Logout
-                  </span>
                 </>
               ) : (
                 <Button

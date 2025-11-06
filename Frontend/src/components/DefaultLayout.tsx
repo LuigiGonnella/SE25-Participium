@@ -1,5 +1,6 @@
 import { Outlet } from "react-router";
 import NavComponent from "./Navbar";
+import {Container} from "design-react-kit";
 
 interface DefaultLayoutProps {
     loggedIn: boolean;
@@ -13,8 +14,21 @@ interface DefaultLayoutProps {
 function DefaultLayout({ loggedIn, user, handleLogout }: DefaultLayoutProps) {
     return (
         <>
-            <NavComponent loggedIn={loggedIn} user={user} handleLogout={handleLogout} />
-            <Outlet />
+            <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+                <NavComponent loggedIn={loggedIn} user={user} handleLogout={handleLogout} />
+                <Container
+                    fluid
+                    style={{
+                        flex: 1,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        overflowY: 'auto',
+                        padding: '20px'
+                    }}
+                >
+                    <Outlet />
+                </Container>
+            </div>
         </>
     );
 }

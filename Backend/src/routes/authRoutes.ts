@@ -3,7 +3,6 @@ import {CitizenToJSON} from '@models/dto/Citizen';
 import {Router} from "express";
 import passport from 'passport';
 import {isAuthenticated} from '@middlewares/authMiddleware';
-import {StaffRole} from "@dao/staffDAO";
 
 const router = Router();
 
@@ -15,7 +14,7 @@ router.post('/register', uploadProfilePicture.single('profilePicture'), async (r
             req.body.name,
             req.body.surname,
             req.body.password,
-            req.body.receive_emails === 'true', // from string to boolean TODO: review
+            req.body.receive_emails,
             req.file, // multer puts file in req.file
             req.body.telegram_username
         );
@@ -39,7 +38,7 @@ router.post('/login', (req, res, next) => {
 
         req.login(user, (err) => {
             if (err) return next(err);
-            res.status(200).json({ message: 'Login successful' });
+            res.status(200).json(user);
         });
     })(req, res, next);
 });
@@ -53,7 +52,7 @@ router.delete('/logout', (req, res) => {
     });
 });
 
-router.get('/me', isAuthenticated([StaffRole.ADMIN]), (req, res) => {
+router.get('/me', isAuthenticated(['CITIZEN', 'STAFF']), (req, res) => {
     res.status(200).json(req.user);
 });
 

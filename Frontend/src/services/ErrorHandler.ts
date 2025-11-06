@@ -10,9 +10,10 @@ export class APIError extends Error {
     }
 }
 
-export const handleAPIError = (response: Response, operation: string): never => {
+export const handleAPIError = async (response: Response, operation: string): Promise<never> => {
     throw new APIError(
         `${operation} failed with status ${response.status}`,
-        response.status
+        response.status,
+        (await response.json()).message
     );
 };
