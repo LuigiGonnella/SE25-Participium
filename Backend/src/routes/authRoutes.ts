@@ -33,7 +33,7 @@ router.post('/register-municipality', isAuthenticated([StaffRole.ADMIN]), async 
             req.body.surname,
             req.body.password,
             req.body.role,
-            req.body.officeId ? req.body.officeId : undefined
+            req.body.officeName 
         );
         res.status(201).json(StaffToJSON(staff)); // does not expose password
     } catch (error) {

@@ -78,7 +78,7 @@ export async function registerMunicipalityUser(
     surname: string,
     password: string,
     role: StaffRole,
-    officeId?: number
+    officeName: string
 ) {
     const staffRepo = new StaffRepository();
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -89,7 +89,7 @@ export async function registerMunicipalityUser(
         surname,
         hashedPassword,
         role,
-        officeId,
+        officeName,
     );
 
     return mapStaffDAOToDTO(staffDAO);

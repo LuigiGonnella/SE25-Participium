@@ -26,7 +26,7 @@ export class StaffDAO {
     @Column({ nullable: false })
     password: string;
 
-    @Column({ nullable: true })
+    @Column({ nullable: false })
     role: StaffRole;
 
     @ManyToOne(() => OfficeDAO, (office) => office.members, {onDelete: "SET NULL", nullable: true})

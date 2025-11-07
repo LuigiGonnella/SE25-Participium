@@ -45,9 +45,9 @@ export interface Staff {
      * @type {StaffRole}
      * @memberof Staff
      */
-    role?: StaffRole;
+    role: StaffRole;
     /**
-     * Office ID this staff member belongs to (if any)
+     * Office ID this staff member belongs to
      * @type {number}
      * @memberof Staff
      */

@@ -3,6 +3,7 @@ import { DataSource } from "typeorm";
 import { CONFIG } from "@config";
 import { logError, logInfo } from "@services/loggingService";
 import {StaffRepository} from "@repositories/staffRepository";
+import { OfficeRepository } from "@repositories/officeRepository";
 
 export const AppDataSource = new DataSource({
     type: CONFIG.DB_TYPE as any,
@@ -21,6 +22,7 @@ export async function initializeDatabase() {
     logInfo("Successfully connected to DB");
 
     await (new StaffRepository()).createDefaultAdminIfNotExists();
+    await (new OfficeRepository()).createDefaultOfficesIfNotExist();
 }
 
 export async function closeDatabase() {

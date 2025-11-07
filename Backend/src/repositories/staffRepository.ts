@@ -52,7 +52,7 @@ export class StaffRepository {
         surname: string,
         password: string,
         role: StaffRole,
-        officeId?: number
+        officeName?: string
     ): Promise<StaffDAO> {
         if (!username || !name || !surname || !password) {
             throw new AppError("Invalid input data: username, name, surname, and password are required", 400);
@@ -68,13 +68,21 @@ export class StaffRepository {
             `Staff already exists with username ${username}`,
         )
 
-        //comment office for now (to be implemented later)
-
-        /*const office = findOrThrowNotFound(
-            await this.officeRepo.find({ where: { id: officeId } } ),
-            () => true,
-            `Office with id ${officeId} not found`,
-        )*/
+        let office: OfficeDAO | undefined = undefined;
+        
+       
+        if (!officeName && role != StaffRole.ADMIN) {
+            throw new AppError(`${role} must be assigned to an office`, 400);
+        }
+        
+        const foundOffice = await this.officeRepo.findOne({ where: { name: officeName } });
+        
+        if (!foundOffice) {
+            throw new AppError(`Office with name ${officeName} not found`, 404);
+        }
+        
+        office = foundOffice;
+        
 
         const staff = this.repo.create({
             username,
@@ -82,8 +90,9 @@ export class StaffRepository {
             surname,
             password,
             role,
-            //office
+            office 
         });
+        
         return await this.repo.save(staff);
     }
 }
