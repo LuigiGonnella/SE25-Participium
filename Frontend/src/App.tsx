@@ -66,7 +66,6 @@ function App() {
     await API.logout();
     setLoggedIn(false);
     setUser({});
-    window.location.href = '/';
   };
 
   return (
