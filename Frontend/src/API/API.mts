@@ -33,7 +33,7 @@ const municipalityRegister = async (newStaff: NewStaff): Promise<Staff> => {
         );
     }
 
-    const response = await fetch(`${BACKEND_URL}/auth/municipality-register`, {
+    const response = await fetch(`${BACKEND_URL}/auth/register-municipality`, {
         method: 'POST',
         headers: { "Content-Type": "application/json" },
         credentials: 'include',

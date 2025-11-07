@@ -116,7 +116,7 @@ function RegistrationForm({ handleRegistration }: RegistrationFormProps) {
         setIsPending(true);
         try {
             await handleRegistration?.(newCitizen);
-            navigate('/');
+            navigate('/login');
         } catch (err) {
             setErrorMessage('Error: ' + (err instanceof APIError ? err.details : err));
         } finally {
@@ -283,9 +283,7 @@ function MunicipalityRegistrationForm({ handleStaffRegistration }: RegistrationF
         officeId: ''
     });
 
-    interface RegistrationFormProps {
-        handleRegistration: (newCitizen: NewCitizen) => Promise<Citizen>;
-    }
+    
 
     interface FormData {
         name: string;
@@ -394,6 +392,24 @@ function MunicipalityRegistrationForm({ handleStaffRegistration }: RegistrationF
         try {
             await handleStaffRegistration?.(newStaff);
             setIsHidden(false);
+            setFormData({
+                name: '',
+                surname: '',
+                username: '',
+                password: '',
+                confirmPassword: '', 
+                role: '',
+                officeId: ''
+            });
+            setTouched({
+                name: false,
+                surname: false,
+                username: false,
+                password: false,
+                confirmPassword: false,
+                role: false,
+                officeId: false
+            });
             setInterval(() => {
                 setIsHidden(true);
             }, 5000);

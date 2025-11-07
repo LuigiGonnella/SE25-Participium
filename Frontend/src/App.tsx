@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router';
-import { use, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import API from './API/API.mts';
 import './App.css'
 import HomePage from './components/Home';
@@ -35,9 +35,9 @@ function App() {
     checkAuth();
   }, []);
 
-  const handleLogin = async (credentials: Credentials): Promise<{ username: string }> => {
+  const handleLogin = async (credentials: Credentials, type:'CITIZEN'| 'STAFF'): Promise<{ username: string }> => {
     try {
-       const user = await API.login(credentials, 'CITIZEN');
+       const user = await API.login(credentials, type);
        setLoggedIn(true);
        setUser(user);
        return { username: user.username }; 
@@ -48,10 +48,7 @@ function App() {
 
   const handleRegistration = async (newCitizen: NewCitizen): Promise<Citizen> => {
     try {
-       const user = await API.register(newCitizen);
-       setLoggedIn(true);
-       setUser(user);
-       return user;
+       return await API.register(newCitizen);
     } catch (err) {
         throw err;
     }
@@ -59,10 +56,7 @@ function App() {
 
   const handleMunicipalityRegistration = async (newStaff: NewStaff): Promise<Staff> => {
     try {
-       const user = await API.municipalityRegister(newStaff);
-       setLoggedIn(true);
-       setUser(user);
-       return user;
+       return await API.municipalityRegister(newStaff);
     } catch (err) {
         throw err;
     }
