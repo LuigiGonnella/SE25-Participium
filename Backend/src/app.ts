@@ -6,6 +6,7 @@ import cors from "cors";
 import path from 'path';
 import authenticationRouter from '@routes/authRoutes'
 import citizenRouter from '@routes/citizenRoutes';
+import officeRoutes from "@routes/officeRoutes";
 import "reflect-metadata";
 import session from 'express-session';
 import passport from 'passport';
@@ -60,6 +61,10 @@ configurePassport();
 // Add routes here
 app.use(CONFIG.ROUTES.V1_AUTH, authenticationRouter);
 app.use(CONFIG.ROUTES.V1_CITIZENS, citizenRouter);
+app.use(CONFIG.ROUTES.V1_OFFICES, officeRoutes);
+
+
+
 
 //This must always be the last middleware added
 app.use(errorHandler);
