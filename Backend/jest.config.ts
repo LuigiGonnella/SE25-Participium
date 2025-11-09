@@ -42,6 +42,7 @@ const config: Config = {
     "^@controllers/(.*)$": "<rootDir>/src/controllers/$1",
     "^@services/(.*)$": "<rootDir>/src/services/$1",
     "^@config$": "<rootDir>/src/config/config",
+    "^@config/(.*)$": "<rootDir>/src/config/$1",
     "^@errors/(.*)$": "<rootDir>/src/models/errors/$1"
   },
   transform: {
