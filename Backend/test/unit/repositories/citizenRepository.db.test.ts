@@ -1,8 +1,8 @@
-import { before } from "node:test";
-import { DataSource } from "typeorm";
 import { CitizenDAO } from "@dao/citizenDAO";
+import { CitizenRepository } from "@repositories/citizenRepository";
+import { initializeTestDataSource, closeTestDataSource, TestDataSource } from "../../setup/test-datasource";
 
-let dataSource: DataSource;
+let citizenRepo: CitizenRepository;
 
 const citizen1 = {
     email: "barack.obama@example.com",
@@ -11,6 +11,8 @@ const citizen1 = {
     surname: "Obama",
     password: "securepassword",
     receive_emails: false,
+    profilePicture: "",
+    telegram_username: "",
 };
 
 const citizen2 = {
@@ -20,30 +22,63 @@ const citizen2 = {
     surname: "Trump",
     password: "verybigpassword",
     receive_emails: true,
+    profilePicture: "",
+    telegram_username: "",
 };
 
 beforeAll(async () => {
-    dataSource = new DataSource({
-        type: "sqlite",
-        database: ":memory:",
-        synchronize: true,
-        logging: false,
-        entities: [CitizenDAO],
-    });
-    await dataSource.initialize();
-
-    const citizenRepo = dataSource.getRepository(CitizenDAO);
-    await citizenRepo.save([citizen1, citizen2]);
+  await initializeTestDataSource();
+  citizenRepo = new CitizenRepository();
 });
 
 afterAll(async () => {
-    await dataSource.destroy();
+  await closeTestDataSource();
+});
+
+beforeEach(async () => {
+    await TestDataSource.getRepository(CitizenDAO).clear();
 });
 
 describe("CitizenRepository - test suite", () => {
+    it("should create a new citizen", async () => {
+        await citizenRepo.createCitizen(
+            citizen1.email,
+            citizen1.username,
+            citizen1.name,
+            citizen1.surname,
+            citizen1.password,
+            citizen1.receive_emails,
+            citizen1.profilePicture,
+            citizen1.telegram_username,
+        );
+        const savedInDB = await TestDataSource
+            .getRepository(CitizenDAO)
+            .findOneBy({ email: citizen1.email });
+        expect(savedInDB).toEqual(expect.objectContaining(citizen1));
+    });
+
     it("should get all citizens", async () => {
-        const citizenRepo = dataSource.getRepository(CitizenDAO);
-        const citizens = await citizenRepo.find();
+        await citizenRepo.createCitizen(
+            citizen1.email,
+            citizen1.username,
+            citizen1.name,
+            citizen1.surname,
+            citizen1.password,
+            citizen1.receive_emails,
+            citizen1.profilePicture,
+            citizen1.telegram_username,
+        );
+        await citizenRepo.createCitizen(
+            citizen2.email,
+            citizen2.username,
+            citizen2.name,
+            citizen2.surname,
+            citizen2.password,
+            citizen2.receive_emails,
+            citizen2.profilePicture,
+            citizen2.telegram_username,
+        );
+        const citizens = await citizenRepo.getAllCitizens();
         expect(citizens).toHaveLength(2);
         expect(citizens).toEqual(
             expect.arrayContaining([
@@ -53,36 +88,52 @@ describe("CitizenRepository - test suite", () => {
         );
     });
 
-    it("should get citizen by ID", async () => {
-        const citizenRepo = dataSource.getRepository(CitizenDAO);
-        const citizen = await citizenRepo.findOne({ where: { username: "barackobama" } });
-        expect(citizen).toEqual(expect.objectContaining(citizen1));
-    });
-
     it("should get citizen by email", async () => {
-        const citizenRepo = dataSource.getRepository(CitizenDAO);
-        const citizen = await citizenRepo.findOne({ where: { email: "barack.obama@example.com" } });
+        await citizenRepo.createCitizen(
+            citizen1.email,
+            citizen1.username,
+            citizen1.name,
+            citizen1.surname,
+            citizen1.password,
+            citizen1.receive_emails,
+            citizen1.profilePicture,
+            citizen1.telegram_username,
+        );
+        const citizen = await citizenRepo.getCitizenByEmail(citizen1.email);
         expect(citizen).toEqual(expect.objectContaining(citizen1));
     });
 
     it("should get citizen by username", async () => {
-        const citizenRepo = dataSource.getRepository(CitizenDAO);
-        const citizen = await citizenRepo.findOne({ where: { username: "donaldtrump" } });
+        await citizenRepo.createCitizen(
+            citizen2.email,
+            citizen2.username,
+            citizen2.name,
+            citizen2.surname,
+            citizen2.password,
+            citizen2.receive_emails,
+            citizen2.profilePicture,
+            citizen2.telegram_username,
+        );
+        const citizen = await citizenRepo.getCitizenByUsername(citizen2.username);
         expect(citizen).toEqual(expect.objectContaining(citizen2));
     });
 
-    it("should create a new citizen", async () => {
-        const citizenRepo = dataSource.getRepository(CitizenDAO);
-        const newCitizen = {
-            email: "joe.clinton@example.com",
-            username: "joebiden",
-            name: "Joe",
-            surname: "Biden",
-            password: "oldpassword",
-            receive_emails: true,
-        };
-        await citizenRepo.save(newCitizen);
-        const savedCitizen = await citizenRepo.findOne({ where: { username: "joebiden" } });
-        expect(savedCitizen).toEqual(expect.objectContaining(newCitizen));
+    it("should get citizen by ID", async () => {
+        await citizenRepo.createCitizen(
+            citizen1.email,
+            citizen1.username,
+            citizen1.name,
+            citizen1.surname,
+            citizen1.password,
+            citizen1.receive_emails,
+            citizen1.profilePicture,
+            citizen1.telegram_username,
+        );
+        const savedInDB = await TestDataSource
+                    .getRepository(CitizenDAO)
+                    .findOneBy({ email: citizen1.email });
+        const citizen = await citizenRepo.getCitizenById(savedInDB!.id);
+        expect(citizen).toEqual(expect.objectContaining(citizen1));
     });
+
 });
