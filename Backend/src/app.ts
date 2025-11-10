@@ -21,6 +21,7 @@ app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 app.use(express.json());
 app.use(cors({
     origin: 'http://localhost:5173',
+    optionsSuccessStatus: 200,
     credentials: true
 }));
 

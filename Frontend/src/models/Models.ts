@@ -8,6 +8,7 @@ export interface Citizen {
     profilePicture?: string;
     telegram_username?: string;
     receive_emails: boolean;
+    type: string;
 }
 
 export interface Staff {
@@ -17,6 +18,9 @@ export interface Staff {
     name: string;
     surname: string;
     password: string;
+    role: string;
+    officeId: number;
+    type: string;
 }
 
 export interface Credentials {
@@ -30,5 +34,20 @@ export interface NewCitizen {
     username: string;
     email: string;
     receive_emails: boolean;
+    password: string;}
+
+export interface NewStaff {
+    name: string;
+    surname: string;
+    username: string;
     password: string;
+    role: string;
+    officeId: number;
+}
+
+export const StaffRole = {
+    ADMIN: "Admin",
+    MPRO: "Municipal Public Relations Officer",
+    MA: "Municipal Administrator",
+    TOSM: "Technical Office Staff Member"
 }
