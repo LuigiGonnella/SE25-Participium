@@ -99,4 +99,58 @@ describe('Auth Routes Tests', () => {
             expect(mockResponse.json).toHaveBeenCalledWith({ message: 'Logout failed' });
         });
     });
+    
+    describe("AuthRoutes - /me endpoint", () => {
+        const isAuthenticated = (roles: string[]) => {
+        return (req: any, res: any, next: any) => {
+            if (!req.isAuthenticated || !req.isAuthenticated()) {
+                return res.status(401).json({ message: "Unauthorized" });
+            }
+
+            if (!roles.includes(req.user?.type)) {
+                return res.status(403).json({ message: "Forbidden" });
+            }
+
+            next();
+        };
+    };
+
+    it("should allow access when authenticated", () => {
+        const req = {
+            user: { id: 1, type: "CITIZEN" },
+            isAuthenticated: () => true
+        } as any;
+        const res = { status: jest.fn().mockReturnThis(), json: jest.fn() } as any;
+        const next = jest.fn();
+
+        isAuthenticated(["CITIZEN", "STAFF"])(req, res, next);
+
+        expect(next).toHaveBeenCalled();
+    });
+
+    it("should return 401 when unauthenticated", () => {
+        const req = { isAuthenticated: () => false } as any;
+        const res = { status: jest.fn().mockReturnThis(), json: jest.fn() } as any;
+        const next = jest.fn();
+
+        isAuthenticated(["CITIZEN", "STAFF"])(req, res, next);
+
+        expect(res.status).toHaveBeenCalledWith(401);
+        expect(res.json).toHaveBeenCalledWith({ message: "Unauthorized" });
+    });
+
+    it("should return 403 for unauthorized role", () => {
+        const req = {
+            isAuthenticated: () => true,
+            user: { type: "UNKNOWN" }
+        } as any;
+        const res = { status: jest.fn().mockReturnThis(), json: jest.fn() } as any;
+        const next = jest.fn();
+
+        isAuthenticated(["CITIZEN", "STAFF"])(req, res, next);
+
+        expect(res.status).toHaveBeenCalledWith(403);
+        expect(res.json).toHaveBeenCalledWith({ message: "Forbidden" });
+    });
+    });
 });

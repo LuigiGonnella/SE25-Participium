@@ -333,3 +333,55 @@ describe('AuthController - login', () => {
         login(req, res, next);
     });
 });
+
+describe("AuthController - session persistence", () => {
+  it("should save user in session after login", (done) => {
+    const mockUser = { id: 1, username: "john", type: "CITIZEN" };
+    const req = {
+      query: { type: "CITIZEN" },
+      body: {},
+      session: {},
+      login: jest.fn((user, cb) => {
+        req.session.user = user;
+        cb(null);
+      }),
+    } as any;
+
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() } as any;
+    const next = jest.fn();
+
+    jest.spyOn(passport, "authenticate").mockImplementation((_, callback: any) => {
+      return (req: any, res: any, next: any) => callback(null, mockUser, null);
+    });
+
+    login(req, res, next);
+    expect(req.session.user).toEqual(mockUser);
+    expect(req.login).toHaveBeenCalledWith(mockUser, expect.any(Function));
+    done();
+  });
+});
+
+describe("AuthController - bcrypt failure", () => {
+  it("should handle bcrypt.compare throwing an error", (done) => {
+    const req = { query: { type: "CITIZEN" }, body: {} } as any;
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    } as any;
+    const next = jest.fn((err) => {
+      expect(err).toBeInstanceOf(Error);
+      expect(err.message).toBe("Hash error");
+      done();
+    });
+
+    jest
+      .spyOn(passport, "authenticate")
+      .mockImplementation((strategy, callback: any) => {
+        return (req: any, res: any, next: any) => {
+          callback(new Error("Hash error"), null, null);
+        };
+      });
+
+    login(req, res, next);
+  });
+});
