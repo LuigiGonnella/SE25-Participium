@@ -1,30 +1,36 @@
 import { DataSource } from 'typeorm';
 import { Request, Response, NextFunction } from 'express';
 import { login } from '@controllers/authController';
+import { register } from '@controllers/authController';
 import { CitizenDAO } from '@dao/citizenDAO';
 import { StaffDAO, StaffRole } from '@dao/staffDAO';
 import { OfficeDAO } from '@dao/officeDAO';
 import bcrypt from 'bcrypt';
 import passport from 'passport';
 import { configurePassport } from '@config/passport';
+import { AppDataSource } from "@database";
 
-let testDataSource: DataSource;
+
+let localDataSource: DataSource;
 
 beforeAll(async () => {
-    testDataSource = new DataSource({
+    localDataSource = new DataSource({
         type: 'sqlite',
         database: ':memory:',
         entities: [CitizenDAO, StaffDAO, OfficeDAO],
         synchronize: true,
         logging: false
     });
-    await testDataSource.initialize();
+    await localDataSource.initialize();
+
+    Object.assign(AppDataSource, localDataSource);
+
 
     // Configure passport
     configurePassport();
 
     // Create test citizen
-    const citizenRepo = testDataSource.getRepository(CitizenDAO);
+    const citizenRepo = localDataSource.getRepository(CitizenDAO);
     await citizenRepo.save({
         email: 'test@test.com',
         username: 'testuser',
@@ -35,7 +41,7 @@ beforeAll(async () => {
     });
 
     // Create test staff
-    const staffRepo = testDataSource.getRepository(StaffDAO);
+    const staffRepo = localDataSource.getRepository(StaffDAO);
     await staffRepo.save({
         username: 'admin',
         name: 'Admin',
@@ -46,7 +52,7 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-    await testDataSource.destroy();
+    await localDataSource.destroy();
 });
 
 describe('AuthController - login', () => {
@@ -385,3 +391,99 @@ describe("AuthController - bcrypt failure", () => {
     login(req, res, next);
   });
 });
+
+//--------------------------------------------------------------
+// AuthController - Registration Tests (Story 1)
+//--------------------------------------------------------------
+describe("AuthController - register", () => {
+  const newCitizen = {
+    email: "newcitizen@example.com",
+    username: "newcitizen",
+    name: "New",
+    surname: "Citizen",
+    password: "mypassword123",
+    receive_emails: true,
+    profilePicture: "",
+    telegram_username: "newcitizen_telegram",
+  };
+
+  const fakeMulterFile = {
+    fieldname: "profilePicture",
+    originalname: "test.png",
+    encoding: "7bit",
+    mimetype: "image/png",
+    size: 1234,
+    buffer: Buffer.from("fake image data"),
+    destination: "/tmp",
+    filename: "test.png",
+    path: "/tmp/test.png",
+  } as Express.Multer.File;
+
+  beforeEach(async () => {
+    const citizenRepo = localDataSource.getRepository(CitizenDAO);
+    await citizenRepo.clear();
+  });
+
+  it("should register a new citizen successfully", async () => {
+    await register(
+      newCitizen.email,
+      newCitizen.username,
+      newCitizen.name,
+      newCitizen.surname,
+      newCitizen.password,
+      newCitizen.receive_emails,
+      fakeMulterFile,
+      newCitizen.telegram_username
+    );
+
+    const citizenRepo = localDataSource.getRepository(CitizenDAO);
+    const saved = await citizenRepo.findOneBy({ email: newCitizen.email });
+
+    expect(saved).not.toBeNull();
+    expect(saved?.username).toBe(newCitizen.username);
+    expect(saved?.email).toBe(newCitizen.email);
+    expect(saved?.password).not.toBe(newCitizen.password);
+  });
+
+  it("should throw an error if username already exists", async () => {
+    const citizenRepo = localDataSource.getRepository(CitizenDAO);
+    await citizenRepo.save({
+      email: "existing@example.com",
+      username: "duplicateuser",
+      name: "Existing",
+      surname: "User",
+      password: await bcrypt.hash("password123", 10),
+      receive_emails: true,
+    });
+
+    await expect(
+      register(
+        "another@example.com",
+        "duplicateuser",
+        "John",
+        "Doe",
+        "somepassword",
+        true,
+        fakeMulterFile,
+        ""
+      )
+    ).rejects.toThrow();
+  });
+
+  it("should throw an error when email is missing", async () => {
+    await expect(
+      register(
+        "",
+        "nousername",
+        "No",
+        "Email",
+        "password",
+        false,
+        fakeMulterFile,
+        ""
+      )
+    ).rejects.toThrow();
+  });
+});
+
+

@@ -32,6 +32,8 @@ const config: Config = {
           ]
         ]
       : ["default"],
+  setupFilesAfterEnv: ["<rootDir>/test/setup/test-datasource.ts"],
+  // use 'as any' to suppress regex key parsing
   moduleNameMapper: {
     "^@database$": "<rootDir>/src/database/connection",
     "^@models/(.*)$": "<rootDir>/src/models/$1",
@@ -43,8 +45,10 @@ const config: Config = {
     "^@services/(.*)$": "<rootDir>/src/services/$1",
     "^@config$": "<rootDir>/src/config/config",
     "^@config/(.*)$": "<rootDir>/src/config/$1",
-    "^@errors/(.*)$": "<rootDir>/src/models/errors/$1"
-  },
+    "^@errors/(.*)$": "<rootDir>/src/models/errors/$1",
+    "^@middlewares/(.*)$": "<rootDir>/src/middlewares/$1",
+    "^@app$": "<rootDir>/src/app"
+  } as any,
   transform: {
     "^.+\\.tsx?$": "ts-jest"
   },
