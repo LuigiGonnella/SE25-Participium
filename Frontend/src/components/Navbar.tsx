@@ -1,5 +1,6 @@
 import { Header, HeaderContent, HeaderBrand, HeaderRightZone, Button, Icon } from 'design-react-kit';
 import { LogoutButton } from './LoginPage';
+import { useNavigate} from "react-router";
 
 interface NavComponentProps {
     loggedIn: boolean;
@@ -11,11 +12,14 @@ interface NavComponentProps {
 }
 
 function NavComponent({ loggedIn, user, handleLogout }: NavComponentProps) {
+
+    const navigate = useNavigate();
+
     return(
         <>
           <Header type="slim" style={{position: 'sticky', top: 0, zIndex: 1000}}>
           <HeaderContent>
-            <HeaderBrand href='/' responsive>
+            <HeaderBrand className="fs-5" href='/' responsive>
               Participium
             </HeaderBrand>
             <HeaderRightZone>
@@ -24,7 +28,9 @@ function NavComponent({ loggedIn, user, handleLogout }: NavComponentProps) {
                   <span className="d-none d-lg-block text-white me-3">
                     {user.username}
                   </span>
-                  <LogoutButton logout={handleLogout} />
+                  <LogoutButton logout={() => {
+                      handleLogout().then(() => navigate('/login', { replace: true }));
+                  }} />
                 </>
               ) : (
                 <Button

@@ -5,12 +5,12 @@ import './App.css'
 import HomePage from './components/Home';
 import { LoginForm } from './components/LoginPage';
 import DefaultLayout from './components/DefaultLayout';
-import RegistrationForm from './components/RegistrationPage';
+import { RegistrationForm, MunicipalityRegistrationForm } from './components/RegistrationPage';
 import 'bootstrap-italia/dist/css/bootstrap-italia.min.css';
 import 'typeface-titillium-web/index.css';
 import 'typeface-roboto-mono/index.css';
 import 'typeface-lora/index.css';
-import type {Citizen, NewCitizen} from "./models/Models.ts";
+import type {Citizen, NewCitizen, Staff, NewStaff} from "./models/Models.ts";
 
 interface User {
   username?: string;
@@ -35,9 +35,9 @@ function App() {
     checkAuth();
   }, []);
 
-  const handleLogin = async (credentials: Credentials): Promise<{ username: string }> => {
+  const handleLogin = async (credentials: Credentials, type:'CITIZEN'| 'STAFF'): Promise<{ username: string }> => {
     try {
-       const user = await API.login(credentials, 'CITIZEN');
+       const user = await API.login(credentials, type);
        setLoggedIn(true);
        setUser(user);
        return { username: user.username }; 
@@ -48,10 +48,15 @@ function App() {
 
   const handleRegistration = async (newCitizen: NewCitizen): Promise<Citizen> => {
     try {
-       const user = await API.register(newCitizen);
-       setLoggedIn(true);
-       setUser(user);
-       return user;
+       return await API.register(newCitizen);
+    } catch (err) {
+        throw err;
+    }
+  };
+
+  const handleMunicipalityRegistration = async (newStaff: NewStaff): Promise<Staff> => {
+    try {
+       return await API.municipalityRegister(newStaff);
     } catch (err) {
         throw err;
     }
@@ -61,7 +66,6 @@ function App() {
     await API.logout();
     setLoggedIn(false);
     setUser({});
-    window.location.href = '/';
   };
 
   return (
@@ -73,7 +77,17 @@ function App() {
           <Navigate replace to="/" /> :
           <LoginForm handleLogin={handleLogin} /> 
         } />
-        <Route path="/registration" element={<RegistrationForm handleRegistration={handleRegistration} />} />
+
+        <Route path="/registration" element={
+          loggedIn ? 
+          <Navigate replace to="/" /> :
+          <RegistrationForm handleRegistration={handleRegistration} 
+          />} />
+
+        {
+          loggedIn && user.type === 'STAFF' && user.role === 'Admin' &&
+          <Route path="/municipality-registration" element={<MunicipalityRegistrationForm handleStaffRegistration={handleMunicipalityRegistration} />} />
+        }
       </Route>
     </Routes>
   )
