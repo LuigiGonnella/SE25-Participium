@@ -1,4 +1,4 @@
-import type {Citizen, Staff, Credentials, NewCitizen, NewStaff} from "../models/Models.ts";
+import type {Citizen, Staff, Credentials, NewCitizen, NewStaff, Office} from "../models/Models.ts";
 import {handleAPIError} from "../services/ErrorHandler.ts";
 
 const BACKEND_URL = "http://localhost:8080/api/v1";
@@ -84,5 +84,16 @@ const logout = async (): Promise<null> => {
     return handleAPIError(response, 'Logout');
 };
 
-const API = { login, register, getUserInfo, logout, municipalityRegister };
+const getOffices = async (): Promise<Office[]> => {
+    const response = await fetch(`${BACKEND_URL}/offices`, {
+        method: 'GET',
+        credentials: 'include',
+    });
+    if (response.ok) {
+        return await response.json();
+    }
+    return handleAPIError(response, 'Get Offices');
+};
+
+const API = { login, register, getUserInfo, logout, municipalityRegister, getOffices };
 export default API;

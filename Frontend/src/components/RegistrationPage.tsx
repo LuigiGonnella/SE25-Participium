@@ -1,9 +1,10 @@
 import { Form, FormGroup, Row, Col, Button, Alert } from 'react-bootstrap';
 import {type ChangeEvent, type FocusEvent, type FormEvent, useState} from 'react';
 import { useNavigate } from 'react-router';
-import type { Citizen, Staff, NewCitizen, NewStaff } from "../models/Models.ts";
-import { StaffRole } from '../models/Models.ts';
+import type { Citizen, Staff, NewCitizen, NewStaff, Office, OfficeCategory } from "../models/Models.ts";
+import { ROLE_OFFICE_MAP, StaffRole } from '../models/Models.ts';
 import {APIError} from "../services/ErrorHandler.ts";
+import API from '../API/API.mts';
 
 interface RegistrationFormProps {
     handleRegistration?: (newCitizen: NewCitizen) => Promise<Citizen>;
@@ -273,6 +274,9 @@ function MunicipalityRegistrationForm({ handleStaffRegistration }: RegistrationF
     const [touched, setTouched] = useState<Partial<Record<keyof FormData, boolean>>>({});
     const [isHidden, setIsHidden] = useState(true);
 
+    const [offices, setOffices] = useState<Office[]>([]);
+    const [filteredOffices, setFilteredOffices] = useState<Office[]>([]);
+
     const [formData, setFormData] = useState<FormData>({
         name: '',
         surname: '',
@@ -280,10 +284,8 @@ function MunicipalityRegistrationForm({ handleStaffRegistration }: RegistrationF
         password: '',
         confirmPassword: '', 
         role: '',
-        officeId: ''
+        officeName: ''
     });
-
-    
 
     interface FormData {
         name: string;
@@ -292,7 +294,7 @@ function MunicipalityRegistrationForm({ handleStaffRegistration }: RegistrationF
         password: string;
         confirmPassword: string;
         role: string;
-        officeId: string;
+        officeName: string;
     }
 
     interface FormErrors {
@@ -302,9 +304,27 @@ function MunicipalityRegistrationForm({ handleStaffRegistration }: RegistrationF
         password: boolean;
         confirmPassword: boolean;
         role: boolean;
-        officeId: boolean;
+        officeName: boolean;
     }
 
+    const fetchOffices = async () => {
+    try {
+        const data = await API.getOffices();
+        setOffices(data);
+        setFilteredOffices(filterOfficesByRole(formData.role, data));
+        
+    } catch (err) {
+        console.error("Errore nel recupero degli uffici:", err);
+    }
+    };
+
+    const filterOfficesByRole = (role: string, allOffices: Office[] = offices) => {
+        if (!role) return [];
+        const allowed = ROLE_OFFICE_MAP[role];
+        if (!allowed) return [];
+        return allOffices.filter(o => allowed.includes((o.category as unknown as string) ?? String(o.id ?? '')));
+    };
+    
     const validateField = (name: keyof FormData, value: string): boolean => {
         switch (name) {
             case 'name':
@@ -319,7 +339,7 @@ function MunicipalityRegistrationForm({ handleStaffRegistration }: RegistrationF
                 return value !== formData.password;
             case 'role':
                 return value === '';
-            case 'officeId':
+            case 'officeName':
             default:
                 return false;
         }
@@ -332,7 +352,7 @@ function MunicipalityRegistrationForm({ handleStaffRegistration }: RegistrationF
         password: validateField('password', formData.password),
         confirmPassword: validateField('confirmPassword', formData.confirmPassword),
         role: validateField('role', formData.role),
-        officeId: validateField('officeId', formData.officeId)
+        officeName: validateField('officeName', formData.officeName)
     };
 
     const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -348,13 +368,18 @@ function MunicipalityRegistrationForm({ handleStaffRegistration }: RegistrationF
         setTouched(prev => ({ ...prev, [e.target.name]: true }));
     };
 
-    const handleSelectChange = (e: ChangeEvent<HTMLSelectElement>) => {
+    const handleSelectChange = async (e: ChangeEvent<HTMLSelectElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({
             ...prev,
             [name]: value
         }));
         setTouched(prev => ({ ...prev, [name]: true }));
+        
+        if (name === "role") {
+            await fetchOffices();
+
+  }
     };
 
     const handleSelectBlur = (e: FocusEvent<HTMLSelectElement>) => {
@@ -372,7 +397,7 @@ function MunicipalityRegistrationForm({ handleStaffRegistration }: RegistrationF
             password: true,
             confirmPassword: true,
             role: true,
-            officeId: true
+            officeName: true
         });
 
         if (Object.values(errors).some(error => error)) {
@@ -385,7 +410,7 @@ function MunicipalityRegistrationForm({ handleStaffRegistration }: RegistrationF
             username: formData.username,
             password: formData.password,
             role: formData.role,
-            officeId: Number(formData.officeId)
+            officeName: formData.officeName
         };
 
         setIsPending(true);
@@ -399,7 +424,7 @@ function MunicipalityRegistrationForm({ handleStaffRegistration }: RegistrationF
                 password: '',
                 confirmPassword: '', 
                 role: '',
-                officeId: ''
+                officeName: ''
             });
             setTouched({
                 name: false,
@@ -408,7 +433,7 @@ function MunicipalityRegistrationForm({ handleStaffRegistration }: RegistrationF
                 password: false,
                 confirmPassword: false,
                 role: false,
-                officeId: false
+                officeName: false
             });
             setInterval(() => {
                 setIsHidden(true);
@@ -535,6 +560,29 @@ function MunicipalityRegistrationForm({ handleStaffRegistration }: RegistrationF
                                 {
                                     Object.entries(StaffRole).map(([key, value]) => (
                                         <option key={key} value={key}>{value}</option>
+                                    ))
+                                }
+                            </Form.Select>
+                        </Form.Group>
+                    </Col>
+                </Row>
+                <Row>
+                    <Col>
+                        <Form.Group className="mb-3" controlId="formName">
+                            <Form.Label>Office</Form.Label>
+                            <Form.Select
+                                name="office"
+                                value={formData.officeName}
+                                onChange={handleSelectChange}
+                                onBlur={handleSelectBlur}
+                                isInvalid={touched.officeName && errors.officeName}
+                                required
+                            >
+                                <option value="">Select an office...
+                                    {filteredOffices.length === 0 ? "" : "Select an office"}</option>
+                                {
+                                    Object.entries(filteredOffices).map(([key, value]) => (
+                                        <option key={key} value={key}>{value.name}</option>
                                     ))
                                 }
                             </Form.Select>
