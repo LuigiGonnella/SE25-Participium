@@ -1,5 +1,5 @@
 import { AppDataSource } from "@database";
-import { OfficeDAO } from "@models/dao/officeDAO";
+import { OfficeCategory, OfficeDAO } from "@models/dao/officeDAO";
 import { throwConflictIfFound } from "@utils";
 import { Repository } from "typeorm";
 import AppError from "@models/errors/AppError";
@@ -15,19 +15,49 @@ export class OfficeRepository {
     async createDefaultOfficesIfNotExist() {
         const defaultOffices = [
             {
-                name: "Municipal Public Relations Office",
-                description: "Office responsible for public relations and communication with citizens",
-                category: "Public Relations"
-            },
-            {
-                name: "Municipal Administration Office",
+                name: "Municipal Organization Office",
                 description: "Office responsible for municipal administration and management",
-                category: "Administration"
+                category: OfficeCategory.MOO
             },
             {
-                name: "Technical Office",
-                description: "Office responsible for technical services and staff management",
-                category: "Technical"
+                name: "Water Supply Office",
+                description: "Technical office responsible for water supply and management",
+                category: OfficeCategory.WSO
+            },
+            {
+                name: "Architectural Barriers Office",
+                description: "Technical office responsible for removing architectural barriers in public spaces",
+                category: OfficeCategory.ABO
+            },
+            {
+                name: "Sewer System Office",
+                description: "Technical office responsible for sewer system maintenance and management",
+                category: OfficeCategory.SSO
+            },
+            {
+                name: "Public Lighting Office",
+                description: "Technical office responsible for public lighting systems",
+                category: OfficeCategory.PLO
+            },
+            {
+                name: "Waste Office",
+                description: "Technical office responsible for waste management and disposal",
+                category: OfficeCategory.WO
+            },
+            {
+                name: "Road Signs and Traffic Lights Office",
+                description: "Technical office responsible for road signs and traffic lights maintenance",
+                category: OfficeCategory.RSTLO
+            },
+            {
+                name: "Roads and Urban Furnishings Office",
+                description: "Technical office responsible for road maintenance and urban furnishings",
+                category: OfficeCategory.RUFO
+            },
+            {
+                name: "Public Green Areas and Playgrounds Office",
+                description: "Technical office responsible for maintenance of public green areas and playgrounds",
+                category: OfficeCategory.PGAPO
             }
         ];
 
@@ -58,7 +88,7 @@ export class OfficeRepository {
     }
 
     // get office by category
-    async getOfficeByCategory(category: string): Promise<OfficeDAO | null> {
+    async getOfficeByCategory(category: OfficeCategory): Promise<OfficeDAO | null> {
         return await this.repo.findOne({ where: { category }, relations: ["members"] });
     }
 
@@ -66,14 +96,14 @@ export class OfficeRepository {
     async createOffice(
         name: string,
         description: string,
-        category: string
+        category: OfficeCategory
     ): Promise<OfficeDAO> {
         if (!name || !category) {
             throw new AppError("Invalid input data: name and category are required", 400);
         }
         
         name = name.trim();
-        category = category.trim();
+        //category = category.trim();
         if (description) {
             description = description.trim();
         }
@@ -104,7 +134,7 @@ export class OfficeRepository {
         id: number,
         name?: string,
         description?: string,
-        category?: string
+        category?: OfficeCategory
     ): Promise<OfficeDAO> {
         const office = await this.getOfficeById(id);
         
@@ -125,7 +155,7 @@ export class OfficeRepository {
 
         // Check for conflicts if category is being updated
         if (category && category !== office.category) {
-            category = category.trim();
+            //category = category.trim();
             throwConflictIfFound(
                 await this.repo.find({ where: { category }}),
                 () => true,
