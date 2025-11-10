@@ -13,6 +13,9 @@ export class OfficeDAO {
     @Column()
     description: string;
 
+    @Column({ unique: true, nullable: false })
+    category: string;
+
     @OneToMany(() => StaffDAO, (staff) => staff.office)
     members: StaffDAO[];
 }
