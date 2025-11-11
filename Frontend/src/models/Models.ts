@@ -70,9 +70,18 @@ export const OfficeCategory = {
     PGAPO: "Public Green Areas and Playgrounds Office",
 }
 
-export const ROLE_OFFICE_MAP: Record<string, string[]> = {
-    ADMIN: ['MOO'],
-    MPRO: ['MOO'],
-    MA: ['MOO'],
-    TOSM: ['WSO', 'ABO', 'SSO', 'PLO', 'WO', 'RSTLO', 'RUFO', 'PGAPO'],
+export const ROLE_OFFICE_MAP = {
+  ADMIN: ["Municipal Organization Office"],
+  MPRO: ["Municipal Organization Office"],
+  MA: ["Municipal Organization Office"],
+  TOSM: [
+    "Water Supply Office",
+    "Architectural Barriers Office",
+    "Sewer System Office",
+    "Public Lighting Office",
+    "Waste Office",
+    "Road Signs and Traffic Lights Office",
+    "Roads and Urban Furnishings Office",
+    "Public Green Areas and Playgrounds Office"
+  ]
 };

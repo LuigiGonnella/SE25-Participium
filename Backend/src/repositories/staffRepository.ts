@@ -66,23 +66,25 @@ export class StaffRepository {
             await this.repo.find({ where: { username } }),
             () => true,
             `Staff already exists with username ${username}`,
-        )
+        );
 
         let office: OfficeDAO | undefined = undefined;
-        
-       
-        if (!officeName && role != StaffRole.ADMIN) {
+
+        if (!officeName && role === StaffRole.TOSM) {
             throw new AppError(`${role} must be assigned to an office`, 400);
         }
-        
-        const foundOffice = await this.officeRepo.findOne({ where: { name: officeName } });
-        
-        if (!foundOffice) {
-            throw new AppError(`Office with name ${officeName} not found`, 404);
+
+        if (officeName && officeName.trim() !== "") {
+            const foundOffice = await this.officeRepo.findOne({
+                where: { name: officeName.trim() },
+            });
+
+            if (!foundOffice) {
+                throw new AppError(`Office with name ${officeName} not found`, 404);
+            }
+
+            office = foundOffice;
         }
-        
-        office = foundOffice;
-        
 
         const staff = this.repo.create({
             username,
@@ -90,9 +92,11 @@ export class StaffRepository {
             surname,
             password,
             role,
-            office 
+            office,
         });
-        
-        return await this.repo.save(staff);
+
+        const savedStaff = await this.repo.save(staff);
+
+        return savedStaff;
     }
 }
