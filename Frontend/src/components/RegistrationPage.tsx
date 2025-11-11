@@ -1,14 +1,14 @@
 import { Form, FormGroup, Row, Col, Button, Alert } from 'react-bootstrap';
-import {type ChangeEvent, type FocusEvent, type FormEvent, useState} from 'react';
+import {type ChangeEvent, type FocusEvent, type FormEvent, useEffect, useState} from 'react';
 import { useNavigate } from 'react-router';
-import type { Citizen, Staff, NewCitizen, NewStaff, Office, OfficeCategory } from "../models/Models.ts";
-import { ROLE_OFFICE_MAP, StaffRole } from '../models/Models.ts';
+import type { NewCitizen, NewStaff, Office } from "../models/Models.ts";
+import { ROLE_OFFICE_MAP, StaffRole, OfficeCategory } from '../models/Models.ts';
 import {APIError} from "../services/ErrorHandler.ts";
 import API from '../API/API.mts';
 
 interface RegistrationFormProps {
-    handleRegistration?: (newCitizen: NewCitizen) => Promise<Citizen>;
-    handleStaffRegistration?: (newStaff: NewStaff) => Promise<Staff>;
+    handleRegistration?: (newCitizen: NewCitizen) => Promise<void>;
+    handleStaffRegistration?: (newStaff: NewStaff) => Promise<void>;
 }
 
 function RegistrationForm({ handleRegistration }: RegistrationFormProps) {
@@ -306,24 +306,6 @@ function MunicipalityRegistrationForm({ handleStaffRegistration }: RegistrationF
         role: boolean;
         officeName: boolean;
     }
-
-    const fetchOffices = async () => {
-    try {
-        const data = await API.getOffices();
-        setOffices(data);
-        setFilteredOffices(filterOfficesByRole(formData.role, data));
-        
-    } catch (err) {
-        console.error("Errore nel recupero degli uffici:", err);
-    }
-    };
-
-    const filterOfficesByRole = (role: string, allOffices: Office[] = offices) => {
-        if (!role) return [];
-        const allowed = ROLE_OFFICE_MAP[role];
-        if (!allowed) return [];
-        return allOffices.filter(o => allowed.includes((o.category as unknown as string) ?? String(o.id ?? '')));
-    };
     
     const validateField = (name: keyof FormData, value: string): boolean => {
         switch (name) {
@@ -334,12 +316,13 @@ function MunicipalityRegistrationForm({ handleStaffRegistration }: RegistrationF
             case 'username':
                 return !value || value.trim() === "";
             case 'password':
-                return typeof value === 'string' && value.length < 8;
+                return value.length < 8;
             case 'confirmPassword':
                 return value !== formData.password;
             case 'role':
                 return value === '';
             case 'officeName':
+                return value === '' && filteredOffices.length > 0;
             default:
                 return false;
         }
@@ -370,16 +353,17 @@ function MunicipalityRegistrationForm({ handleStaffRegistration }: RegistrationF
 
     const handleSelectChange = async (e: ChangeEvent<HTMLSelectElement>) => {
         const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
+        setFormData(prev => {
+            const next = {
+                ...prev,
+                [name]: value
+            };
+            if (name === 'role') {
+                next.officeName = '';
+            }
+            return next;
+        });
         setTouched(prev => ({ ...prev, [name]: true }));
-        
-        if (name === "role") {
-            await fetchOffices();
-
-  }
     };
 
     const handleSelectBlur = (e: FocusEvent<HTMLSelectElement>) => {
@@ -445,12 +429,27 @@ function MunicipalityRegistrationForm({ handleStaffRegistration }: RegistrationF
         }
     };
 
+    useEffect(() => {
+
+        const filterOfficesByRole = (role: string, allOffices: Office[] = offices) => {
+            if (!role) return [];
+            const allowed = ROLE_OFFICE_MAP[role];
+            if (!allowed) return [];
+            return allOffices.filter(o => allowed.includes(OfficeCategory[o.category]));
+        };
+
+        API.getOffices().then((data) => {
+            setOffices(data);
+            setFilteredOffices(filterOfficesByRole(formData.role, data))
+        }).catch((err) => { console.log("Errore nel recupero degli uffici:", err) });
+    },[formData.role]);
+
     return (
 <>
         {isPending && <Alert variant="warning">Wait...</Alert>}
         <div className="d-flex flex-column gap-2 justify-content-center align-items-center flex-grow-1">
             <Form onSubmit={handleSubmit} id="registrationForm" name="registrationForm">
-                <h2 className="text-center mb-3">Registration</h2>
+                <h2 className="text-center mb-3">Staff Registration</h2>
                 <Row>
                     <Col>
                         <Form.Group className="mb-3" controlId="formName">
@@ -546,7 +545,7 @@ function MunicipalityRegistrationForm({ handleStaffRegistration }: RegistrationF
                 </Row>
                 <Row>
                     <Col>
-                        <Form.Group className="mb-3" controlId="formName">
+                        <Form.Group className="mb-3" controlId="formRole">
                             <Form.Label>Role</Form.Label>
                             <Form.Select
                                 name="role"
@@ -568,49 +567,27 @@ function MunicipalityRegistrationForm({ handleStaffRegistration }: RegistrationF
                 </Row>
                 <Row>
                     <Col>
-                        <Form.Group className="mb-3" controlId="formName">
+                        <Form.Group className="mb-3" controlId="formOffice">
                             <Form.Label>Office</Form.Label>
                             <Form.Select
-                                name="office"
+                                name="officeName"
                                 value={formData.officeName}
                                 onChange={handleSelectChange}
                                 onBlur={handleSelectBlur}
                                 isInvalid={touched.officeName && errors.officeName}
+                                disabled={!formData.role}
                                 required
                             >
-                                <option value="">Select an office...
-                                    {filteredOffices.length === 0 ? "" : "Select an office"}</option>
+                                <option disabled value="">Select an office...</option>
                                 {
-                                    Object.entries(filteredOffices).map(([key, value]) => (
-                                        <option key={key} value={key}>{value.name}</option>
+                                    filteredOffices.map((v) => (
+                                        <option key={v.id} value={v.name}>{v.name}</option>
                                     ))
                                 }
                             </Form.Select>
                         </Form.Group>
                     </Col>
                 </Row>
-                {/* <Row>
-                    <Col>
-                        <Form.Group className="mb-3" controlId="formName">
-                            <Form.Label>Office</Form.Label>
-                            <Form.Select
-                                name="officeId"
-                                value={formData.officeId}
-                                onChange={handleSelectChange}
-                                onBlur={handleSelectBlur}
-                                isInvalid={touched.officeId && errors.officeId}
-                                required
-                            >
-                                <option value="">Select an office...</option>
-                                {
-                                    Object.entries(offices).map(([key, value]) => (
-                                        <option key={key} value={key}>{value}</option>
-                                    ))
-                                }
-                            </Form.Select>
-                        </Form.Group>
-                    </Col>
-                </Row> */}
             </Form>
             {errorMessage && <Alert variant='danger'>{errorMessage}</Alert>}
             <Alert variant='success' hidden={isHidden}>Registration successful!</Alert>

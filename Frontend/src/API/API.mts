@@ -1,4 +1,4 @@
-import type {Citizen, Staff, Credentials, NewCitizen, NewStaff, Office} from "../models/Models.ts";
+import type {Citizen, Staff, Credentials, NewCitizen, NewStaff, Office, User} from "../models/Models.ts";
 import {handleAPIError} from "../services/ErrorHandler.ts";
 
 const BACKEND_URL = "http://localhost:8080/api/v1";
@@ -47,7 +47,7 @@ const municipalityRegister = async (newStaff: NewStaff): Promise<Staff> => {
     return handleAPIError(response, 'Municipality Registration');
 }
 
-const login = async (credentials: Credentials, type: 'CITIZEN' | 'STAFF'): Promise<Citizen> => {
+const login = async (credentials: Credentials, type: 'CITIZEN' | 'STAFF'): Promise<User> => {
     const response = await fetch(`${BACKEND_URL}/auth/login?type=${type}`, {
         method: 'POST',
         headers: {
@@ -62,26 +62,24 @@ const login = async (credentials: Credentials, type: 'CITIZEN' | 'STAFF'): Promi
     return handleAPIError(response, 'Login');
 };
 
-const getUserInfo = async (): Promise<Citizen> => {
+const getUserInfo = async (): Promise<User> => {
     const response = await fetch(`${BACKEND_URL}/auth/me`, {
         credentials: 'include',
 });
-    const user = await response.json();
     if (response.ok) {
-        return user as Citizen;
+        return await response.json();
     } 
     return handleAPIError(response, 'Get user info');
 };
 
-const logout = async (): Promise<null> => {
+const logout = async (): Promise<void> => {
     const response = await fetch(`${BACKEND_URL}/auth/logout`, {
         method: 'DELETE',
         credentials: 'include',
     });
     if (response.ok) {
-        return null;
-    } 
-    return handleAPIError(response, 'Logout');
+        await handleAPIError(response, 'Logout');
+    }
 };
 
 const getOffices = async (): Promise<Office[]> => {

@@ -1,10 +1,12 @@
-import { useActionState, useState } from 'react';
-import { Link } from 'react-router';
-import { Form, Button, Alert } from 'react-bootstrap';
-import {Icon} from "design-react-kit";
+import {useActionState, useState} from 'react';
+import {Link} from 'react-router';
+import {Alert, Button, Form} from 'react-bootstrap';
+import {Col, Container, Icon, Row} from "design-react-kit";
+import type {Credentials} from "../models/Models.ts";
+import type {APIError} from "../services/ErrorHandler.ts";
 
 interface LoginFormProps {
-    handleLogin: (credentials: { username: string, password: string },type:'CITIZEN' | 'STAFF') => Promise<{ username: string }>;
+    handleLogin: (credentials: Credentials, type: 'CITIZEN' | 'STAFF') => Promise<void>;
 }
 
 interface LoginState {
@@ -17,9 +19,10 @@ interface LogoutButtonProps {
     logout: () => void;
 }
 
-function LoginForm({ handleLogin }: LoginFormProps) {
+function LoginForm({handleLogin}: LoginFormProps) {
 
     const [type, setType] = useState<'CITIZEN' | 'STAFF'>('CITIZEN');
+    const [error, setError] = useState<string>();
     const [, formAction, isPending] = useActionState<LoginState, FormData>(
         async (state: LoginState, formData: FormData) => {
             const credentials = {
@@ -28,12 +31,13 @@ function LoginForm({ handleLogin }: LoginFormProps) {
             };
 
             try {
-                await handleLogin(credentials,type);
+                await handleLogin(credentials, type);
                 return {
                     ...state,
                     success: true
                 };
             } catch (err) {
+                setError((err as APIError).details)
                 return err as LoginState;
             }
         },
@@ -44,37 +48,53 @@ function LoginForm({ handleLogin }: LoginFormProps) {
     );
 
     const changeType = () => {
-        setType(type==='CITIZEN' ? 'STAFF' : 'CITIZEN');
+        setType(type === 'CITIZEN' ? 'STAFF' : 'CITIZEN');
     }
-    
-    return(
+
+    return (
         <>
-           {isPending && <Alert variant="warning">Wait...</Alert>} 
-           <div className="d-flex justify-content-center align-items-center flex-grow-1">
-               <Form action={formAction}>
-                   <h2 className="text-center mb-3">Insert your credentials</h2>
-                   {type==='CITIZEN'&& <p className="text-center text-muted mb-4">Don't have an account? <Link to="/registration">Register now</Link>
-                   </p>}
-                   <Form.Group className="mb-3" controlId='username'>
-                       <Form.Label>Username</Form.Label>
-                       <Form.Control type="text" name="username" placeholder="Enter username" required />
-                   </Form.Group>
-                   <Form.Group className="mb-3" controlId='password'>
-                       <Form.Label>Password</Form.Label>
-                       <Form.Control type="password" name="password" placeholder="Enter password" required />
-                   </Form.Group>
-                   <Button variant="primary" type="submit" disabled={isPending}>
-                       Login
-                   </Button>
-                   <p className="text-center text-muted mb-4">Are you a {type==='CITIZEN'?'Staff Member' : 'Citizen'}?<span> <a role='button' onClick={changeType} className='text-primary'>Login here</a></span>
-                   </p>
-               </Form>
-           </div>
+            {isPending && <Alert variant="warning">Wait...</Alert>}
+            <div className="d-flex flex-column justify-content-center align-items-center flex-grow-1">
+                <div style={{width: '30%'}}>
+                    <Container className="text-center mb-5">
+                        <h2>{type === 'CITIZEN' ? 'Citizen' : 'Staff'} Login</h2>
+                        {type === 'CITIZEN' &&
+                            <p className="text-muted">Don't have an account? <Link to="/registration">Register
+                                now</Link>
+                            </p>}
+                    </Container>
+                    <Form action={formAction} id="login-form">
+                        <Form.Group className="mb-3" controlId='username'>
+                            <Form.Label>Username</Form.Label>
+                            <Form.Control type="text" name="username" placeholder="Enter username" required/>
+                        </Form.Group>
+                        <Form.Group className="mb-3" controlId='password'>
+                            <Form.Label>Password</Form.Label>
+                            <Form.Control type="password" name="password" placeholder="Enter password" required/>
+                        </Form.Group>
+                    </Form>
+                    {(!isPending && error &&
+                        <Alert variant="danger">{error}</Alert>)}
+                    <Row>
+                        <Col className="col-3">
+                            <Button variant="primary" type="submit" form="login-form" disabled={isPending}>
+                                Login
+                            </Button>
+                        </Col>
+                        <Col className="col-9 d-flex flex-column justify-content-center">
+                            <p className="text-end text-muted m-0">Are you
+                                a {type === 'CITIZEN' ? 'Staff Member' : 'Citizen'}?<span> <a role='button' onClick={changeType}
+                                                                                              className='text-primary'>Login here</a></span>
+                            </p>
+                        </Col>
+                    </Row>
+                </div>
+            </div>
         </>
     )
 }
 
-function LogoutButton({ logout }: LogoutButtonProps) {
+function LogoutButton({logout}: LogoutButtonProps) {
     return (
         <span role="button" onClick={logout}>
             <Icon
@@ -86,4 +106,4 @@ function LogoutButton({ logout }: LogoutButtonProps) {
     )
 }
 
-export { LoginForm, LogoutButton };
+export {LoginForm, LogoutButton};

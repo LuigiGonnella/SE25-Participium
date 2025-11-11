@@ -26,7 +26,7 @@ export class OfficeDAO {
     @Column()
     description: string;
 
-    @Column({ unique: true, nullable: false })
+    @Column({ type: "simple-enum", enum: OfficeCategory, unique: true, nullable: false })
     category: OfficeCategory;
 
     @OneToMany(() => StaffDAO, (staff) => staff.office)

@@ -6,6 +6,7 @@ import fs from 'fs';
 import {mapCitizenDAOToDTO, mapStaffDAOToDTO} from "@services/mapperService";
 import { StaffRole } from '@models/dao/staffDAO';
 import { StaffRepository } from "@repositories/staffRepository";
+import {NotFoundError} from "@errors/NotFoundError";
 
 
 // storage configuration
@@ -77,21 +78,26 @@ export async function registerMunicipalityUser(
     name: string,
     surname: string,
     password: string,
-    role: StaffRole,
+    role: string,
     officeName: string
 ) {
     const staffRepo = new StaffRepository();
     const hashedPassword = await bcrypt.hash(password, 10);
+
+    if (!(role in StaffRole)) {
+        throw new NotFoundError(`Invalid staff role: ${role}`);
+    }
+
+    const validRole = StaffRole[role as keyof typeof StaffRole];
 
     const staffDAO = await staffRepo.createStaff(
         username,
         name,
         surname,
         hashedPassword,
-        role,
+        validRole,
         officeName,
     );
 
     return mapStaffDAOToDTO(staffDAO);
-
 }

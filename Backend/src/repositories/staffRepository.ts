@@ -2,9 +2,9 @@ import {AppDataSource} from "@database";
 import {StaffDAO, StaffRole} from "@models/dao/staffDAO";
 import {Repository} from "typeorm";
 import bcrypt from "bcrypt";
-import AppError from "@errors/AppError";
 import {findOrThrowNotFound, throwConflictIfFound} from "@utils";
-import {OfficeDAO} from "@dao/officeDAO";
+import {OfficeCategory, OfficeDAO} from "@dao/officeDAO";
+import {BadRequestError} from "@errors/BadRequestError";
 
 export class StaffRepository {
     private repo: Repository<StaffDAO>;
@@ -18,12 +18,18 @@ export class StaffRepository {
     async createDefaultAdminIfNotExists() {
         const adminExists = await this.repo.exists({ where: { role: StaffRole.ADMIN } });
         if (!adminExists) {
+            const office = findOrThrowNotFound(
+                await this.officeRepo.find({ where: { category: OfficeCategory.MOO } }),
+                () => true,
+                "No Municipal Organization Office found to assign to default admin"
+            )
             const defaultAdmin = this.repo.create({
                 username: "admin",
                 name: "Default",
                 surname: "Admin",
                 password: bcrypt.hashSync('admin123', 10),
-                role: StaffRole.ADMIN
+                role: StaffRole.ADMIN,
+                office: office
             });
             await this.repo.save(defaultAdmin);
             console.log("Default admin user created with username 'admin' and password 'admin123'");
@@ -52,10 +58,10 @@ export class StaffRepository {
         surname: string,
         password: string,
         role: StaffRole,
-        officeName?: string
+        officeName: string
     ): Promise<StaffDAO> {
         if (!username || !name || !surname || !password) {
-            throw new AppError("Invalid input data: username, name, surname, and password are required", 400);
+            throw new BadRequestError("Invalid input data: username, name, surname, and password are required");
         }
 
         username = username.trim();
@@ -67,21 +73,16 @@ export class StaffRepository {
             () => true,
             `Staff already exists with username ${username}`,
         )
-
-        let office: OfficeDAO | undefined = undefined;
-        
        
-        if (!officeName && role != StaffRole.ADMIN) {
-            throw new AppError(`${role} must be assigned to an office`, 400);
+        if (!officeName) {
+            throw new BadRequestError(`${role} must be assigned to an office`);
         }
         
-        const foundOffice = await this.officeRepo.findOne({ where: { name: officeName } });
-        
-        if (!foundOffice) {
-            throw new AppError(`Office with name ${officeName} not found`, 404);
-        }
-        
-        office = foundOffice;
+        const office = findOrThrowNotFound(
+            await this.officeRepo.find({ where: { name: officeName } }),
+            () => true,
+            `Office with name ${officeName} not found`
+        );
         
 
         const staff = this.repo.create({
