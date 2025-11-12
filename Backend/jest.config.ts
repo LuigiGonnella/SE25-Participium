@@ -48,8 +48,8 @@ const config: Config = {
     "^@errors/(.*)$": "<rootDir>/src/models/errors/$1",
     "^@middlewares/(.*)$": "<rootDir>/src/middlewares/$1",
     "^@routes/(.*)$": "<rootDir>/src/routes/$1",
-    "^@test/(.*)$": "<rootDir>/test/$1",
-    "^@app$": "<rootDir>/src/app"
+    "^@app$": "<rootDir>/src/app",
+    "^@test/(.*)$": "<rootDir>/test/$1"
   } as any,
   transform: {
     "^.+\\.tsx?$": "ts-jest"
