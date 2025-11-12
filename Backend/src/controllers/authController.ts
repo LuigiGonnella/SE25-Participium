@@ -3,7 +3,9 @@ import bcrypt from 'bcrypt';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
-import { mapCitizenDAOToDTO } from "@services/mapperService";
+import {mapCitizenDAOToDTO, mapStaffDAOToDTO} from "@services/mapperService";
+import { StaffRole } from '@models/dao/staffDAO';
+import { StaffRepository } from "@repositories/staffRepository";
 import { Request, Response, NextFunction } from 'express';
 import passport from 'passport';
 import AppError from "@models/errors/AppError";
@@ -72,6 +74,28 @@ export async function register(
     return mapCitizenDAOToDTO(citizenDAO);
 
 }
+
+export async function registerMunicipalityUser(
+    username: string,
+    name: string,
+    surname: string,
+    password: string,
+    role: StaffRole,
+    officeId?: number
+) {
+    const staffRepo = new StaffRepository();
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const staffDAO = await staffRepo.createStaff(
+        username,
+        name,
+        surname,
+        hashedPassword,
+        role,
+        officeId,
+    );
+
+    return mapStaffDAOToDTO(staffDAO);
 
 export async function login(req: Request, res: Response, next: NextFunction) {
     const rawType = req.query.type;

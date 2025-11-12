@@ -68,11 +68,13 @@ export class StaffRepository {
             `Staff already exists with username ${username}`,
         )
 
-        const office = findOrThrowNotFound(
+        //comment office for now (to be implemented later)
+
+        /*const office = findOrThrowNotFound(
             await this.officeRepo.find({ where: { id: officeId } } ),
             () => true,
             `Office with id ${officeId} not found`,
-        )
+        )*/
 
         const staff = this.repo.create({
             username,
@@ -80,7 +82,7 @@ export class StaffRepository {
             surname,
             password,
             role,
-            office
+            //office
         });
         return await this.repo.save(staff);
     }

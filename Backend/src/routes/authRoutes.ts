@@ -1,12 +1,15 @@
-import { register, uploadProfilePicture, login } from '@controllers/authController';
-import { CitizenToJSON } from '@models/dto/Citizen';
-import { Router } from "express";
-import { isAuthenticated } from '@middlewares/authMiddleware';
+import {register, uploadProfilePicture, registerMunicipalityUser, login} from '@controllers/authController';
+import {CitizenToJSON} from '@models/dto/Citizen';
+import {Router} from "express";
+import passport from 'passport';
+import {isAuthenticated} from '@middlewares/authMiddleware';
+import { StaffToJSON } from '@models/dto/Staff';
+import { StaffRole } from '@models/dao/staffDAO';
 
 const router = Router();
 
 router.post('/register', uploadProfilePicture.single('profilePicture'), async (req, res, next) => {
-    try {
+    try { //form-data request
         const citizen = await register(
             req.body.email,
             req.body.username,
@@ -18,6 +21,22 @@ router.post('/register', uploadProfilePicture.single('profilePicture'), async (r
             req.body.telegram_username
         );
         res.status(201).json(CitizenToJSON(citizen)); // does not expose password
+    } catch (error) {
+        next(error);
+    }
+});
+
+router.post('/register-municipality', isAuthenticated([StaffRole.ADMIN]), async (req, res, next) => {
+    try { //JSON request
+        const staff = await registerMunicipalityUser(
+            req.body.username,
+            req.body.name,
+            req.body.surname,
+            req.body.password,
+            req.body.role,
+            req.body.officeId ? req.body.officeId : undefined
+        );
+        res.status(201).json(StaffToJSON(staff)); // does not expose password
     } catch (error) {
         next(error);
     }

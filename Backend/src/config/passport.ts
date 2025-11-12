@@ -8,21 +8,21 @@ import {mapCitizenDAOToDTO, mapStaffDAOToDTO} from "@services/mapperService";
 export const configurePassport = () => {
 
     passport.serializeUser((user: any, done) => {
-        done(null, { id: user.id, type: user.type });
+        done(null, { username: user.username, type: user.type });
     });
 
     passport.deserializeUser(async (data: any, done) => {
         try {
             if (data.type === 'CITIZEN') {
                 const repo = new CitizenRepository();
-                const user = await repo.getCitizenById(data.id);
+                const user = await repo.getCitizenByUsername(data.username);
                 if (!user) {
                     return done(new Error('User not found'));
                 }
                 done(null, { ...mapCitizenDAOToDTO(user), type: 'CITIZEN' });
             } else {
                 const repo = new StaffRepository();
-                const user = await repo.getStaffById(data.id);
+                const user = await repo.getStaffByUsername(data.username);
                 if (!user) {
                     return done(new Error('User not found'));
                 }
