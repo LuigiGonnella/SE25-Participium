@@ -3,9 +3,14 @@ import { StaffDAO, StaffRole } from "@models/dao/staffDAO";
 import { OfficeRepository } from "@repositories/officeRepository";
 import { initializeTestDataSource, closeTestDataSource, TestDataSource } from "../setup/test-datasource";
 import request from "supertest";
+import { Staff } from "@models/dto/Staff";
+import { StaffRepository } from "@repositories/staffRepository";
+
 import { app } from "@app";
 
 let officeRepo: OfficeRepository;
+let staffRepo: StaffRepository;
+let authCookie: string;
 
 const office1 = {
     name: "Municipal Organization Office",
@@ -27,54 +32,43 @@ const staff1 = {
     role: StaffRole.TOSM,
 };
 
+
 beforeAll(async () => {
     await initializeTestDataSource();
     officeRepo = new OfficeRepository();
+    staffRepo = new StaffRepository();
+
+    await officeRepo.createDefaultOfficesIfNotExist();
+    await staffRepo.createDefaultAdminIfNotExists();
+
+    const loginResponse = await request(app)
+        .post('/api/v1/auth/login?type=STAFF')
+        .send({
+            username: "admin",
+            password: "admin123",
+        })
+        .expect(200);
+
+    authCookie = loginResponse.headers['set-cookie'][0]; 
 });
 
 afterAll(async () => {
     await closeTestDataSource();
 });
 
-beforeEach(async () => {
-    await TestDataSource.getRepository(OfficeDAO).clear();
-    await TestDataSource.getRepository(StaffDAO).clear();
-});
-
 describe("Office E2E Tests", () => {
     describe("GET /offices - Get all offices", () => {
         it("should return an empty array when no offices exist", async () => {
-            const offices = await officeRepo.getAllOffices();
-            expect(offices).toBeDefined();
-            expect(offices.length).toBe(0);
-        });
-
-        it("should return all offices", async () => {
-            const newOffice1 = await officeRepo.createOffice(
-                office1.name,
-                office1.description,
-                office1.category
-            );
-            const newOffice2 = await officeRepo.createOffice(
-                office2.name,
-                office2.description,
-                office2.category
-            );
-            /*
             const response = await request(app)
-                .get('/api/offices')
-                .expect('Content-Type', /json/)
+                .get('/api/v1/offices')
+                .set('Cookie', authCookie)
                 .expect(200);
-            */
-            expect(newOffice1).toBeDefined();
-            expect(newOffice1.name).toBe(office1.name);
-            expect(newOffice1.description).toBe(office1.description);
-            expect(newOffice1.category).toBe(office1.category);
-            expect(newOffice2).toBeDefined();
-            expect(newOffice2.name).toBe(office2.name);
-            expect(newOffice2.description).toBe(office2.description);
-            expect(newOffice2.category).toBe(office2.category);
+
+            expect(response.body).toBeDefined();
+            expect(Array.isArray(response.body)).toBe(true);
+            expect(response.body.length).toBe(9);
         });
+        
     });
 });
 

@@ -47,6 +47,8 @@ const config: Config = {
     "^@config/(.*)$": "<rootDir>/src/config/$1",
     "^@errors/(.*)$": "<rootDir>/src/models/errors/$1",
     "^@middlewares/(.*)$": "<rootDir>/src/middlewares/$1",
+    "^@routes/(.*)$": "<rootDir>/src/routes/$1",
+    "^@test/(.*)$": "<rootDir>/test/$1",
     "^@app$": "<rootDir>/src/app"
   } as any,
   transform: {
