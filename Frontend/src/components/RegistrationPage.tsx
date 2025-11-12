@@ -134,7 +134,7 @@ function RegistrationForm({ handleRegistration }: RegistrationFormProps) {
         <>
         {isPending && <Alert variant="warning">Wait...</Alert>}
         <div className="d-flex flex-column gap-2 justify-content-center align-items-center flex-grow-1">
-            <Form onSubmit={handleSubmit} id="registrationForm" name="registrationForm">
+            <Form onSubmit={handleSubmit} id="registrationForm" name="registrationForm" style={{width: '100%', maxWidth: '500px'}}>
                 <h2 className="text-center mb-3">Registration</h2>
                 <Row>
                     <Col>
@@ -479,7 +479,7 @@ function MunicipalityRegistrationForm({ handleStaffRegistration }: RegistrationF
         <>
             {isPending && <Alert variant="warning">Wait...</Alert>}
             <div className="d-flex flex-column gap-2 justify-content-center align-items-center flex-grow-1">
-                <Form onSubmit={handleSubmit} id="registrationForm" name="registrationForm">
+                <Form onSubmit={handleSubmit} id="registrationForm" name="registrationForm" style={{width: '100%', maxWidth: '500px'}}>
                     <h2 className="text-center mb-3">Municipality Staff Registration</h2>
 
                     {(["name", "surname", "username"] as (keyof FormData)[]).map((field) => (
