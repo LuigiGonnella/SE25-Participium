@@ -5,6 +5,7 @@ import './App.css'
 import HomePage from './components/Home';
 import { LoginForm } from './components/LoginPage';
 import DefaultLayout from './components/DefaultLayout';
+import TurinMaskedMap from './components/Map';
 import { RegistrationForm, MunicipalityRegistrationForm } from './components/RegistrationPage';
 import 'bootstrap-italia/dist/css/bootstrap-italia.min.css';
 import 'typeface-titillium-web/index.css';
@@ -88,6 +89,7 @@ function App() {
           loggedIn && user.type === 'STAFF' && user.role === 'admin' &&
           <Route path="/municipality-registration" element={<MunicipalityRegistrationForm handleStaffRegistration={handleMunicipalityRegistration} />} />
         }
+        <Route path="/map" element={<TurinMaskedMap />} />
       </Route>
     </Routes>
   )
