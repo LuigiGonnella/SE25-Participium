@@ -151,5 +151,5 @@ export default function TurinMaskedMap() {
         };
     }, []);
 
-    return <div id="map" style={{height: "100vh", width: "100%"}}/>;
+    return <div id="map" className="d-flex flex-grow-1"/>;
 }
