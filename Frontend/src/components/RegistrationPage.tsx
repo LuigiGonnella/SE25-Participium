@@ -1,9 +1,10 @@
 import { Form, FormGroup, Row, Col, Button, Alert } from 'react-bootstrap';
-import {type ChangeEvent, type FocusEvent, type FormEvent, useState} from 'react';
+import {type ChangeEvent, type FocusEvent, type FormEvent, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
-import type { Citizen, Staff, NewCitizen, NewStaff } from "../models/Models.ts";
-import { StaffRole } from '../models/Models.ts';
+import type { Citizen, Staff, NewCitizen, NewStaff, Office } from "../models/Models.ts";
+import { ROLE_OFFICE_MAP, StaffRole } from '../models/Models.ts';
 import {APIError} from "../services/ErrorHandler.ts";
+import API from '../API/API.mts';
 
 interface RegistrationFormProps {
     handleRegistration?: (newCitizen: NewCitizen) => Promise<Citizen>;
@@ -267,23 +268,24 @@ function RegistrationForm({ handleRegistration }: RegistrationFormProps) {
 }
 
 function MunicipalityRegistrationForm({ handleStaffRegistration }: RegistrationFormProps) {
-
     const [isPending, setIsPending] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string>('');
     const [touched, setTouched] = useState<Partial<Record<keyof FormData, boolean>>>({});
     const [isHidden, setIsHidden] = useState(true);
+    const [showOfficeSelect, setShowOfficeSelect] = useState(false);
+
+    const [offices, setOffices] = useState<Office[]>([]);
+    const [filteredOffices, setFilteredOffices] = useState<Office[]>([]);
 
     const [formData, setFormData] = useState<FormData>({
         name: '',
         surname: '',
         username: '',
         password: '',
-        confirmPassword: '', 
+        confirmPassword: '',
         role: '',
-        officeId: ''
+        officeName: ''
     });
-
-    
 
     interface FormData {
         name: string;
@@ -292,7 +294,7 @@ function MunicipalityRegistrationForm({ handleStaffRegistration }: RegistrationF
         password: string;
         confirmPassword: string;
         role: string;
-        officeId: string;
+        officeName: string;
     }
 
     interface FormErrors {
@@ -302,24 +304,55 @@ function MunicipalityRegistrationForm({ handleStaffRegistration }: RegistrationF
         password: boolean;
         confirmPassword: boolean;
         role: boolean;
-        officeId: boolean;
+        officeName: boolean;
     }
+
+    useEffect(() => {
+        const loadOffices = async () => {
+            try {
+                const data = await API.getOffices();
+                setOffices(data);
+            } catch (err) {
+                console.error("Failed to fetch offices:", err);
+            }
+        };
+        loadOffices();
+    }, []);
+
+    useEffect(() => {
+        if (formData.role === "TOSM") {
+            setShowOfficeSelect(true);
+
+            const allowed = ROLE_OFFICE_MAP["TOSM"];
+            if (allowed && offices.length > 0) {
+                const filtered = offices.filter((office) =>
+                    allowed.some((abbr: string) =>
+                        office.name.toLowerCase().includes(abbr.toLowerCase())
+                    )
+                );
+                setFilteredOffices(filtered);
+            } else {
+                setFilteredOffices([]);
+            }
+        } else {
+            setShowOfficeSelect(false);
+            setFilteredOffices([]);
+            setFormData((prev) => ({ ...prev, officeName: "" }));
+        }
+    }, [formData.role, offices]);
 
     const validateField = (name: keyof FormData, value: string): boolean => {
         switch (name) {
             case 'name':
-                return !value || value.trim() === "";
             case 'surname':
-                return !value || value.trim() === "";
             case 'username':
                 return !value || value.trim() === "";
             case 'password':
-                return typeof value === 'string' && value.length < 8;
+                return value.length < 8;
             case 'confirmPassword':
                 return value !== formData.password;
             case 'role':
                 return value === '';
-            case 'officeId':
             default:
                 return false;
         }
@@ -332,33 +365,23 @@ function MunicipalityRegistrationForm({ handleStaffRegistration }: RegistrationF
         password: validateField('password', formData.password),
         confirmPassword: validateField('confirmPassword', formData.confirmPassword),
         role: validateField('role', formData.role),
-        officeId: validateField('officeId', formData.officeId)
+        officeName: validateField('officeName', formData.officeName)
     };
 
     const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-        ...prev,
-        [name]: value
-    }));
-        setTouched(prev => ({ ...prev, [name]: true }));
+        const { name, value } = e.target;
+        setFormData((prev) => ({ ...prev, [name]: value }));
+        setTouched((prev) => ({ ...prev, [name]: true }));
     };
 
     const handleBlur = (e: FocusEvent<HTMLInputElement>) => {
-        setTouched(prev => ({ ...prev, [e.target.name]: true }));
+        setTouched((prev) => ({ ...prev, [e.target.name]: true }));
     };
 
     const handleSelectChange = (e: ChangeEvent<HTMLSelectElement>) => {
         const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
-        setTouched(prev => ({ ...prev, [name]: true }));
-    };
-
-    const handleSelectBlur = (e: FocusEvent<HTMLSelectElement>) => {
-        setTouched(prev => ({ ...prev, [e.target.name]: true }));
+        setFormData((prev) => ({ ...prev, [name]: value }));
+        setTouched((prev) => ({ ...prev, [name]: true }));
     };
 
     const handleSubmit = async (e: FormEvent) => {
@@ -372,12 +395,10 @@ function MunicipalityRegistrationForm({ handleStaffRegistration }: RegistrationF
             password: true,
             confirmPassword: true,
             role: true,
-            officeId: true
+            officeName: true
         });
 
-        if (Object.values(errors).some(error => error)) {
-            return;
-        }
+        if (Object.values(errors).some((error) => error)) return;
 
         const newStaff: NewStaff = {
             name: formData.name,
@@ -385,7 +406,7 @@ function MunicipalityRegistrationForm({ handleStaffRegistration }: RegistrationF
             username: formData.username,
             password: formData.password,
             role: formData.role,
-            officeId: Number(formData.officeId)
+            officeName: formData.officeName
         };
 
         setIsPending(true);
@@ -397,22 +418,11 @@ function MunicipalityRegistrationForm({ handleStaffRegistration }: RegistrationF
                 surname: '',
                 username: '',
                 password: '',
-                confirmPassword: '', 
+                confirmPassword: '',
                 role: '',
-                officeId: ''
+                officeName: ''
             });
-            setTouched({
-                name: false,
-                surname: false,
-                username: false,
-                password: false,
-                confirmPassword: false,
-                role: false,
-                officeId: false
-            });
-            setInterval(() => {
-                setIsHidden(true);
-            }, 5000);
+            setTimeout(() => setIsHidden(true), 5000);
         } catch (err) {
             setErrorMessage('Error: ' + (err instanceof APIError ? err.details : err));
         } finally {
@@ -421,158 +431,140 @@ function MunicipalityRegistrationForm({ handleStaffRegistration }: RegistrationF
     };
 
     return (
-<>
-        {isPending && <Alert variant="warning">Wait...</Alert>}
-        <div className="d-flex flex-column gap-2 justify-content-center align-items-center flex-grow-1">
-            <Form onSubmit={handleSubmit} id="registrationForm" name="registrationForm">
-                <h2 className="text-center mb-3">Registration</h2>
-                <Row>
-                    <Col>
-                        <Form.Group className="mb-3" controlId="formName">
-                            <Form.Label>Name</Form.Label>
-                            <Form.Control
-                                type="text"
-                                name="name"
-                                value={formData.name}
-                                onChange={handleChange}
-                                onBlur={handleBlur}
-                                isInvalid={touched.name && errors.name}
-                                required
-                            />
-                            <Form.Control.Feedback type="invalid">
-                                This field is required.
-                            </Form.Control.Feedback>
-                        </Form.Group>
-                    </Col>
-                </Row>
-                <Row>
-                    <Col>
-                        <FormGroup className="mb-3" controlId="formSurname">
-                            <Form.Label>Surname</Form.Label>
-                            <Form.Control
-                                type="text"
-                                name="surname"
-                                value={formData.surname}
-                                onChange={handleChange}
-                                onBlur={handleBlur}
-                                isInvalid={touched.surname && errors.surname}
-                                required
-                            />
-                            <Form.Control.Feedback type="invalid">
-                                This field is required.
-                            </Form.Control.Feedback>
-                        </FormGroup>
-                    </Col>
-                </Row>
-                <Row>
-                    <Col>
-                        <FormGroup className="mb-3" controlId="formUsername">
-                            <Form.Label>Username</Form.Label>
-                            <Form.Control
-                                type="text"
-                                name="username"
-                                value={formData.username}
-                                onChange={handleChange}
-                                onBlur={handleBlur}
-                                isInvalid={touched.username && errors.username}
-                                required
-                            />
-                            <Form.Control.Feedback type="invalid">
-                                This field is required.
-                            </Form.Control.Feedback>
-                        </FormGroup>
-                    </Col>
-                </Row>
-                <Row>
-                    <Col>
-                        <FormGroup className="mb-3" controlId="formPassword">
-                            <Form.Label>Password</Form.Label>
-                            <Form.Control
-                                type="password"
-                                name="password"
-                                value={formData.password}
-                                onChange={handleChange}
-                                onBlur={handleBlur}
-                                isInvalid={touched.password && errors.password}
-                            />
-                            <Form.Control.Feedback type="invalid">
-                                Your password must contain at least 8 characters.
-                            </Form.Control.Feedback>
-                        </FormGroup>
-                    </Col>
-                </Row>
-                <Row>
-                    <Col>
-                        <Form.Group className="mb-3" controlId="formConfirmPassword">
-                            <Form.Label>Confirm Password</Form.Label>
-                            <Form.Control
-                                type="password"
-                                name="confirmPassword"
-                                value={formData.confirmPassword}
-                                onChange={handleChange}
-                                onBlur={handleBlur}
-                                isInvalid={touched.confirmPassword && errors.confirmPassword}
-                            />
-                            <Form.Control.Feedback type="invalid">
-                                Password does not match.
-                            </Form.Control.Feedback>
-                        </Form.Group>
-                    </Col>
-                </Row>
-                <Row>
-                    <Col>
-                        <Form.Group className="mb-3" controlId="formName">
-                            <Form.Label>Role</Form.Label>
-                            <Form.Select
-                                name="role"
-                                value={formData.role}
-                                onChange={handleSelectChange}
-                                onBlur={handleSelectBlur}
-                                isInvalid={touched.role && errors.role}
-                                required
-                            >
-                                <option value="">Select a role...</option>
-                                {
-                                    Object.entries(StaffRole).map(([key, value]) => (
-                                        <option key={key} value={key}>{value}</option>
-                                    ))
-                                }
-                            </Form.Select>
-                        </Form.Group>
-                    </Col>
-                </Row>
-                {/* <Row>
-                    <Col>
-                        <Form.Group className="mb-3" controlId="formName">
-                            <Form.Label>Office</Form.Label>
-                            <Form.Select
-                                name="officeId"
-                                value={formData.officeId}
-                                onChange={handleSelectChange}
-                                onBlur={handleSelectBlur}
-                                isInvalid={touched.officeId && errors.officeId}
-                                required
-                            >
-                                <option value="">Select an office...</option>
-                                {
-                                    Object.entries(offices).map(([key, value]) => (
-                                        <option key={key} value={key}>{value}</option>
-                                    ))
-                                }
-                            </Form.Select>
-                        </Form.Group>
-                    </Col>
-                </Row> */}
-            </Form>
-            {errorMessage && <Alert variant='danger'>{errorMessage}</Alert>}
-            <Alert variant='success' hidden={isHidden}>Registration successful!</Alert>
-            <Button form="registrationForm" color='primary' type='submit' disabled={isPending}>
-                Submit
-            </Button>
-        </div>
-        </>
-    )
-}
+        <>
+            {isPending && <Alert variant="warning">Wait...</Alert>}
+            <div className="d-flex flex-column gap-2 justify-content-center align-items-center flex-grow-1">
+                <Form onSubmit={handleSubmit} id="registrationForm" name="registrationForm">
+                    <h2 className="text-center mb-3">Municipality Staff Registration</h2>
 
+                    {(["name", "surname", "username"] as (keyof FormData)[]).map((field) => (
+                    <Row key={field}>
+                        <Col>
+                        <Form.Group className="mb-3" controlId={`form${field}`}>
+                            <Form.Label>
+                            {field.charAt(0).toUpperCase() + field.slice(1)}
+                            </Form.Label>
+                            <Form.Control
+                            type="text"
+                            name={field}
+                            value={formData[field]}
+                            onChange={handleChange}
+                            onBlur={handleBlur}
+                            isInvalid={touched[field] && errors[field]}
+                            required
+                            />
+                            <Form.Control.Feedback type="invalid">
+                            This field is required.
+                            </Form.Control.Feedback>
+                        </Form.Group>
+                        </Col>
+                    </Row>
+                    ))}
+
+                    {/** Password */}
+                    <Row>
+                        <Col>
+                            <Form.Group className="mb-3" controlId="formPassword">
+                                <Form.Label>Password</Form.Label>
+                                <Form.Control
+                                    type="password"
+                                    name="password"
+                                    value={formData.password}
+                                    onChange={handleChange}
+                                    onBlur={handleBlur}
+                                    isInvalid={touched.password && errors.password}
+                                />
+                                <Form.Control.Feedback type="invalid">
+                                    Must contain at least 8 characters.
+                                </Form.Control.Feedback>
+                            </Form.Group>
+                        </Col>
+                    </Row>
+
+                    {/** Confirm Password */}
+                    <Row>
+                        <Col>
+                            <Form.Group className="mb-3" controlId="formConfirmPassword">
+                                <Form.Label>Confirm Password</Form.Label>
+                                <Form.Control
+                                    type="password"
+                                    name="confirmPassword"
+                                    value={formData.confirmPassword}
+                                    onChange={handleChange}
+                                    onBlur={handleBlur}
+                                    isInvalid={touched.confirmPassword && errors.confirmPassword}
+                                />
+                                <Form.Control.Feedback type="invalid">
+                                    Password does not match.
+                                </Form.Control.Feedback>
+                            </Form.Group>
+                        </Col>
+                    </Row>
+
+                    {/** Role */}
+                    <Row>
+                        <Col>
+                            <Form.Group className="mb-3" controlId="formRole">
+                                <Form.Label>Role</Form.Label>
+                                <Form.Select
+                                    name="role"
+                                    value={formData.role}
+                                    onChange={handleSelectChange}
+                                    onBlur={() => setTouched((prev) => ({ ...prev, role: true }))}
+                                    isInvalid={touched.role && errors.role}
+                                    required
+                                >
+                                    <option value="">Select a role...</option>
+                                    {Object.entries(StaffRole).map(([key, value]) => (
+                                        <option key={key} value={key}>
+                                            {value}
+                                        </option>
+                                    ))}
+                                </Form.Select>
+                            </Form.Group>
+                        </Col>
+                    </Row>
+
+                    {showOfficeSelect && (
+                        <Row>
+                            <Col>
+                                <Form.Group className="mb-3" controlId="formOffice">
+                                    <Form.Label>Office</Form.Label>
+                                    <Form.Select
+                                        name="officeName"
+                                        value={formData.officeName}
+                                        onChange={handleSelectChange}
+                                        onBlur={() => setTouched((prev) => ({ ...prev, officeName: true }))}
+                                        isInvalid={touched.officeName && errors.officeName}
+                                        required
+                                    >
+                                        <option value="">
+                                            {filteredOffices.length === 0
+                                                ? "No offices available"
+                                                : "Select an office"}
+                                        </option>
+                                        {filteredOffices.map((office) => (
+                                            <option key={office.id} value={office.name}>
+                                                {office.name}
+                                            </option>
+                                        ))}
+                                    </Form.Select>
+                                </Form.Group>
+                            </Col>
+                        </Row>
+                    )}
+                </Form>
+
+                {errorMessage && <Alert variant="danger">{errorMessage}</Alert>}
+                <Alert variant="success" hidden={isHidden}>
+                    Registration successful!
+                </Alert>
+                <Button form="registrationForm" color="primary" type="submit" disabled={isPending}>
+                    Submit
+                </Button>
+            </div>
+        </>
+    );
+}
 
 export { RegistrationForm, MunicipalityRegistrationForm};

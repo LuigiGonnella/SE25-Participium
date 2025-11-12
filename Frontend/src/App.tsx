@@ -85,7 +85,7 @@ function App() {
           />} />
 
         {
-          loggedIn && user.type === 'STAFF' && user.role === 'Admin' &&
+          loggedIn && user.type === 'STAFF' && user.role === 'admin' &&
           <Route path="/municipality-registration" element={<MunicipalityRegistrationForm handleStaffRegistration={handleMunicipalityRegistration} />} />
         }
       </Route>

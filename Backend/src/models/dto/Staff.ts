@@ -45,13 +45,13 @@ export interface Staff {
      * @type {StaffRole}
      * @memberof Staff
      */
-    role?: StaffRole;
+    role: StaffRole;
     /**
-     * Office ID this staff member belongs to (if any)
-     * @type {number}
+     * Office ID this staff member belongs to
+     * @type {string}
      * @memberof Staff
      */
-    officeId?: number;
+    officeName?: string;
 }
 
 /**
@@ -79,7 +79,7 @@ export function StaffFromJSONTyped(json: any, ignoreDiscriminator: boolean): Sta
         'name': json['name'],
         'surname': json['surname'],
         'role': json['role'] == null ? undefined : json['role'],
-        'officeId': json['officeId'] == null ? undefined : json['officeId'],
+        'officeName': json['officeName'] == null ? undefined : json['officeName'],
     };
 }
 
@@ -98,6 +98,6 @@ export function StaffToJSONTyped(value?: Staff | null, ignoreDiscriminator: bool
         'name': value['name'],
         'surname': value['surname'],
         'role': value['role'],
-        'officeId': value['officeId'],
+        'officeName': value['officeName'],
     };
 }
