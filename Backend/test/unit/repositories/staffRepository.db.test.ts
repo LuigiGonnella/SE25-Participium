@@ -1,5 +1,5 @@
 import { StaffDAO, StaffRole } from "@dao/staffDAO";
-import { OfficeDAO } from "@dao/officeDAO";
+import { OfficeDAO, OfficeCategory } from "@dao/officeDAO";
 import { StaffRepository } from "@repositories/staffRepository";
 import { initializeTestDataSource, closeTestDataSource, TestDataSource } from "../../setup/test-datasource";
 import bcrypt from "bcrypt";
@@ -9,13 +9,13 @@ let staffRepo: StaffRepository;
 const office1 = {
     name: "Municipal Public Relations Office",
     description: "Handles public relations",
-    category: "MPRO",
+    category: OfficeCategory.MOO,
 };
 
 const office2 = {
-    name: "Municipal Administration",
-    description: "Handles administration",
-    category: "MA",
+    name: "Water Supply Office",
+    description: "Handles water supply",
+    category: OfficeCategory.WSO,
 };
 
 const staff1 = {
@@ -31,7 +31,7 @@ const staff2 = {
     name: "Jane",
     surname: "Doe",
     password: "securepass456",
-    role: StaffRole.MA,
+    role: StaffRole.TOSM,
 };
 
 beforeAll(async () => {
@@ -60,7 +60,7 @@ describe("StaffRepository - test suite", () => {
             staff1.surname,
             staff1.password,
             staff1.role,
-            office.id
+            office.name
         );
         const savedInDB = await TestDataSource
             .getRepository(StaffDAO)
@@ -87,7 +87,7 @@ describe("StaffRepository - test suite", () => {
             staff1.surname,
             staff1.password,
             staff1.role,
-            office1Saved.id
+            office1Saved.name
         );
         await staffRepo.createStaff(
             staff2.username,
@@ -95,7 +95,7 @@ describe("StaffRepository - test suite", () => {
             staff2.surname,
             staff2.password,
             staff2.role,
-            office2Saved.id
+            office2Saved.name
         );
         
         const staffs = await staffRepo.getAllStaffs();
@@ -127,7 +127,7 @@ describe("StaffRepository - test suite", () => {
             staff1.surname,
             staff1.password,
             staff1.role,
-            office.id
+            office.name
         );
         
         const staff = await staffRepo.getStaffByUsername(staff1.username);
@@ -149,7 +149,7 @@ describe("StaffRepository - test suite", () => {
             staff1.surname,
             staff1.password,
             staff1.role,
-            office.id
+            office.name
         );
         const savedInDB = await TestDataSource
             .getRepository(StaffDAO)
@@ -206,7 +206,7 @@ describe("StaffRepository - test suite", () => {
             staff1.surname,
             staff1.password,
             staff1.role,
-            office.id
+            office.name
         );
         
         await expect(
@@ -216,7 +216,7 @@ describe("StaffRepository - test suite", () => {
                 "Name",
                 "differentpass",
                 StaffRole.ADMIN,
-                office.id
+                office.name
             )
         ).rejects.toThrow(`Staff already exists with username ${staff1.username}`);
     });
@@ -229,8 +229,8 @@ describe("StaffRepository - test suite", () => {
                 staff1.surname,
                 staff1.password,
                 staff1.role,
-                9999
+                "NonExistentOffice"
             )
-        ).rejects.toThrow("Office with id 9999 not found");
+        ).rejects.toThrow("Office with name NonExistentOffice not found");
     });
 });

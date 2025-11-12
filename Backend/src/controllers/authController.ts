@@ -96,6 +96,7 @@ export async function registerMunicipalityUser(
     );
 
     return mapStaffDAOToDTO(staffDAO);
+}
 
 export async function login(req: Request, res: Response, next: NextFunction) {
     const rawType = req.query.type;
