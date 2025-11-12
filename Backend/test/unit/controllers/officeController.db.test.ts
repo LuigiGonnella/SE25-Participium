@@ -55,6 +55,76 @@ describe("OfficeController - test suite", () => {
         });
     });
 
+    it("tests createOffice - missing name only", async () => {
+        const req = {
+            body: {
+                description: fakeOfficeDAO.description,
+                category: fakeOfficeDAO.category,
+            },
+        } as Request;
+
+        const res = {
+            status: jest.fn().mockReturnThis(),
+            json: jest.fn(),
+        } as unknown as Response;
+
+        await OfficeController.createOffice(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(400);
+        expect(res.json).toHaveBeenCalledWith({
+            message: "Name and category are required",
+        });
+    });
+
+    it("tests createOffice - missing category only", async () => {
+        const req = {
+            body: {
+                name: fakeOfficeDAO.name,
+                description: fakeOfficeDAO.description,
+            },
+        } as Request;
+
+        const res = {
+            status: jest.fn().mockReturnThis(),
+            json: jest.fn(),
+        } as unknown as Response;
+
+        await OfficeController.createOffice(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(400);
+        expect(res.json).toHaveBeenCalledWith({
+            message: "Name and category are required",
+        });
+    });
+
+    it("tests createOffice - duplicate office triggers AppError", async () => {
+        await officeRepo.createOffice(
+            fakeOfficeDAO.name,
+            fakeOfficeDAO.description,
+            fakeOfficeDAO.category
+        );
+
+        const req = {
+            body: {
+                name: "Another Office",
+                description: "Another description",
+                category: fakeOfficeDAO.category,
+            },
+        } as Request;
+
+        const res = {
+            status: jest.fn().mockReturnThis(),
+            json: jest.fn(),
+        } as unknown as Response;
+
+        await OfficeController.createOffice(req, res);
+
+        expect(res.status).toHaveBeenCalled();
+        expect(res.json).toHaveBeenCalledWith({
+            message: expect.stringContaining("Office"),
+        });
+    });
+
     it("tests createOffice - missing required fields", async () => {
         const req = {
             body: {
