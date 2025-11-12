@@ -9,7 +9,25 @@ import { StaffRole } from '@models/dao/staffDAO';
 const router = Router();
 
 router.post('/register', uploadProfilePicture.single('profilePicture'), async (req, res, next) => {
-    try { //form-data request
+    try {
+        // Validate required fields
+        const { email, username, name, surname, password } = req.body;
+        
+        if (!email || !email.trim() || !email.includes('@')) {
+            return res.status(400).json({ error: 'Invalid or missing email' });
+        }
+        if (!username || !username.trim()) {
+            return res.status(400).json({ error: 'Invalid or missing username' });
+        }
+        if (!name || !name.trim()) {
+            return res.status(400).json({ error: 'Invalid or missing name' });
+        }
+        if (!surname || !surname.trim()) {
+            return res.status(400).json({ error: 'Invalid or missing surname' });
+        }
+        if (!password || !password.trim()) {
+            return res.status(400).json({ error: 'Invalid or missing password' });
+        }
         const citizen = await register(
             email,
             username,
