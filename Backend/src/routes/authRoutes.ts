@@ -1,31 +1,15 @@
-import { register, uploadProfilePicture, login } from '@controllers/authController';
-import { CitizenToJSON } from '@models/dto/Citizen';
-import { Router } from "express";
-import { isAuthenticated } from '@middlewares/authMiddleware';
+import {register, uploadProfilePicture, registerMunicipalityUser, login} from '@controllers/authController';
+import {CitizenToJSON} from '@models/dto/Citizen';
+import {Router} from "express";
+import passport from 'passport';
+import {isAuthenticated} from '@middlewares/authMiddleware';
+import { StaffToJSON } from '@models/dto/Staff';
+import { StaffRole } from '@models/dao/staffDAO';
 
 const router = Router();
 
 router.post('/register', uploadProfilePicture.single('profilePicture'), async (req, res, next) => {
-    try {
-        // Validate required fields
-        const { email, username, name, surname, password } = req.body;
-        
-        if (!email || !email.trim() || !email.includes('@')) {
-            return res.status(400).json({ error: 'Invalid or missing email' });
-        }
-        if (!username || !username.trim()) {
-            return res.status(400).json({ error: 'Invalid or missing username' });
-        }
-        if (!name || !name.trim()) {
-            return res.status(400).json({ error: 'Invalid or missing name' });
-        }
-        if (!surname || !surname.trim()) {
-            return res.status(400).json({ error: 'Invalid or missing surname' });
-        }
-        if (!password || !password.trim()) {
-            return res.status(400).json({ error: 'Invalid or missing password' });
-        }
-
+    try { //form-data request
         const citizen = await register(
             email,
             username,
@@ -37,6 +21,22 @@ router.post('/register', uploadProfilePicture.single('profilePicture'), async (r
             req.body.telegram_username
         );
         res.status(201).json(CitizenToJSON(citizen)); // does not expose password
+    } catch (error) {
+        next(error);
+    }
+});
+
+router.post('/register-municipality', isAuthenticated([StaffRole.ADMIN]), async (req, res, next) => {
+    try { //JSON request
+        const staff = await registerMunicipalityUser(
+            req.body.username,
+            req.body.name,
+            req.body.surname,
+            req.body.password,
+            req.body.role,
+            req.body.officeName 
+        );
+        res.status(201).json(StaffToJSON(staff)); // does not expose password
     } catch (error) {
         next(error);
     }

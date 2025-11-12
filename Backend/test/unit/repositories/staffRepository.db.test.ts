@@ -1,21 +1,22 @@
 import { StaffDAO, StaffRole } from "@dao/staffDAO";
-import { OfficeDAO } from "@dao/officeDAO";
+import { OfficeDAO, OfficeCategory } from "@dao/officeDAO";
 import { StaffRepository } from "@repositories/staffRepository";
 import { initializeTestDataSource, closeTestDataSource, TestDataSource } from "../../setup/test-datasource";
 import bcrypt from "bcrypt";
+import { off } from "process";
 
 let staffRepo: StaffRepository;
 
 const office1 = {
-    name: "Municipal Public Relations Office",
-    description: "Handles public relations",
-    category: "MPRO",
+    name: "Municipal Organization Office",
+    description: "Handles municipal organization",
+    category: OfficeCategory.MOO,
 };
 
 const office2 = {
-    name: "Municipal Administration",
-    description: "Handles administration",
-    category: "MA",
+    name: "Water Supply Office",
+    description: "Handles water supply",
+    category: OfficeCategory.WSO,
 };
 
 const staff1 = {
@@ -31,7 +32,7 @@ const staff2 = {
     name: "Jane",
     surname: "Doe",
     password: "securepass456",
-    role: StaffRole.MA,
+    role: StaffRole.TOSM,
 };
 
 beforeAll(async () => {
@@ -60,7 +61,7 @@ describe("StaffRepository - test suite", () => {
             staff1.surname,
             staff1.password,
             staff1.role,
-            office.id
+            office.name
         );
         const savedInDB = await TestDataSource
             .getRepository(StaffDAO)
@@ -87,7 +88,7 @@ describe("StaffRepository - test suite", () => {
             staff1.surname,
             staff1.password,
             staff1.role,
-            office1Saved.id
+            office1Saved.name
         );
         await staffRepo.createStaff(
             staff2.username,
@@ -95,7 +96,7 @@ describe("StaffRepository - test suite", () => {
             staff2.surname,
             staff2.password,
             staff2.role,
-            office2Saved.id
+            office2Saved.name
         );
         
         const staffs = await staffRepo.getAllStaffs();
@@ -127,7 +128,7 @@ describe("StaffRepository - test suite", () => {
             staff1.surname,
             staff1.password,
             staff1.role,
-            office.id
+            office.name
         );
         
         const staff = await staffRepo.getStaffByUsername(staff1.username);
@@ -149,7 +150,7 @@ describe("StaffRepository - test suite", () => {
             staff1.surname,
             staff1.password,
             staff1.role,
-            office.id
+            office.name
         );
         const savedInDB = await TestDataSource
             .getRepository(StaffDAO)
@@ -164,6 +165,9 @@ describe("StaffRepository - test suite", () => {
     });
 
     it("should create default admin if not exists", async () => {
+        const office = await TestDataSource
+            .getRepository(OfficeDAO)
+            .save(office1);
         await staffRepo.createDefaultAdminIfNotExists();
         
         const admin = await TestDataSource
@@ -179,6 +183,10 @@ describe("StaffRepository - test suite", () => {
     });
 
     it("should not create duplicate admin", async () => {
+        const office = await TestDataSource
+            .getRepository(OfficeDAO)
+            .save(office1);
+
         await staffRepo.createDefaultAdminIfNotExists();
         await staffRepo.createDefaultAdminIfNotExists();
         
@@ -189,9 +197,15 @@ describe("StaffRepository - test suite", () => {
         expect(admins).toHaveLength(1);
     });
 
+    it("should not create default admin if no MOO office exists", async () => {
+        await expect(
+            staffRepo.createDefaultAdminIfNotExists()
+        ).rejects.toThrow("No Municipal Organization Office found to assign to default admin");
+    });
+
     it("should throw error when creating staff with missing required fields", async () => {
         await expect(
-            staffRepo.createStaff("", staff1.name, staff1.surname, staff1.password, staff1.role)
+            staffRepo.createStaff("", staff1.name, staff1.surname, staff1.password, staff1.role, office1.name)
         ).rejects.toThrow("Invalid input data: username, name, surname, and password are required");
     });
 
@@ -206,7 +220,7 @@ describe("StaffRepository - test suite", () => {
             staff1.surname,
             staff1.password,
             staff1.role,
-            office.id
+            office.name
         );
         
         await expect(
@@ -216,7 +230,7 @@ describe("StaffRepository - test suite", () => {
                 "Name",
                 "differentpass",
                 StaffRole.ADMIN,
-                office.id
+                office.name
             )
         ).rejects.toThrow(`Staff already exists with username ${staff1.username}`);
     });
@@ -229,8 +243,8 @@ describe("StaffRepository - test suite", () => {
                 staff1.surname,
                 staff1.password,
                 staff1.role,
-                9999
+                "NonExistentOffice"
             )
-        ).rejects.toThrow("Office with id 9999 not found");
+        ).rejects.toThrow("Office with name NonExistentOffice not found");
     });
 });
