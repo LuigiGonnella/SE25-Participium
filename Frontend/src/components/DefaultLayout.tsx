@@ -22,7 +22,7 @@ function DefaultLayout({ loggedIn, user, handleLogout, loading = false }: Defaul
                         display: 'flex',
                         flexDirection: 'column',
                         overflowY: 'auto',
-                        padding: '20px'
+                        padding: '0'
                     }}
                 >
                     {loading ? (
