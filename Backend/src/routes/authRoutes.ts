@@ -7,12 +7,31 @@ const router = Router();
 
 router.post('/register', uploadProfilePicture.single('profilePicture'), async (req, res, next) => {
     try {
+        // Validate required fields
+        const { email, username, name, surname, password } = req.body;
+        
+        if (!email || !email.trim() || !email.includes('@')) {
+            return res.status(400).json({ error: 'Invalid or missing email' });
+        }
+        if (!username || !username.trim()) {
+            return res.status(400).json({ error: 'Invalid or missing username' });
+        }
+        if (!name || !name.trim()) {
+            return res.status(400).json({ error: 'Invalid or missing name' });
+        }
+        if (!surname || !surname.trim()) {
+            return res.status(400).json({ error: 'Invalid or missing surname' });
+        }
+        if (!password || !password.trim()) {
+            return res.status(400).json({ error: 'Invalid or missing password' });
+        }
+
         const citizen = await register(
-            req.body.email,
-            req.body.username,
-            req.body.name,
-            req.body.surname,
-            req.body.password,
+            email,
+            username,
+            name,
+            surname,
+            password,
             req.body.receive_emails,
             req.file, // multer puts file in req.file
             req.body.telegram_username
@@ -25,6 +44,16 @@ router.post('/register', uploadProfilePicture.single('profilePicture'), async (r
 
 router.post('/login', async (req, res, next) => {
     try {
+        // Validate required fields
+        const { username, password } = req.body;
+        
+        if (!username || !username.trim()) {
+            return res.status(400).json({ error: 'Invalid or missing username' });
+        }
+        if (!password || !password.trim()) {
+            return res.status(400).json({ error: 'Invalid or missing password' });
+        }
+
         await login(req, res, next);
     } catch (error) {
         next(error);

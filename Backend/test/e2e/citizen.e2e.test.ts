@@ -1,487 +1,490 @@
-import { DataSource } from "typeorm";
+import request from "supertest";
+import { app } from "@app";
+import { beforeAllE2e, afterAllE2e, TEST_CITIZENS } from "@test/e2e/lifecycle";
+import { TestDataSource } from "../setup/test-datasource";
 import { CitizenDAO } from "@dao/citizenDAO";
 import { CitizenRepository } from "@repositories/citizenRepository";
-import { initializeTestDataSource, closeTestDataSource, TestDataSource } from "../setup/test-datasource";
-import { getAllCitizens, getCitizenByEmail, getCitizenById, getCitizenByUsername } from "@controllers/citizenController";
-import bcrypt from 'bcrypt';
+import bcrypt from "bcrypt";
 
-let citizenRepo: CitizenRepository;
+describe("Citizen API E2E Tests", () => {
+    let citizenRepo: CitizenRepository;
 
-const testCitizen1 = {
-    email: "john.doe@example.com",
-    username: "johndoe",
-    name: "John",
-    surname: "Doe",
-    password: "password123",
-    receive_emails: true,
-    profilePicture: "/uploads/profiles/john.jpg",
-    telegram_username: "@johndoe",
-};
+    beforeAll(async () => {
+        await beforeAllE2e();
+        citizenRepo = new CitizenRepository();
+    });
 
-const testCitizen2 = {
-    email: "jane.smith@example.com",
-    username: "janesmith",
-    name: "Jane",
-    surname: "Smith",
-    password: "securepass456",
-    receive_emails: false,
-    profilePicture: "",
-    telegram_username: "",
-};
+    afterAll(async () => {
+        await afterAllE2e();
+    });
 
-const testCitizen3 = {
-    email: "bob.wilson@example.com",
-    username: "bobwilson",
-    name: "Bob",
-    surname: "Wilson",
-    password: "bobpass789",
-    receive_emails: true,
-    profilePicture: "/uploads/profiles/bob.jpg",
-    telegram_username: "@bobwilson",
-};
+    beforeEach(async () => {
+        await TestDataSource.getRepository(CitizenDAO).clear();
+    });
 
-beforeAll(async () => {
-    await initializeTestDataSource();
-    citizenRepo = new CitizenRepository();
-});
-
-afterAll(async () => {
-    await closeTestDataSource();
-});
-
-beforeEach(async () => {
-    await TestDataSource.getRepository(CitizenDAO).clear();
-});
-
-describe("Citizen E2E Tests", () => {
-    describe("GET /citizens - Get all citizens", () => {
+    describe("GET /api/v1/citizens - Get all citizens", () => {
         it("should return empty array when no citizens exist", async () => {
-            const citizens = await getAllCitizens();
-            expect(citizens).toEqual([]);
+            const res = await request(app)
+                .get("/api/v1/citizens");
+
+            expect(res.status).toBe(200);
+            expect(res.body).toEqual([]);
         });
 
-        it("should return all citizens", async () => {
+        it("should return all citizens with correct structure", async () => {
+            // Create test citizens
             await citizenRepo.createCitizen(
-                testCitizen1.email,
-                testCitizen1.username,
-                testCitizen1.name,
-                testCitizen1.surname,
-                testCitizen1.password,
-                testCitizen1.receive_emails,
-                testCitizen1.profilePicture,
-                testCitizen1.telegram_username
+                TEST_CITIZENS.citizen1.email,
+                TEST_CITIZENS.citizen1.username,
+                TEST_CITIZENS.citizen1.name,
+                TEST_CITIZENS.citizen1.surname,
+                await bcrypt.hash(TEST_CITIZENS.citizen1.password, 10),
+                TEST_CITIZENS.citizen1.receive_emails,
+                TEST_CITIZENS.citizen1.profilePicture,
+                TEST_CITIZENS.citizen1.telegram_username
             );
 
             await citizenRepo.createCitizen(
-                testCitizen2.email,
-                testCitizen2.username,
-                testCitizen2.name,
-                testCitizen2.surname,
-                testCitizen2.password,
-                testCitizen2.receive_emails,
-                testCitizen2.profilePicture,
-                testCitizen2.telegram_username
+                TEST_CITIZENS.citizen2.email,
+                TEST_CITIZENS.citizen2.username,
+                TEST_CITIZENS.citizen2.name,
+                TEST_CITIZENS.citizen2.surname,
+                await bcrypt.hash(TEST_CITIZENS.citizen2.password, 10),
+                TEST_CITIZENS.citizen2.receive_emails,
+                TEST_CITIZENS.citizen2.profilePicture || undefined,
+                TEST_CITIZENS.citizen2.telegram_username || undefined
             );
 
-            const citizens = await getAllCitizens();
+            const res = await request(app)
+                .get("/api/v1/citizens");
+
+            expect(res.status).toBe(200);
+            expect(res.body).toHaveLength(2);
             
-            expect(citizens).toHaveLength(2);
-            expect(citizens[0]).toMatchObject({
-                email: testCitizen1.email,
-                username: testCitizen1.username,
-                name: testCitizen1.name,
-                surname: testCitizen1.surname,
+            // Check first citizen
+            expect(res.body[0]).toMatchObject({
+                email: TEST_CITIZENS.citizen1.email,
+                username: TEST_CITIZENS.citizen1.username,
+                name: TEST_CITIZENS.citizen1.name,
+                surname: TEST_CITIZENS.citizen1.surname,
             });
-            expect(citizens[1]).toMatchObject({
-                email: testCitizen2.email,
-                username: testCitizen2.username,
-                name: testCitizen2.name,
-                surname: testCitizen2.surname,
+
+            // Check second citizen
+            expect(res.body[1]).toMatchObject({
+                email: TEST_CITIZENS.citizen2.email,
+                username: TEST_CITIZENS.citizen2.username,
+                name: TEST_CITIZENS.citizen2.name,
+                surname: TEST_CITIZENS.citizen2.surname,
             });
         });
 
-        it("should not include password in returned citizens", async () => {
+        it("should not include password or id in returned citizens", async () => {
             await citizenRepo.createCitizen(
-                testCitizen1.email,
-                testCitizen1.username,
-                testCitizen1.name,
-                testCitizen1.surname,
-                testCitizen1.password,
-                testCitizen1.receive_emails,
-                testCitizen1.profilePicture,
-                testCitizen1.telegram_username
+                TEST_CITIZENS.citizen1.email,
+                TEST_CITIZENS.citizen1.username,
+                TEST_CITIZENS.citizen1.name,
+                TEST_CITIZENS.citizen1.surname,
+                await bcrypt.hash(TEST_CITIZENS.citizen1.password, 10),
+                TEST_CITIZENS.citizen1.receive_emails,
+                TEST_CITIZENS.citizen1.profilePicture,
+                TEST_CITIZENS.citizen1.telegram_username
             );
 
-            const citizens = await getAllCitizens();
-            
-            expect(citizens[0]).not.toHaveProperty('password');
+            const res = await request(app)
+                .get("/api/v1/citizens");
+
+            expect(res.status).toBe(200);
+            expect(res.body[0]).not.toHaveProperty('password');
+            expect(res.body[0]).not.toHaveProperty('id');
         });
 
-        it("should return citizens with all DTO fields", async () => {
+        it("should return citizens with all expected DTO fields", async () => {
             await citizenRepo.createCitizen(
-                testCitizen1.email,
-                testCitizen1.username,
-                testCitizen1.name,
-                testCitizen1.surname,
-                testCitizen1.password,
-                testCitizen1.receive_emails,
-                testCitizen1.profilePicture,
-                testCitizen1.telegram_username
+                TEST_CITIZENS.citizen3.email,
+                TEST_CITIZENS.citizen3.username,
+                TEST_CITIZENS.citizen3.name,
+                TEST_CITIZENS.citizen3.surname,
+                await bcrypt.hash(TEST_CITIZENS.citizen3.password, 10),
+                TEST_CITIZENS.citizen3.receive_emails,
+                TEST_CITIZENS.citizen3.profilePicture,
+                TEST_CITIZENS.citizen3.telegram_username
             );
 
-            const citizens = await getAllCitizens();
-            
-            expect(citizens[0]).toHaveProperty('email');
-            expect(citizens[0]).toHaveProperty('username');
-            expect(citizens[0]).toHaveProperty('name');
-            expect(citizens[0]).toHaveProperty('surname');
-            expect(citizens[0]).toHaveProperty('receive_emails');
-            expect(citizens[0]).toHaveProperty('profilePicture');
-            expect(citizens[0]).toHaveProperty('telegram_username');
-            expect(citizens[0]).not.toHaveProperty('id');
-            expect(citizens[0]).not.toHaveProperty('password');
+            const res = await request(app)
+                .get("/api/v1/citizens");
+
+            expect(res.status).toBe(200);
+            expect(res.body[0]).toHaveProperty('email');
+            expect(res.body[0]).toHaveProperty('username');
+            expect(res.body[0]).toHaveProperty('name');
+            expect(res.body[0]).toHaveProperty('surname');
+            expect(res.body[0]).toHaveProperty('receive_emails');
+            expect(res.body[0]).toHaveProperty('profilePicture');
+            expect(res.body[0]).toHaveProperty('telegram_username');
         });
     });
 
-    describe("GET /citizens/id/:id - Get citizen by ID", () => {
+    describe("GET /api/v1/citizens/id/:id - Get citizen by ID", () => {
         it("should return citizen by valid ID", async () => {
             await citizenRepo.createCitizen(
-                testCitizen1.email,
-                testCitizen1.username,
-                testCitizen1.name,
-                testCitizen1.surname,
-                testCitizen1.password,
-                testCitizen1.receive_emails,
-                testCitizen1.profilePicture,
-                testCitizen1.telegram_username
+                TEST_CITIZENS.citizen1.email,
+                TEST_CITIZENS.citizen1.username,
+                TEST_CITIZENS.citizen1.name,
+                TEST_CITIZENS.citizen1.surname,
+                await bcrypt.hash(TEST_CITIZENS.citizen1.password, 10),
+                TEST_CITIZENS.citizen1.receive_emails,
+                TEST_CITIZENS.citizen1.profilePicture,
+                TEST_CITIZENS.citizen1.telegram_username
             );
 
             const savedCitizen = await TestDataSource
                 .getRepository(CitizenDAO)
-                .findOneBy({ email: testCitizen1.email });
+                .findOneBy({ email: TEST_CITIZENS.citizen1.email });
 
-            const citizen = await getCitizenById(savedCitizen!.id);
+            const res = await request(app)
+                .get(`/api/v1/citizens/id/${savedCitizen!.id}`);
 
-            expect(citizen).toMatchObject({
-                email: testCitizen1.email,
-                username: testCitizen1.username,
-                name: testCitizen1.name,
-                surname: testCitizen1.surname,
+            expect(res.status).toBe(200);
+            expect(res.body).toMatchObject({
+                email: TEST_CITIZENS.citizen1.email,
+                username: TEST_CITIZENS.citizen1.username,
+                name: TEST_CITIZENS.citizen1.name,
+                surname: TEST_CITIZENS.citizen1.surname,
             });
+            expect(res.body).not.toHaveProperty('password');
+            expect(res.body).not.toHaveProperty('id');
         });
 
-        it("should return null for non-existent ID", async () => {
-            const citizen = await getCitizenById(9999);
-            expect(citizen).toBeNull();
+        it("should return 200 with null body for non-existent ID", async () => {
+            const res = await request(app)
+                .get("/api/v1/citizens/id/9999");
+
+            expect(res.status).toBe(200);
+            expect(res.body).toBeNull();
         });
 
         it("should return correct citizen when multiple citizens exist", async () => {
             await citizenRepo.createCitizen(
-                testCitizen1.email,
-                testCitizen1.username,
-                testCitizen1.name,
-                testCitizen1.surname,
-                testCitizen1.password,
-                testCitizen1.receive_emails,
-                testCitizen1.profilePicture,
-                testCitizen1.telegram_username
+                TEST_CITIZENS.citizen1.email,
+                TEST_CITIZENS.citizen1.username,
+                TEST_CITIZENS.citizen1.name,
+                TEST_CITIZENS.citizen1.surname,
+                await bcrypt.hash(TEST_CITIZENS.citizen1.password, 10),
+                TEST_CITIZENS.citizen1.receive_emails,
+                TEST_CITIZENS.citizen1.profilePicture,
+                TEST_CITIZENS.citizen1.telegram_username
             );
 
             await citizenRepo.createCitizen(
-                testCitizen2.email,
-                testCitizen2.username,
-                testCitizen2.name,
-                testCitizen2.surname,
-                testCitizen2.password,
-                testCitizen2.receive_emails,
-                testCitizen2.profilePicture,
-                testCitizen2.telegram_username
+                TEST_CITIZENS.citizen2.email,
+                TEST_CITIZENS.citizen2.username,
+                TEST_CITIZENS.citizen2.name,
+                TEST_CITIZENS.citizen2.surname,
+                await bcrypt.hash(TEST_CITIZENS.citizen2.password, 10),
+                TEST_CITIZENS.citizen2.receive_emails,
+                TEST_CITIZENS.citizen2.profilePicture || undefined,
+                TEST_CITIZENS.citizen2.telegram_username || undefined
             );
 
             const savedCitizen2 = await TestDataSource
                 .getRepository(CitizenDAO)
-                .findOneBy({ email: testCitizen2.email });
+                .findOneBy({ email: TEST_CITIZENS.citizen2.email });
 
-            const citizen = await getCitizenById(savedCitizen2!.id);
+            const res = await request(app)
+                .get(`/api/v1/citizens/id/${savedCitizen2!.id}`);
 
-            expect(citizen).toMatchObject({
-                email: testCitizen2.email,
-                username: testCitizen2.username,
+            expect(res.status).toBe(200);
+            expect(res.body).toMatchObject({
+                email: TEST_CITIZENS.citizen2.email,
+                username: TEST_CITIZENS.citizen2.username,
             });
         });
 
-        it("should not return password in citizen DTO", async () => {
-            await citizenRepo.createCitizen(
-                testCitizen1.email,
-                testCitizen1.username,
-                testCitizen1.name,
-                testCitizen1.surname,
-                testCitizen1.password,
-                testCitizen1.receive_emails,
-                testCitizen1.profilePicture,
-                testCitizen1.telegram_username
-            );
+        it("should handle invalid ID parameter", async () => {
+            const res = await request(app)
+                .get("/api/v1/citizens/id/invalid");
 
-            const savedCitizen = await TestDataSource
-                .getRepository(CitizenDAO)
-                .findOneBy({ email: testCitizen1.email });
-
-            const citizen = await getCitizenById(savedCitizen!.id);
-
-            expect(citizen).not.toHaveProperty('password');
+            expect(res.status).toBe(400);
+            expect(res.body).toHaveProperty('error');
         });
     });
 
-    describe("GET /citizens/email/:email - Get citizen by email", () => {
+    describe("GET /api/v1/citizens/email/:email - Get citizen by email", () => {
         it("should return citizen by valid email", async () => {
             await citizenRepo.createCitizen(
-                testCitizen1.email,
-                testCitizen1.username,
-                testCitizen1.name,
-                testCitizen1.surname,
-                testCitizen1.password,
-                testCitizen1.receive_emails,
-                testCitizen1.profilePicture,
-                testCitizen1.telegram_username
+                TEST_CITIZENS.citizen1.email,
+                TEST_CITIZENS.citizen1.username,
+                TEST_CITIZENS.citizen1.name,
+                TEST_CITIZENS.citizen1.surname,
+                await bcrypt.hash(TEST_CITIZENS.citizen1.password, 10),
+                TEST_CITIZENS.citizen1.receive_emails,
+                TEST_CITIZENS.citizen1.profilePicture,
+                TEST_CITIZENS.citizen1.telegram_username
             );
 
-            const citizen = await getCitizenByEmail(testCitizen1.email);
+            const res = await request(app)
+                .get(`/api/v1/citizens/email/${TEST_CITIZENS.citizen1.email}`);
 
-            expect(citizen).toMatchObject({
-                email: testCitizen1.email,
-                username: testCitizen1.username,
-                name: testCitizen1.name,
-                surname: testCitizen1.surname,
+            expect(res.status).toBe(200);
+            expect(res.body).toMatchObject({
+                email: TEST_CITIZENS.citizen1.email,
+                username: TEST_CITIZENS.citizen1.username,
+                name: TEST_CITIZENS.citizen1.name,
+                surname: TEST_CITIZENS.citizen1.surname,
+            });
+            expect(res.body).not.toHaveProperty('password');
+        });
+
+        it("should return 200 with null for non-existent email", async () => {
+            const res = await request(app)
+                .get("/api/v1/citizens/email/nonexistent@example.com");
+
+            expect(res.status).toBe(200);
+            expect(res.body).toBeNull();
+        });
+
+        it("should return complete citizen DTO with all fields", async () => {
+            await citizenRepo.createCitizen(
+                TEST_CITIZENS.citizen3.email,
+                TEST_CITIZENS.citizen3.username,
+                TEST_CITIZENS.citizen3.name,
+                TEST_CITIZENS.citizen3.surname,
+                await bcrypt.hash(TEST_CITIZENS.citizen3.password, 10),
+                TEST_CITIZENS.citizen3.receive_emails,
+                TEST_CITIZENS.citizen3.profilePicture,
+                TEST_CITIZENS.citizen3.telegram_username
+            );
+
+            const res = await request(app)
+                .get(`/api/v1/citizens/email/${TEST_CITIZENS.citizen3.email}`);
+
+            expect(res.status).toBe(200);
+            expect(res.body).toHaveProperty('email', TEST_CITIZENS.citizen3.email);
+            expect(res.body).toHaveProperty('username', TEST_CITIZENS.citizen3.username);
+            expect(res.body).toHaveProperty('name', TEST_CITIZENS.citizen3.name);
+            expect(res.body).toHaveProperty('surname', TEST_CITIZENS.citizen3.surname);
+            expect(res.body).toHaveProperty('receive_emails', TEST_CITIZENS.citizen3.receive_emails);
+            expect(res.body).toHaveProperty('profilePicture', TEST_CITIZENS.citizen3.profilePicture);
+            expect(res.body).toHaveProperty('telegram_username', TEST_CITIZENS.citizen3.telegram_username);
+        });
+
+        it("should handle URL-encoded email addresses", async () => {
+            await citizenRepo.createCitizen(
+                TEST_CITIZENS.citizen1.email,
+                TEST_CITIZENS.citizen1.username,
+                TEST_CITIZENS.citizen1.name,
+                TEST_CITIZENS.citizen1.surname,
+                await bcrypt.hash(TEST_CITIZENS.citizen1.password, 10),
+                TEST_CITIZENS.citizen1.receive_emails,
+                TEST_CITIZENS.citizen1.profilePicture,
+                TEST_CITIZENS.citizen1.telegram_username
+            );
+
+            const encodedEmail = encodeURIComponent(TEST_CITIZENS.citizen1.email);
+            const res = await request(app)
+                .get(`/api/v1/citizens/email/${encodedEmail}`);
+
+            expect(res.status).toBe(200);
+            expect(res.body).toMatchObject({
+                email: TEST_CITIZENS.citizen1.email,
             });
         });
 
-        it("should return null for non-existent email", async () => {
-            const citizen = await getCitizenByEmail("nonexistent@example.com");
-            expect(citizen).toBeNull();
-        });
+        it("should return 400 for invalid email (missing @)", async () => {
+            const res = await request(app)
+                .get("/api/v1/citizens/email/invalidemail");
 
-        it("should be case-sensitive for email", async () => {
-            await citizenRepo.createCitizen(
-                testCitizen1.email,
-                testCitizen1.username,
-                testCitizen1.name,
-                testCitizen1.surname,
-                testCitizen1.password,
-                testCitizen1.receive_emails,
-                testCitizen1.profilePicture,
-                testCitizen1.telegram_username
-            );
-
-            const citizen = await getCitizenByEmail(testCitizen1.email.toUpperCase());
-            // SQLite is case-insensitive by default for LIKE, but we test the behavior
-            // Depending on implementation, this might return null or the citizen
-        });
-
-        it("should return complete citizen DTO", async () => {
-            await citizenRepo.createCitizen(
-                testCitizen3.email,
-                testCitizen3.username,
-                testCitizen3.name,
-                testCitizen3.surname,
-                testCitizen3.password,
-                testCitizen3.receive_emails,
-                testCitizen3.profilePicture,
-                testCitizen3.telegram_username
-            );
-
-            const citizen = await getCitizenByEmail(testCitizen3.email);
-
-            expect(citizen).toHaveProperty('email', testCitizen3.email);
-            expect(citizen).toHaveProperty('username', testCitizen3.username);
-            expect(citizen).toHaveProperty('name', testCitizen3.name);
-            expect(citizen).toHaveProperty('surname', testCitizen3.surname);
-            expect(citizen).toHaveProperty('receive_emails', testCitizen3.receive_emails);
-            expect(citizen).toHaveProperty('profilePicture', testCitizen3.profilePicture);
-            expect(citizen).toHaveProperty('telegram_username', testCitizen3.telegram_username);
-            expect(citizen).not.toHaveProperty('id');
-            expect(citizen).not.toHaveProperty('password');
+            expect(res.status).toBe(400);
+            expect(res.body).toHaveProperty('error');
         });
     });
 
-    describe("GET /citizens/username/:username - Get citizen by username", () => {
+    describe("GET /api/v1/citizens/username/:username - Get citizen by username", () => {
         it("should return citizen by valid username", async () => {
             await citizenRepo.createCitizen(
-                testCitizen1.email,
-                testCitizen1.username,
-                testCitizen1.name,
-                testCitizen1.surname,
-                testCitizen1.password,
-                testCitizen1.receive_emails,
-                testCitizen1.profilePicture,
-                testCitizen1.telegram_username
+                TEST_CITIZENS.citizen1.email,
+                TEST_CITIZENS.citizen1.username,
+                TEST_CITIZENS.citizen1.name,
+                TEST_CITIZENS.citizen1.surname,
+                await bcrypt.hash(TEST_CITIZENS.citizen1.password, 10),
+                TEST_CITIZENS.citizen1.receive_emails,
+                TEST_CITIZENS.citizen1.profilePicture,
+                TEST_CITIZENS.citizen1.telegram_username
             );
 
-            const citizen = await getCitizenByUsername(testCitizen1.username);
+            const res = await request(app)
+                .get(`/api/v1/citizens/username/${TEST_CITIZENS.citizen1.username}`);
 
-            expect(citizen).toMatchObject({
-                email: testCitizen1.email,
-                username: testCitizen1.username,
-                name: testCitizen1.name,
-                surname: testCitizen1.surname,
+            expect(res.status).toBe(200);
+            expect(res.body).toMatchObject({
+                email: TEST_CITIZENS.citizen1.email,
+                username: TEST_CITIZENS.citizen1.username,
+                name: TEST_CITIZENS.citizen1.name,
+                surname: TEST_CITIZENS.citizen1.surname,
             });
+            expect(res.body).not.toHaveProperty('password');
         });
 
-        it("should return null for non-existent username", async () => {
-            const citizen = await getCitizenByUsername("nonexistentuser");
-            expect(citizen).toBeNull();
+        it("should return 200 with null for non-existent username", async () => {
+            const res = await request(app)
+                .get("/api/v1/citizens/username/nonexistentuser");
+
+            expect(res.status).toBe(200);
+            expect(res.body).toBeNull();
         });
 
         it("should return correct citizen when multiple exist", async () => {
             await citizenRepo.createCitizen(
-                testCitizen1.email,
-                testCitizen1.username,
-                testCitizen1.name,
-                testCitizen1.surname,
-                testCitizen1.password,
-                testCitizen1.receive_emails,
-                testCitizen1.profilePicture,
-                testCitizen1.telegram_username
+                TEST_CITIZENS.citizen1.email,
+                TEST_CITIZENS.citizen1.username,
+                TEST_CITIZENS.citizen1.name,
+                TEST_CITIZENS.citizen1.surname,
+                await bcrypt.hash(TEST_CITIZENS.citizen1.password, 10),
+                TEST_CITIZENS.citizen1.receive_emails,
+                TEST_CITIZENS.citizen1.profilePicture,
+                TEST_CITIZENS.citizen1.telegram_username
             );
 
             await citizenRepo.createCitizen(
-                testCitizen2.email,
-                testCitizen2.username,
-                testCitizen2.name,
-                testCitizen2.surname,
-                testCitizen2.password,
-                testCitizen2.receive_emails,
-                testCitizen2.profilePicture,
-                testCitizen2.telegram_username
+                TEST_CITIZENS.citizen2.email,
+                TEST_CITIZENS.citizen2.username,
+                TEST_CITIZENS.citizen2.name,
+                TEST_CITIZENS.citizen2.surname,
+                await bcrypt.hash(TEST_CITIZENS.citizen2.password, 10),
+                TEST_CITIZENS.citizen2.receive_emails,
+                TEST_CITIZENS.citizen2.profilePicture || undefined,
+                TEST_CITIZENS.citizen2.telegram_username || undefined
             );
 
-            const citizen = await getCitizenByUsername(testCitizen2.username);
+            const res = await request(app)
+                .get(`/api/v1/citizens/username/${TEST_CITIZENS.citizen2.username}`);
 
-            expect(citizen).toMatchObject({
-                email: testCitizen2.email,
-                username: testCitizen2.username,
+            expect(res.status).toBe(200);
+            expect(res.body).toMatchObject({
+                email: TEST_CITIZENS.citizen2.email,
+                username: TEST_CITIZENS.citizen2.username,
             });
         });
 
-        it("should not return password", async () => {
-            await citizenRepo.createCitizen(
-                testCitizen1.email,
-                testCitizen1.username,
-                testCitizen1.name,
-                testCitizen1.surname,
-                testCitizen1.password,
-                testCitizen1.receive_emails,
-                testCitizen1.profilePicture,
-                testCitizen1.telegram_username
-            );
-
-            const citizen = await getCitizenByUsername(testCitizen1.username);
-
-            expect(citizen).not.toHaveProperty('password');
-        });
-
         it("should handle usernames with special characters", async () => {
-            const specialCitizen = {
-                ...testCitizen1,
-                username: "test_user.123",
-                email: "special@test.com"
-            };
-
+            const specialUsername = "test_user.123";
             await citizenRepo.createCitizen(
-                specialCitizen.email,
-                specialCitizen.username,
-                specialCitizen.name,
-                specialCitizen.surname,
-                specialCitizen.password,
-                specialCitizen.receive_emails,
-                specialCitizen.profilePicture,
-                specialCitizen.telegram_username
+                "special@test.com",
+                specialUsername,
+                "Test",
+                "User",
+                await bcrypt.hash("password123", 10),
+                true,
+                undefined,
+                undefined
             );
 
-            const citizen = await getCitizenByUsername(specialCitizen.username);
+            const res = await request(app)
+                .get(`/api/v1/citizens/username/${specialUsername}`);
 
-            expect(citizen).toMatchObject({
-                username: specialCitizen.username,
+            expect(res.status).toBe(200);
+            expect(res.body).toMatchObject({
+                username: specialUsername,
             });
         });
     });
 
-    describe("Integration - Complete citizen lifecycle", () => {
-        it("should handle creating and retrieving citizen by all methods", async () => {
-            const hashedPassword = await bcrypt.hash(testCitizen1.password, 10);
-            
+    describe("Integration - Complete HTTP citizen lifecycle", () => {
+        it("should retrieve same citizen data through different endpoints", async () => {
+            const hashedPassword = await bcrypt.hash(TEST_CITIZENS.citizen1.password, 10);
             const createdCitizen = await citizenRepo.createCitizen(
-                testCitizen1.email,
-                testCitizen1.username,
-                testCitizen1.name,
-                testCitizen1.surname,
+                TEST_CITIZENS.citizen1.email,
+                TEST_CITIZENS.citizen1.username,
+                TEST_CITIZENS.citizen1.name,
+                TEST_CITIZENS.citizen1.surname,
                 hashedPassword,
-                testCitizen1.receive_emails,
-                testCitizen1.profilePicture,
-                testCitizen1.telegram_username
+                TEST_CITIZENS.citizen1.receive_emails,
+                TEST_CITIZENS.citizen1.profilePicture,
+                TEST_CITIZENS.citizen1.telegram_username
             );
 
             // Get by ID
-            const byId = await getCitizenById(createdCitizen.id);
-            expect(byId).toBeTruthy();
-            expect(byId?.username).toBe(testCitizen1.username);
-            expect(byId).not.toHaveProperty('id');
+            const byIdRes = await request(app)
+                .get(`/api/v1/citizens/id/${createdCitizen.id}`);
+            expect(byIdRes.status).toBe(200);
+            expect(byIdRes.body.username).toBe(TEST_CITIZENS.citizen1.username);
 
             // Get by email
-            const byEmail = await getCitizenByEmail(testCitizen1.email);
-            expect(byEmail).toBeTruthy();
-            expect(byEmail?.username).toBe(testCitizen1.username);
+            const byEmailRes = await request(app)
+                .get(`/api/v1/citizens/email/${TEST_CITIZENS.citizen1.email}`);
+            expect(byEmailRes.status).toBe(200);
+            expect(byEmailRes.body.username).toBe(TEST_CITIZENS.citizen1.username);
 
             // Get by username
-            const byUsername = await getCitizenByUsername(testCitizen1.username);
-            expect(byUsername).toBeTruthy();
-            expect(byUsername?.email).toBe(testCitizen1.email);
+            const byUsernameRes = await request(app)
+                .get(`/api/v1/citizens/username/${TEST_CITIZENS.citizen1.username}`);
+            expect(byUsernameRes.status).toBe(200);
+            expect(byUsernameRes.body.email).toBe(TEST_CITIZENS.citizen1.email);
 
             // Get all
-            const all = await getAllCitizens();
-            expect(all).toHaveLength(1);
-            expect(all[0].username).toBe(testCitizen1.username);
+            const allRes = await request(app)
+                .get("/api/v1/citizens");
+            expect(allRes.status).toBe(200);
+            expect(allRes.body).toHaveLength(1);
+            expect(allRes.body[0].username).toBe(TEST_CITIZENS.citizen1.username);
         });
 
-        it("should maintain data consistency across different retrieval methods", async () => {
+        it("should maintain data consistency across all retrieval endpoints", async () => {
             await citizenRepo.createCitizen(
-                testCitizen2.email,
-                testCitizen2.username,
-                testCitizen2.name,
-                testCitizen2.surname,
-                testCitizen2.password,
-                testCitizen2.receive_emails,
-                testCitizen2.profilePicture,
-                testCitizen2.telegram_username
+                TEST_CITIZENS.citizen2.email,
+                TEST_CITIZENS.citizen2.username,
+                TEST_CITIZENS.citizen2.name,
+                TEST_CITIZENS.citizen2.surname,
+                await bcrypt.hash(TEST_CITIZENS.citizen2.password, 10),
+                TEST_CITIZENS.citizen2.receive_emails,
+                TEST_CITIZENS.citizen2.profilePicture || undefined,
+                TEST_CITIZENS.citizen2.telegram_username || undefined
             );
 
-            const byEmail = await getCitizenByEmail(testCitizen2.email);
-            const byUsername = await getCitizenByUsername(testCitizen2.username);
+            const byEmailRes = await request(app)
+                .get(`/api/v1/citizens/email/${TEST_CITIZENS.citizen2.email}`);
+            
+            const byUsernameRes = await request(app)
+                .get(`/api/v1/citizens/username/${TEST_CITIZENS.citizen2.username}`);
 
-            expect(byEmail).toEqual(byUsername);
+            expect(byEmailRes.body).toEqual(byUsernameRes.body);
         });
     });
 
     describe("Edge cases and error handling", () => {
-        it("should handle empty database gracefully", async () => {
-            const allCitizens = await getAllCitizens();
-            const byId = await getCitizenById(1);
-            const byEmail = await getCitizenByEmail("test@test.com");
-            const byUsername = await getCitizenByUsername("testuser");
+        it("should handle requests to empty database gracefully", async () => {
+            const allRes = await request(app).get("/api/v1/citizens");
+            const byIdRes = await request(app).get("/api/v1/citizens/id/1");
+            const byEmailRes = await request(app).get("/api/v1/citizens/email/test@test.com");
+            const byUsernameRes = await request(app).get("/api/v1/citizens/username/testuser");
 
-            expect(allCitizens).toEqual([]);
-            expect(byId).toBeNull();
-            expect(byEmail).toBeNull();
-            expect(byUsername).toBeNull();
+            expect(allRes.status).toBe(200);
+            expect(allRes.body).toEqual([]);
+            
+            expect(byIdRes.status).toBe(200);
+            expect(byIdRes.body).toBeNull();
+            
+            expect(byEmailRes.status).toBe(200);
+            expect(byEmailRes.body).toBeNull();
+            
+            expect(byUsernameRes.status).toBe(200);
+            expect(byUsernameRes.body).toBeNull();
         });
 
         it("should handle negative IDs", async () => {
-            const citizen = await getCitizenById(-1);
-            expect(citizen).toBeNull();
+            const res = await request(app)
+                .get("/api/v1/citizens/id/-1");
+
+            expect(res.status).toBe(200);
+            expect(res.body).toBeNull();
         });
 
         it("should handle zero as ID", async () => {
-            const citizen = await getCitizenById(0);
-            expect(citizen).toBeNull();
+            const res = await request(app)
+                .get("/api/v1/citizens/id/0");
+
+            expect(res.status).toBe(200);
+            expect(res.body).toBeNull();
         });
     });
 });

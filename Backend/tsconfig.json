@@ -27,7 +27,8 @@
       "@middlewares/*": ["src/middlewares/*"],
       "@database": ["src/database/connection.ts"],
       "@utils": ["src/utils.ts"],
-      "@app": ["src/app.ts"]
+      "@app": ["src/app.ts"],
+      "@test/*": ["test/*"]
     },
     "types": ["node", "jest"]
   },
