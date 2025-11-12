@@ -6,6 +6,9 @@ import fs from 'fs';
 import {mapCitizenDAOToDTO, mapStaffDAOToDTO} from "@services/mapperService";
 import { StaffRole } from '@models/dao/staffDAO';
 import { StaffRepository } from "@repositories/staffRepository";
+import { Request, Response, NextFunction } from 'express';
+import passport from 'passport';
+import AppError from "@models/errors/AppError";
 
 
 // storage configuration
@@ -94,4 +97,33 @@ export async function registerMunicipalityUser(
 
     return mapStaffDAOToDTO(staffDAO);
 
+export async function login(req: Request, res: Response, next: NextFunction) {
+    const rawType = req.query.type;
+    
+    if (rawType !== 'CITIZEN' && rawType !== 'STAFF') {
+        throw new AppError('Invalid or missing query parameter', 400);
+    }
+
+    const strategy = rawType === 'CITIZEN' ? 'citizen-local' : 'staff-local';
+
+    passport.authenticate(strategy, (err: any, user: any, info: any) => {
+        if (err) {
+            return next(err);
+        }
+        
+        if (!user) {
+            return res.status(401).json({ 
+                message: info?.message || 'Authentication failed',
+                error: 'Invalid credentials'
+            });
+        }
+
+        req.login(user, (err) => {
+            if (err) {
+                return next(err);
+            }
+            
+            return res.status(200).json(user);
+        });
+    })(req, res, next);
 }

@@ -1,10 +1,11 @@
-import {register, uploadProfilePicture, registerMunicipalityUser} from '@controllers/authController';
+import {register, uploadProfilePicture, registerMunicipalityUser, login} from '@controllers/authController';
 import {CitizenToJSON} from '@models/dto/Citizen';
 import {Router} from "express";
 import passport from 'passport';
 import {isAuthenticated} from '@middlewares/authMiddleware';
 import { StaffToJSON } from '@models/dto/Staff';
 import { StaffRole } from '@models/dao/staffDAO';
+
 const router = Router();
 
 router.post('/register', uploadProfilePicture.single('profilePicture'), async (req, res, next) => {
@@ -41,23 +42,12 @@ router.post('/register-municipality', isAuthenticated([StaffRole.ADMIN]), async 
     }
 });
 
-router.post('/login', (req, res, next) => {
-    const rawType = req.query.type;
-    if (rawType !== 'CITIZEN' && rawType !== 'STAFF') {
-        return res.status(400).json({ message: 'Invalid or missing query parameter: type' });
+router.post('/login', async (req, res, next) => {
+    try {
+        await login(req, res, next);
+    } catch (error) {
+        next(error);
     }
-
-    const strategy = rawType === 'CITIZEN' ? 'citizen-local' : 'staff-local';
-
-    passport.authenticate(strategy, (err: any, user: any, info: any) => {
-        if (err) return next(err);
-        if (!user) return res.status(401).json({ message: info?.message || 'Authentication failed' });
-
-        req.login(user, (err) => {
-            if (err) return next(err);
-            res.status(200).json(user);
-        });
-    })(req, res, next);
 });
 
 router.delete('/logout', (req, res) => {
