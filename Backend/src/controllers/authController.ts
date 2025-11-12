@@ -1,10 +1,15 @@
-import type { Citizen as CitizenDTO } from "@models/dto/Citizen"
 import { CitizenRepository } from "@repositories/citizenRepository";
 import bcrypt from 'bcrypt';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
-import { mapCitizenDAOToDTO } from "@services/mapperService";
+import {mapCitizenDAOToDTO, mapStaffDAOToDTO} from "@services/mapperService";
+import { StaffRole } from '@models/dao/staffDAO';
+import { StaffRepository } from "@repositories/staffRepository";
+import { Request, Response, NextFunction } from 'express';
+import passport from 'passport';
+import AppError from "@models/errors/AppError";
+
 
 // storage configuration
 const storage = multer.diskStorage({
@@ -37,9 +42,6 @@ export const uploadProfilePicture = multer({
     }
 });
 
-
-export const citizenRepo = new CitizenRepository()
-
 export async function register(
     email: string,
     username: string,
@@ -50,6 +52,7 @@ export async function register(
     profilePictureFile?: Express.Multer.File, // uploaded file
     telegram_username?: string
 ) {
+    const citizenRepo = new CitizenRepository();
     const hashedPassword = await bcrypt.hash(password, 10);
     
     // image path
@@ -70,4 +73,57 @@ export async function register(
 
     return mapCitizenDAOToDTO(citizenDAO);
 
+}
+
+export async function registerMunicipalityUser(
+    username: string,
+    name: string,
+    surname: string,
+    password: string,
+    role: StaffRole,
+    officeName: string
+) {
+    const staffRepo = new StaffRepository();
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const staffDAO = await staffRepo.createStaff(
+        username,
+        name,
+        surname,
+        hashedPassword,
+        role,
+        officeName,
+    );
+
+    return mapStaffDAOToDTO(staffDAO);
+
+export async function login(req: Request, res: Response, next: NextFunction) {
+    const rawType = req.query.type;
+    
+    if (rawType !== 'CITIZEN' && rawType !== 'STAFF') {
+        throw new AppError('Invalid or missing query parameter', 400);
+    }
+
+    const strategy = rawType === 'CITIZEN' ? 'citizen-local' : 'staff-local';
+
+    passport.authenticate(strategy, (err: any, user: any, info: any) => {
+        if (err) {
+            return next(err);
+        }
+        
+        if (!user) {
+            return res.status(401).json({ 
+                message: info?.message || 'Authentication failed',
+                error: 'Invalid credentials'
+            });
+        }
+
+        req.login(user, (err) => {
+            if (err) {
+                return next(err);
+            }
+            
+            return res.status(200).json(user);
+        });
+    })(req, res, next);
 }

@@ -1,11 +1,11 @@
 import {Column, Entity, ManyToOne, PrimaryGeneratedColumn} from "typeorm";
 import {OfficeDAO} from "./officeDAO";
 
-enum StaffRole {
+export enum StaffRole {
     ADMIN = "admin",
-    MPRO = "municipal public relations officer",
-    MA = "municipal administrator",
-    TOSM = "technical office staff member"
+    MPRO = "Municipal Public Relations Officer",
+    MA = "Municipal Administrator",
+    TOSM = "Technical Office Staff Member"
 }
 
 @Entity("staff")
@@ -13,9 +13,6 @@ export class StaffDAO {
 
     @PrimaryGeneratedColumn('increment', { type: 'int', unsigned: true })
     id: number;
-
-    @Column({ unique: true, nullable: false })
-    email: string;
 
     @Column({ unique: true, nullable: false })
     username: string;
@@ -29,7 +26,7 @@ export class StaffDAO {
     @Column({ nullable: false })
     password: string;
 
-    @Column({ nullable: true })
+    @Column({ nullable: false })
     role: StaffRole;
 
     @ManyToOne(() => OfficeDAO, (office) => office.members, {onDelete: "SET NULL", nullable: true})

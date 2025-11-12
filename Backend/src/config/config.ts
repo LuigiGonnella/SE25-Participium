@@ -1,5 +1,4 @@
-import { readdirSync } from "fs";
-import path from "node:path";
+import path from "path";
 
 const DB_PATH = path.resolve(__dirname, '../../data/database.sqlite');
 const APP_V1_BASE_URL = "/api/v1";
@@ -7,7 +6,6 @@ const URL_AUTH = "/auth";
 const URL_CITIZENS = "/citizens";
 const URL_OFFICES = "/offices";
 const URL_STAFFS = "/staffs";
-
 
 
 export const CONFIG = {
