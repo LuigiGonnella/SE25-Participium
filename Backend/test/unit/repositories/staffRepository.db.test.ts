@@ -3,12 +3,13 @@ import { OfficeDAO, OfficeCategory } from "@dao/officeDAO";
 import { StaffRepository } from "@repositories/staffRepository";
 import { initializeTestDataSource, closeTestDataSource, TestDataSource } from "../../setup/test-datasource";
 import bcrypt from "bcrypt";
+import { off } from "process";
 
 let staffRepo: StaffRepository;
 
 const office1 = {
-    name: "Municipal Public Relations Office",
-    description: "Handles public relations",
+    name: "Municipal Organization Office",
+    description: "Handles municipal organization",
     category: OfficeCategory.MOO,
 };
 
@@ -164,6 +165,9 @@ describe("StaffRepository - test suite", () => {
     });
 
     it("should create default admin if not exists", async () => {
+        const office = await TestDataSource
+            .getRepository(OfficeDAO)
+            .save(office1);
         await staffRepo.createDefaultAdminIfNotExists();
         
         const admin = await TestDataSource
@@ -179,6 +183,10 @@ describe("StaffRepository - test suite", () => {
     });
 
     it("should not create duplicate admin", async () => {
+        const office = await TestDataSource
+            .getRepository(OfficeDAO)
+            .save(office1);
+
         await staffRepo.createDefaultAdminIfNotExists();
         await staffRepo.createDefaultAdminIfNotExists();
         
@@ -189,9 +197,15 @@ describe("StaffRepository - test suite", () => {
         expect(admins).toHaveLength(1);
     });
 
+    it("should not create default admin if no MOO office exists", async () => {
+        await expect(
+            staffRepo.createDefaultAdminIfNotExists()
+        ).rejects.toThrow("No Municipal Organization Office found to assign to default admin");
+    });
+
     it("should throw error when creating staff with missing required fields", async () => {
         await expect(
-            staffRepo.createStaff("", staff1.name, staff1.surname, staff1.password, staff1.role)
+            staffRepo.createStaff("", staff1.name, staff1.surname, staff1.password, staff1.role, office1.name)
         ).rejects.toThrow("Invalid input data: username, name, surname, and password are required");
     });
 
