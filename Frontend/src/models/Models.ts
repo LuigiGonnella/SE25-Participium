@@ -1,5 +1,4 @@
 export interface Citizen {
-    id: number;
     email: string;
     username: string;
     name: string;
@@ -12,7 +11,6 @@ export interface Citizen {
 }
 
 export interface Staff {
-    id: number;
     email: string;
     username: string;
     name: string;
@@ -21,6 +19,16 @@ export interface Staff {
     role: string;
     officeName: string;
     type: string;
+}
+
+export type User = Citizen | Staff;
+
+export function isStaff(user: User | undefined): user is Staff {
+    return user !== undefined && 'type' in user && user.type === 'STAFF';
+}
+
+export function isCitizen(user: User | undefined): user is Citizen {
+    return user !== undefined && 'type' in user && user.type === 'CITIZEN';
 }
 
 export interface Credentials {
@@ -58,16 +66,16 @@ export interface Office {
     category: string;
 }
 
-export const OfficeCategory = {
-    MOO: "Municipal Organization Office",
-    WSO: "Water Supply Office",
-    ABO: "Architectural Barriers Office",
-    SSO: "Sewer System Office",
-    PLO: "Public Lighting Office",
-    WO: "Waste Office",
-    RSTLO: "Road Signs and Traffic Lights Office",
-    RUFO: "Roads and Urban Furnishings Office",
-    PGAPO: "Public Green Areas and Playgrounds Office",
+export const OfficeCategory: {[key: string]: string} = {
+    "Municipal Organization Office": "MOO",
+    "Water Supply Office": "WSO",
+    "Architectural Barriers Office": "ABO",
+    "Sewer System Office": "SSO",
+    "Public Lighting Office": "PLO",
+    "Waste Office": "WO",
+    "Road Signs and Traffic Lights Office": "RSTLO",
+    "Roads and Urban Furnishings Office": "RUFO",
+    "Public Green Areas and Playgrounds Office": "PGAPO",
 }
 
 export const ROLE_OFFICE_MAP = {

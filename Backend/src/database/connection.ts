@@ -21,8 +21,8 @@ export async function initializeDatabase() {
     await AppDataSource.initialize();
     logInfo("Successfully connected to DB");
 
-    await (new StaffRepository()).createDefaultAdminIfNotExists();
     await (new OfficeRepository()).createDefaultOfficesIfNotExist();
+    await (new StaffRepository()).createDefaultAdminIfNotExists();
 }
 
 export async function closeDatabase() {

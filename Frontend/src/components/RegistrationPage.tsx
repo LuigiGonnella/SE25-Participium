@@ -1,14 +1,14 @@
 import { Form, FormGroup, Row, Col, Button, Alert } from 'react-bootstrap';
 import {type ChangeEvent, type FocusEvent, type FormEvent, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
-import type { Citizen, Staff, NewCitizen, NewStaff, Office } from "../models/Models.ts";
+import type { NewCitizen, NewStaff, Office } from "../models/Models.ts";
 import { ROLE_OFFICE_MAP, StaffRole } from '../models/Models.ts';
 import {APIError} from "../services/ErrorHandler.ts";
 import API from '../API/API.mts';
 
 interface RegistrationFormProps {
-    handleRegistration?: (newCitizen: NewCitizen) => Promise<Citizen>;
-    handleStaffRegistration?: (newStaff: NewStaff) => Promise<Staff>;
+    handleRegistration?: (newCitizen: NewCitizen) => Promise<void>;
+    handleStaffRegistration?: (newStaff: NewStaff) => Promise<void>;
 }
 
 function RegistrationForm({ handleRegistration }: RegistrationFormProps) {
@@ -268,6 +268,7 @@ function RegistrationForm({ handleRegistration }: RegistrationFormProps) {
 }
 
 function MunicipalityRegistrationForm({ handleStaffRegistration }: RegistrationFormProps) {
+
     const [isPending, setIsPending] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string>('');
     const [touched, setTouched] = useState<Partial<Record<keyof FormData, boolean>>>({});
@@ -344,7 +345,9 @@ function MunicipalityRegistrationForm({ handleStaffRegistration }: RegistrationF
     const validateField = (name: keyof FormData, value: string): boolean => {
         switch (name) {
             case 'name':
+                return !value || value.trim() === "";
             case 'surname':
+                return !value || value.trim() === "";
             case 'username':
                 return !value || value.trim() === "";
             case 'password':
@@ -353,6 +356,8 @@ function MunicipalityRegistrationForm({ handleStaffRegistration }: RegistrationF
                 return value !== formData.password;
             case 'role':
                 return value === '';
+            case 'officeName':
+                return value === '' && filteredOffices.length > 0;
             default:
                 return false;
         }
@@ -380,8 +385,21 @@ function MunicipalityRegistrationForm({ handleStaffRegistration }: RegistrationF
 
     const handleSelectChange = (e: ChangeEvent<HTMLSelectElement>) => {
         const { name, value } = e.target;
-        setFormData((prev) => ({ ...prev, [name]: value }));
-        setTouched((prev) => ({ ...prev, [name]: true }));
+        setFormData(prev => {
+            const next = {
+                ...prev,
+                [name]: value
+            };
+            if (name === 'role') {
+                next.officeName = '';
+            }
+            return next;
+        });
+        setTouched(prev => ({ ...prev, [name]: true }));
+    };
+
+    const handleSelectBlur = (e: FocusEvent<HTMLSelectElement>) => {
+        setTouched(prev => ({ ...prev, [e.target.name]: true }));
     };
 
     const handleSubmit = async (e: FormEvent) => {
@@ -422,13 +440,41 @@ function MunicipalityRegistrationForm({ handleStaffRegistration }: RegistrationF
                 role: '',
                 officeName: ''
             });
-            setTimeout(() => setIsHidden(true), 5000);
+            /* TODO
+            setTouched({
+                name: false,
+                surname: false,
+                username: false,
+                password: false,
+                confirmPassword: false,
+                role: false,
+                officeName: false
+            });*/
+            setInterval(() => {
+                setIsHidden(true);
+            }, 5000);
         } catch (err) {
             setErrorMessage('Error: ' + (err instanceof APIError ? err.details : err));
         } finally {
             setIsPending(false);
         }
     };
+
+    /* TODO
+    useEffect(() => {
+
+        const filterOfficesByRole = (role: string, allOffices: Office[] = offices) => {
+            if (!role) return [];
+            const allowed = ROLE_OFFICE_MAP[role];
+            if (!allowed) return [];
+            return allOffices.filter(o => allowed.includes(OfficeCategory[o.category]));
+        };
+
+        API.getOffices().then((data) => {
+            setOffices(data);
+            setFilteredOffices(filterOfficesByRole(formData.role, data))
+        }).catch((err) => { console.log("Errore nel recupero degli uffici:", err) });
+    },[formData.role]);*/
 
     return (
         <>
@@ -510,11 +556,11 @@ function MunicipalityRegistrationForm({ handleStaffRegistration }: RegistrationF
                                     name="role"
                                     value={formData.role}
                                     onChange={handleSelectChange}
-                                    onBlur={() => setTouched((prev) => ({ ...prev, role: true }))}
+                                    onBlur={handleSelectBlur}
                                     isInvalid={touched.role && errors.role}
                                     required
                                 >
-                                    <option value="">Select a role...</option>
+                                    <option disabled value="">Select a role...</option>
                                     {Object.entries(StaffRole).map(([key, value]) => (
                                         <option key={key} value={key}>
                                             {value}
@@ -534,11 +580,11 @@ function MunicipalityRegistrationForm({ handleStaffRegistration }: RegistrationF
                                         name="officeName"
                                         value={formData.officeName}
                                         onChange={handleSelectChange}
-                                        onBlur={() => setTouched((prev) => ({ ...prev, officeName: true }))}
+                                        onBlur={handleSelectBlur}
                                         isInvalid={touched.officeName && errors.officeName}
                                         required
                                     >
-                                        <option value="">
+                                        <option disabled value="">
                                             {filteredOffices.length === 0
                                                 ? "No offices available"
                                                 : "Select an office"}

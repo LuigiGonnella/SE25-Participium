@@ -3,12 +3,7 @@
  * @export
  * @enum {string}
  */
-export enum StaffRole {
-    ADMIN = "admin",
-    MPRO = "municipal public relations officer",
-    MA = "municipal administrator",
-    TOSM = "technical office staff member"
-}
+import {StaffRole} from "@dao/staffDAO";
 
 /**
  * 
@@ -47,11 +42,11 @@ export interface Staff {
      */
     role: StaffRole;
     /**
-     * Office ID this staff member belongs to
+     * Office Name this staff member belongs to
      * @type {string}
      * @memberof Staff
      */
-    officeName?: string;
+    officeName: string;
 }
 
 /**
@@ -62,6 +57,8 @@ export function instanceOfStaff(value: object): value is Staff {
     if (!('username' in value) || value['username'] === undefined) return false;
     if (!('name' in value) || value['name'] === undefined) return false;
     if (!('surname' in value) || value['surname'] === undefined) return false;
+    if (!('role' in value) || value['role'] === undefined) return false;
+    if (!('officeName' in value) || value['officeName'] === undefined) return false;
     return true;
 }
 

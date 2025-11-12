@@ -1,9 +1,9 @@
 import { ErrorDTO } from "@models/dto/ErrorDTO";
 import type { Citizen as CitizenDTO } from "@models/dto/Citizen";
-import { Staff as StaffDTO, StaffRole as StaffRoleDTO } from "@models/dto/Staff";
+import type { Staff as StaffDTO } from "@models/dto/Staff";
 import type { Office as OfficeDTO } from "@models/dto/Office";
 import { CitizenDAO } from "@models/dao/citizenDAO";
-import { StaffDAO, StaffRole as StaffRoleDAO } from "@dao/staffDAO";
+import {StaffDAO} from "@dao/staffDAO";
 import {OfficeDAO} from "@dao/officeDAO";
 
 export function createErrorDTO(
@@ -44,20 +44,12 @@ export function mapCitizenDAOToDTO(citizenDAO: CitizenDAO): CitizenDTO {
 }
 
 export function mapStaffDAOToDTO(staffDAO: StaffDAO): StaffDTO {
-  const roleMap: Record<StaffRoleDAO, StaffRoleDTO> = {
-    [StaffRoleDAO.ADMIN]: StaffRoleDTO.ADMIN,
-    [StaffRoleDAO.MPRO]: StaffRoleDTO.MPRO,
-    [StaffRoleDAO.MA]: StaffRoleDTO.MA,
-    [StaffRoleDAO.TOSM]: StaffRoleDTO.TOSM,
-  };
-
   return removeNullAttributes({
-    id: staffDAO.id,
     username: staffDAO.username,
     name: staffDAO.name,
     surname: staffDAO.surname,
-    role: roleMap[staffDAO.role],
-    officeName: staffDAO.office?.name,
+    role: staffDAO.role,
+    officeName: staffDAO.office.name
   }) as StaffDTO;
 }
 

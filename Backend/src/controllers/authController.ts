@@ -6,10 +6,10 @@ import fs from 'fs';
 import {mapCitizenDAOToDTO, mapStaffDAOToDTO} from "@services/mapperService";
 import { StaffRole } from '@models/dao/staffDAO';
 import { StaffRepository } from "@repositories/staffRepository";
+import {NotFoundError} from "@errors/NotFoundError";
 import { Request, Response, NextFunction } from 'express';
 import passport from 'passport';
-import AppError from "@models/errors/AppError";
-
+import {BadRequestError} from "@errors/BadRequestError";
 
 // storage configuration
 const storage = multer.diskStorage({
@@ -80,18 +80,24 @@ export async function registerMunicipalityUser(
     name: string,
     surname: string,
     password: string,
-    role: StaffRole,
+    role: string,
     officeName: string
 ) {
     const staffRepo = new StaffRepository();
     const hashedPassword = await bcrypt.hash(password, 10);
+
+    if (!(role in StaffRole)) {
+        throw new NotFoundError(`Invalid staff role: ${role}`);
+    }
+
+    const validRole = StaffRole[role as keyof typeof StaffRole];
 
     const staffDAO = await staffRepo.createStaff(
         username,
         name,
         surname,
         hashedPassword,
-        role,
+        validRole,
         officeName,
     );
 
@@ -100,9 +106,9 @@ export async function registerMunicipalityUser(
 
 export async function login(req: Request, res: Response, next: NextFunction) {
     const rawType = req.query.type;
-    
+
     if (rawType !== 'CITIZEN' && rawType !== 'STAFF') {
-        throw new AppError('Invalid or missing query parameter', 400);
+        throw new BadRequestError('Invalid or missing query parameter');
     }
 
     const strategy = rawType === 'CITIZEN' ? 'citizen-local' : 'staff-local';
@@ -111,9 +117,9 @@ export async function login(req: Request, res: Response, next: NextFunction) {
         if (err) {
             return next(err);
         }
-        
+
         if (!user) {
-            return res.status(401).json({ 
+            return res.status(401).json({
                 message: info?.message || 'Authentication failed',
                 error: 'Invalid credentials'
             });
@@ -123,7 +129,7 @@ export async function login(req: Request, res: Response, next: NextFunction) {
             if (err) {
                 return next(err);
             }
-            
+
             return res.status(200).json(user);
         });
     })(req, res, next);
