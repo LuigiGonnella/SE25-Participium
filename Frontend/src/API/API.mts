@@ -1,7 +1,7 @@
 import type {Citizen, Staff, Credentials, NewCitizen, NewStaff, Office, User} from "../models/Models.ts";
 import {handleAPIError} from "../services/ErrorHandler.ts";
 
-const BACKEND_URL = "http://localhost:8080/api/v1";
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:8080/api/v1";
 
 const register = async (newCitizen: NewCitizen): Promise<Citizen> => {
     if (!newCitizen.email || !newCitizen.password || !newCitizen.username) {
