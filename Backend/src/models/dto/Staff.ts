@@ -46,7 +46,7 @@ export interface Staff {
      * @type {string}
      * @memberof Staff
      */
-    office: string;
+    officeName: string;
 }
 
 /**
@@ -58,7 +58,7 @@ export function instanceOfStaff(value: object): value is Staff {
     if (!('name' in value) || value['name'] === undefined) return false;
     if (!('surname' in value) || value['surname'] === undefined) return false;
     if (!('role' in value) || value['role'] === undefined) return false;
-    if (!('office' in value) || value['office'] === undefined) return false;
+    if (!('officeName' in value) || value['officeName'] === undefined) return false;
     return true;
 }
 
@@ -76,7 +76,7 @@ export function StaffFromJSONTyped(json: any, ignoreDiscriminator: boolean): Sta
         'name': json['name'],
         'surname': json['surname'],
         'role': json['role'] == null ? undefined : json['role'],
-        'office': json['office'] == null ? undefined : json['office'],
+        'officeName': json['officeName'] == null ? undefined : json['officeName'],
     };
 }
 
@@ -95,6 +95,6 @@ export function StaffToJSONTyped(value?: Staff | null, ignoreDiscriminator: bool
         'name': value['name'],
         'surname': value['surname'],
         'role': value['role'],
-        'office': value['office'],
+        'officeName': value['officeName'],
     };
 }

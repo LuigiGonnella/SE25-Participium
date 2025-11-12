@@ -38,7 +38,10 @@ function LoginForm({handleLogin}: LoginFormProps) {
                 };
             } catch (err) {
                 setError((err as APIError).details)
-                return err as LoginState;
+                return {
+                    ...state,
+                    success: false
+                };
             }
         },
         {

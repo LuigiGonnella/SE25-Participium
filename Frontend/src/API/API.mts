@@ -72,14 +72,15 @@ const getUserInfo = async (): Promise<User> => {
     return handleAPIError(response, 'Get user info');
 };
 
-const logout = async (): Promise<void> => {
+const logout = async (): Promise<null> => {
     const response = await fetch(`${BACKEND_URL}/auth/logout`, {
         method: 'DELETE',
         credentials: 'include',
     });
     if (response.ok) {
-        await handleAPIError(response, 'Logout');
+        return null;
     }
+    return handleAPIError(response, 'Logout');
 };
 
 const getOffices = async (): Promise<Office[]> => {
