@@ -2,7 +2,7 @@ import {Column, Entity, ManyToOne, PrimaryGeneratedColumn} from "typeorm";
 import {OfficeDAO} from "./officeDAO";
 
 export enum StaffRole {
-    ADMIN = "admin",
+    ADMIN = "Admin",
     MPRO = "Municipal Public Relations Officer",
     MA = "Municipal Administrator",
     TOSM = "Technical Office Staff Member"

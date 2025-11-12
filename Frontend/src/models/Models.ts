@@ -66,18 +66,6 @@ export interface Office {
     category: string;
 }
 
-export const OfficeCategory: {[key: string]: string} = {
-    "Municipal Organization Office": "MOO",
-    "Water Supply Office": "WSO",
-    "Architectural Barriers Office": "ABO",
-    "Sewer System Office": "SSO",
-    "Public Lighting Office": "PLO",
-    "Waste Office": "WO",
-    "Road Signs and Traffic Lights Office": "RSTLO",
-    "Roads and Urban Furnishings Office": "RUFO",
-    "Public Green Areas and Playgrounds Office": "PGAPO",
-}
-
 export const ROLE_OFFICE_MAP = {
   ADMIN: ["Municipal Organization Office"],
   MPRO: ["Municipal Organization Office"],

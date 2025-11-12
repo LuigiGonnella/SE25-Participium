@@ -21,10 +21,6 @@ function NavComponent({loggedIn, user, handleLogout}: NavComponentProps) {
 
     const navigate = useNavigate();
 
-    let avatarDetails = user && `<strong>${user.name} ${user.surname}</strong>`;
-    if (isStaff(user))
-        avatarDetails += `<br/><em>${user.officeName}</em>`
-
     return (
         <>
             <Header type="slim" style={{position: 'sticky', top: 0, zIndex: 1000}}>
@@ -34,21 +30,22 @@ function NavComponent({loggedIn, user, handleLogout}: NavComponentProps) {
                     </HeaderBrand>
                     <div className="nav-mobile">
                         <nav className="d-flex flex-row justify-content-end">
-                            <a className="it-opener d-lg-none" data-bs-toggle="collapse" href="#menu1a" role="button"
-                               aria-expanded="false" aria-controls="menu4">
+                            <a className="it-opener d-lg-none" data-bs-toggle="collapse" data-bs-target="#menu1a" role="button"
+                               aria-expanded="false" aria-controls="menu1a">
                                 <span className="fs-5 fw-bold">Participium</span>
-                                <svg className="icon" aria-hidden="true">
-                                    <use href="/bootstrap-italia/dist/svg/sprites.svg#it-expand"></use>
-                                </svg>
+                                <Icon aria-hidden icon="it-expand" />
                             </a>
                             <LinkList className="collapse" id="menu1a">
+                                <LinkListItem inDropdown href="/" active={ window.location.pathname === '/' }>
+                                    Homepage
+                                </LinkListItem>
                                 <LinkListItem inDropdown href="/map" active={ window.location.pathname === '/map' }>
                                     Map
                                 </LinkListItem>
 
                             {(loggedIn && isStaff(user) && user.role === StaffRole.ADMIN) && (
                                 <LinkListItem inDropdown href="/municipality-registration" active={ window.location.pathname === '/municipality-registration' }>
-                                    Add staff
+                                    Staff registration
                                 </LinkListItem>
                             )}
                             </LinkList>
@@ -63,16 +60,18 @@ function NavComponent({loggedIn, user, handleLogout}: NavComponentProps) {
                                             <img src={user.profilePicture} alt="Avatar"/>
                                         : <span className="initials">{user.name.charAt(0).toUpperCase()}{user.surname.charAt(0).toUpperCase()}</span>}
                                     </AvatarIcon>
-                                    <span className="d-none d-lg-block text-white">
+                                    <span className="text-white">
                                         {user.username}
                                     </span>
                                 </div>
                                 <UncontrolledTooltip placement="bottom" target={"avatarRef"}>
-                                    {user.name} {user.surname}
+                                    <strong><small>{user.name} {user.surname}</small></strong>
                                     {isStaff(user) &&
                                         <>
-                                        <br/>
-                                        <i>{user.officeName}</i>
+                                            <br/>
+                                            <em><small>{user.role}</small></em>
+                                            <br/>
+                                            <em>({user.officeName})</em>
                                         </>
                                     }
                                 </UncontrolledTooltip>

@@ -5,6 +5,7 @@ import type { NewCitizen, NewStaff, Office } from "../models/Models.ts";
 import { ROLE_OFFICE_MAP, StaffRole } from '../models/Models.ts';
 import {APIError} from "../services/ErrorHandler.ts";
 import API from '../API/API.mts';
+import {Spinner} from "design-react-kit";
 
 interface RegistrationFormProps {
     handleRegistration?: (newCitizen: NewCitizen) => Promise<void>;
@@ -36,6 +37,7 @@ function RegistrationForm({ handleRegistration }: RegistrationFormProps) {
     const [isPending, setIsPending] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string>('');
     const [touched, setTouched] = useState<Partial<Record<keyof FormData, boolean>>>({});
+    const [isHidden, setIsHidden] = useState(true);
 
     const [formData, setFormData] = useState<FormData>({
         name: '',
@@ -117,7 +119,10 @@ function RegistrationForm({ handleRegistration }: RegistrationFormProps) {
         setIsPending(true);
         try {
             await handleRegistration?.(newCitizen);
-            navigate('/login');
+            setIsHidden(false);
+            setTimeout(() => {
+                navigate('/login');
+            }, 3000);
         } catch (err) {
             setErrorMessage('Error: ' + (err instanceof APIError ? err.details : err));
         } finally {
@@ -259,6 +264,16 @@ function RegistrationForm({ handleRegistration }: RegistrationFormProps) {
                 </Row>
             </Form>
             {errorMessage && <Alert variant='danger'>{errorMessage}</Alert>}
+            <Alert variant="success" hidden={isHidden}>
+                <Row>
+                    <Col className="col-auto">
+                        Registration successful! You'll be redirected to the login page.
+                    </Col>
+                    <Col>
+                        <Spinner active small></Spinner>
+                    </Col>
+                </Row>
+            </Alert>
             <Button form="registrationForm" color='primary' type='submit' disabled={isPending}>
                 Submit
             </Button>
@@ -309,22 +324,20 @@ function MunicipalityRegistrationForm({ handleStaffRegistration }: RegistrationF
     }
 
     useEffect(() => {
-        const loadOffices = async () => {
-            try {
-                const data = await API.getOffices();
-                setOffices(data);
-            } catch (err) {
+
+        API.getOffices()
+            .then(setOffices)
+            .catch((err) => {
                 console.error("Failed to fetch offices:", err);
-            }
-        };
-        loadOffices();
+            });
     }, []);
 
     useEffect(() => {
-        if (formData.role === "TOSM") {
+        if (formData.role in StaffRole) {
             setShowOfficeSelect(true);
+            setTouched((prev) => ({ ...prev, officeName: false }));
 
-            const allowed = ROLE_OFFICE_MAP["TOSM"];
+            const allowed = ROLE_OFFICE_MAP[formData.role as keyof typeof ROLE_OFFICE_MAP];
             if (allowed && offices.length > 0) {
                 const filtered = offices.filter((office) =>
                     allowed.some((abbr: string) =>
@@ -332,6 +345,9 @@ function MunicipalityRegistrationForm({ handleStaffRegistration }: RegistrationF
                     )
                 );
                 setFilteredOffices(filtered);
+                if (filtered.length === 1) {
+                    setFormData((prev) => ({ ...prev, officeName: filtered[0].name }));
+                }
             } else {
                 setFilteredOffices([]);
             }
@@ -440,7 +456,6 @@ function MunicipalityRegistrationForm({ handleStaffRegistration }: RegistrationF
                 role: '',
                 officeName: ''
             });
-            /* TODO
             setTouched({
                 name: false,
                 surname: false,
@@ -449,7 +464,7 @@ function MunicipalityRegistrationForm({ handleStaffRegistration }: RegistrationF
                 confirmPassword: false,
                 role: false,
                 officeName: false
-            });*/
+            });
             setInterval(() => {
                 setIsHidden(true);
             }, 5000);
@@ -459,22 +474,6 @@ function MunicipalityRegistrationForm({ handleStaffRegistration }: RegistrationF
             setIsPending(false);
         }
     };
-
-    /* TODO
-    useEffect(() => {
-
-        const filterOfficesByRole = (role: string, allOffices: Office[] = offices) => {
-            if (!role) return [];
-            const allowed = ROLE_OFFICE_MAP[role];
-            if (!allowed) return [];
-            return allOffices.filter(o => allowed.includes(OfficeCategory[o.category]));
-        };
-
-        API.getOffices().then((data) => {
-            setOffices(data);
-            setFilteredOffices(filterOfficesByRole(formData.role, data))
-        }).catch((err) => { console.log("Errore nel recupero degli uffici:", err) });
-    },[formData.role]);*/
 
     return (
         <>
@@ -584,11 +583,10 @@ function MunicipalityRegistrationForm({ handleStaffRegistration }: RegistrationF
                                         isInvalid={touched.officeName && errors.officeName}
                                         required
                                     >
-                                        <option disabled value="">
-                                            {filteredOffices.length === 0
-                                                ? "No offices available"
-                                                : "Select an office"}
-                                        </option>
+                                        {filteredOffices.length > 1 &&
+                                            <option disabled value="">
+                                                Select an office...
+                                        </option>}
                                         {filteredOffices.map((office) => (
                                             <option key={office.id} value={office.name}>
                                                 {office.name}
