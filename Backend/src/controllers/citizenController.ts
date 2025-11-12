@@ -1,7 +1,6 @@
 import type { Citizen as CitizenDTO } from "@models/dto/Citizen"
 import { CitizenRepository } from "@repositories/citizenRepository"
 import { mapCitizenDAOToDTO } from "@services/mapperService"
-import bcrypt from 'bcrypt';
 
 
 export const citizenRepository = new CitizenRepository();

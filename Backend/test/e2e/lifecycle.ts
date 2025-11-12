@@ -2,7 +2,6 @@ import { TestDataSource } from "../setup/test-datasource";
 import { CitizenDAO } from "@dao/citizenDAO";
 import { StaffDAO } from "@dao/staffDAO";
 import { CitizenRepository } from "@repositories/citizenRepository";
-import { StaffRepository } from "@repositories/staffRepository";
 import { AppDataSource } from "@database";
 import bcrypt from "bcrypt";
 

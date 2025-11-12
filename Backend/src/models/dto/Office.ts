@@ -1,4 +1,4 @@
-import { Staff, StaffFromJSON, StaffFromJSONTyped, StaffToJSON } from './Staff';
+import { Staff, StaffFromJSON, StaffToJSON } from './Staff';
 
 /**
  * 

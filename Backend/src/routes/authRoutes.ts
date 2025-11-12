@@ -1,7 +1,6 @@
 import {register, uploadProfilePicture, registerMunicipalityUser, login} from '@controllers/authController';
 import {CitizenToJSON} from '@models/dto/Citizen';
 import {Router} from "express";
-import passport from 'passport';
 import {isAuthenticated} from '@middlewares/authMiddleware';
 import { StaffToJSON } from '@models/dto/Staff';
 import { StaffRole } from '@models/dao/staffDAO';

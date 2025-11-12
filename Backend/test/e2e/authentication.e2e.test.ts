@@ -4,8 +4,6 @@ import { beforeAllE2e, afterAllE2e } from "@test/e2e/lifecycle";
 import { TestDataSource } from "../setup/test-datasource";
 import { CitizenDAO } from "@dao/citizenDAO";
 import bcrypt from "bcrypt";
-import path from "path";
-import fs from "fs";
 
 describe("Authentication API E2E Tests", () => {
     beforeAll(async () => {

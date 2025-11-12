@@ -1,5 +1,5 @@
 import { DataSource } from 'typeorm';
-import { Request, Response, NextFunction } from 'express';
+import { Response, NextFunction } from 'express';
 import { login } from '@controllers/authController';
 import { register } from '@controllers/authController';
 import { CitizenDAO } from '@dao/citizenDAO';

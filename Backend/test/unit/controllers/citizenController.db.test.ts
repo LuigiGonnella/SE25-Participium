@@ -1,7 +1,4 @@
-import { before } from "node:test";
-import { DataSource } from "typeorm";
 import { CitizenDAO } from "@dao/citizenDAO";
-import { Citizen } from "@models/dto/Citizen";
 import { CitizenRepository } from "@repositories/citizenRepository";
 import { initializeTestDataSource, closeTestDataSource, TestDataSource } from "../../setup/test-datasource";
 import { getAllCitizens, getCitizenByEmail, getCitizenById, getCitizenByUsername } from "@controllers/citizenController";
