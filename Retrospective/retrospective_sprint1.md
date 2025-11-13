@@ -86,41 +86,78 @@ sections:
       84.72%
 
 ```
------------------|---------|----------|---------|---------|-------------------
-File             |  Stmts  | Branch   | Funcs   |  Lines  | Uncovered Lines   
------------------|---------|----------|---------|---------|-------------------
-All files        |   95.03 |    85.18 |   96.15 |   95.71 |                   
- src             |     100 |      100 |     100 |     100 |                   
-  utils.ts       |     100 |      100 |     100 |     100 |                   
- ...repositories |   94.65 |     82.6 |      96 |   95.38 |                   
-  ...pository.ts |     100 |      100 |     100 |     100 |                   
-  ...pository.ts |     100 |      100 |     100 |     100 |                   
-  ...pository.ts |     100 |      100 |     100 |     100 |                   
-  ...pository.ts |     100 |      100 |     100 |     100 |                   
-  ...pository.ts |   84.09 |    66.66 |   85.71 |   86.04 | 71,106-125        
------------------|---------|----------|---------|---------|-------------------
+-----------------------|---------|----------|---------|---------|--------------------
+File                   | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s  
+-----------------------|---------|----------|---------|---------|--------------------
+All files              |   84.72 |    74.72 |   81.13 |   84.72 |                    
+ src                   |     100 |      100 |     100 |     100 |                    
+  utils.ts             |     100 |      100 |     100 |     100 |                    
+ src/controllers       |    73.4 |    61.53 |   71.42 |    73.4 |                    
+  authController.ts    |   64.15 |       60 |      50 |   64.15 | 17-25,34-40,86-104 
+  citizenController.ts |   85.71 |       50 |     100 |   85.71 | 16,24,32           
+  officeController.ts  |      85 |       75 |     100 |      85 | 28,40-41           
+ src/repositories      |   96.03 |    84.09 |   93.33 |   96.03 |                    
+  citizenRepository.ts |   95.23 |     87.5 |    87.5 |   95.23 | 57                 
+  officeRepository.ts  |   95.83 |    80.76 |    92.3 |   95.83 | 102,114            
+  staffRepository.ts   |   96.87 |       90 |     100 |   96.87 | 78                 
+ src/services          |   63.63 |       75 |   42.85 |   63.63 |                    
+  mapperService.ts     |   63.63 |       75 |   42.85 |   63.63 | 14,47,57-61        
+-----------------------|---------|----------|---------|---------|--------------------
 ```
 
-Test Suites: 5 passed, 5 total
-Tests:       92 passed, 92 total
+Test Suites: 8 passed, 8 total
+Tests:       86 passed, 86 total
 
 - E2E testing: 
   - Total hours estimated
 
-      1d 2h 30m
+      10h
   - Total hours spent
 
-      0
+      3h 30m
   - Nr of test cases
 
-      0
+      47
+
+```
+-----------------------|---------|----------|---------|---------|----------------------------
+File                   | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s          
+-----------------------|---------|----------|---------|---------|----------------------------
+All files              |   71.82 |    56.79 |   65.67 |   71.74 |                            
+ src                   |   97.05 |    83.33 |     100 |   97.05 |                            
+  app.ts               |     100 |      100 |     100 |     100 |                            
+  utils.ts             |      90 |       75 |     100 |      90 | 11                         
+ src/controllers       |   63.82 |    48.71 |   64.28 |   63.82 |                            
+  authController.ts    |   60.37 |       52 |      50 |   60.37 | 17-25,34-40,86-104,118,130 
+  citizenController.ts |     100 |      100 |     100 |     100 |                            
+  officeController.ts  |      35 |        0 |      50 |      35 | 7-28,40-41                 
+ src/middlewares       |   80.76 |    72.22 |     100 |      80 |                            
+  authMiddleware.ts    |   76.19 |    72.22 |     100 |      75 | 13,23,28,36-39             
+  errorMiddleware.ts   |     100 |      100 |     100 |     100 |                            
+ src/repositories      |   50.49 |    18.18 |      50 |   50.49 |                            
+  citizenRepository.ts |   95.23 |       75 |     100 |   95.23 | 46                         
+  officeRepository.ts  |   29.16 |     3.84 |   23.07 |   29.16 | 82-190                     
+  staffRepository.ts   |   53.12 |       10 |   44.44 |   53.12 | 41-46,63-97                
+ src/routes            |   88.37 |    95.23 |      90 |   88.37 |                            
+  authRoutes.ts        |   88.88 |    96.77 |   83.33 |   88.88 | 47-58,83                   
+  citizenRoutes.ts     |   85.29 |     90.9 |     100 |   85.29 | 13,28,43,53,58             
+  officeRoutes.ts      |     100 |      100 |     100 |     100 |                            
+ src/services          |   90.47 |    53.84 |      75 |   90.47 |                            
+  errorService.ts      |     100 |    44.44 |     100 |     100 | 9-19                       
+  mapperService.ts     |   81.81 |       75 |   71.42 |   81.81 | 57-61                      
+-----------------------|---------|----------|---------|---------|----------------------------
+
+Test Suites: 3 passed, 3 total
+Tests:       47 passed, 47 total
+
+```
 - Code review 
   - Total hours estimated 
 
-      0
+      11h
   - Total hours spent
 
-      0
+      6h 18m
   
 
 
@@ -128,21 +165,14 @@ Tests:       92 passed, 92 total
 
 - What did go wrong in the sprint?
 
-        We underestimated time in planning and spent more time on uncategorized tasks like the sprint planning and we waived test time.
+        
 
 - What caused your errors in estimation (if any)?
 
-        We divided the tasks and stories in internal groups and while performing the tasks simultaneously we didn't catch up with the other groups on time.
-
-        It was our first time working together and with Agile.
+        
 
 - What lessons did you learn (both positive and negative) in this sprint?
 
-        We understood how to work together under pressure. (Positive)
-
-        We agreed and made unanimous decisions. (Positive)
-
-        We learned that planning and communication are key elements in a group project. (Negative)
 
 
 - Which improvement goals set in the previous retrospective were you able to achieve? 
@@ -151,10 +181,6 @@ Tests:       92 passed, 92 total
 
 - Improvement goals for the next sprint and how to achieve them (technical tasks, team coordination, etc.)
 
-        Tasks -> We will make sure everyone participates in the setup tasks (defining entities, backend configuration, ...).
-
-        Planning -> We will try to spend planning time more efficiently.
 
 - One thing you are proud of as a Team!!
 
-        We are proud of doing a great presentation and provide a fully working software.
