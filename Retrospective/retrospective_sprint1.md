@@ -165,22 +165,26 @@ Tests:       47 passed, 47 total
 
 - What did go wrong in the sprint?
 
-        
+        We underestimated the implementation tasks and overestimated the tests. In the end we spent less time than estimated, not reaching the expected 8 hours per week.
 
 - What caused your errors in estimation (if any)?
 
-        
+        We overestimated the map, because nobody in the group ever implemented it, and the tests, thinking they would require more time.
 
 - What lessons did you learn (both positive and negative) in this sprint?
 
+        Positive: as a group, we're more efficient and experienced than we thought, so we can probably estimate a higher workload next time
+        Negative: communication should be improved, as well as tasks estimation and planning
 
-
-- Which improvement goals set in the previous retrospective were you able to achieve? 
+- Which improvement goals set in the previous retrospective were you able to achieve?
   
 - Which ones you were not able to achieve? Why?
 
 - Improvement goals for the next sprint and how to achieve them (technical tasks, team coordination, etc.)
 
+        Sprint Planning: we should be more efficient when dividing tasks, trying to balance the workload for each member.
+        Communication: making sure to inform the group about breaking changes
 
 - One thing you are proud of as a Team!!
 
+        We could fully complete all the estimated stories before the deadline, without rushing in the last minute.
