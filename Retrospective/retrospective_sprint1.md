@@ -22,7 +22,7 @@ sections:
 
 - Nr of hours planned vs. spent (as a team)
 
-        * hours * minutes vs * hours * minutes
+        96 hours 22 minutes vs 75 hours 56 minutes
 
 **Remember**a story is done ONLY if it fits the Definition of Done:
  
@@ -44,7 +44,7 @@ sections:
 
 |      Story      | # Tasks | Points | Hours est. | Hours actual |
 | :-------------: | :-----: | :----: | :--------: | :----------: |
-| _Uncategorized_ |    8    |   -    | 37 h 22 m  |  30 h 17 m   |
+| _Uncategorized_ |    8    |   -    | 37 h 22 m  |  30 h 27 m   |
 | _PT01_          |    7    |   3    | 24 h       |  23 h        |
 | _PT02_          |    5    |   3    | 14 h       |  7 h 6m      |
 | _PT03_          |    5    |   2    | 9 h        |  9 h 28 m    |
@@ -56,16 +56,16 @@ sections:
 
 |            | Mean | StDev |
 | ---------- | :--: | :---: |
-| Estimation | *    |  *    |
-| Actual     | *    |  *    |
+| Estimation | 207  |  141  |
+| Actual     | 163  |  169  |
 
 - Total estimation error ratio: sum of total hours spent / sum of total hours effort - 1
 
-    $$\frac{\sum_i spent_{task_i}}{\sum_i estimation_{task_i}} - 1 = -2\% $$
+    $$\frac{\sum_i spent_{task_i}}{\sum_i estimation_{task_i}} - 1 = -21\% $$
     
 - Absolute relative task estimation error: sum( abs( spent-task-i / estimation-task-i - 1))/n
 
-    $$\frac{1}{n}\sum_i^n \left| \frac{spent_{task_i}}{estimation_task_i}-1 \right| = 29\% $$
+    $$\frac{1}{n}\sum_i^n \left| \frac{spent_{task_i}}{estimation_task_i}-1 \right| = 41\% $$
   
 ## QUALITY MEASURES 
 
@@ -169,7 +169,7 @@ Tests:       47 passed, 47 total
 
 - What caused your errors in estimation (if any)?
 
-        We overestimated the map, because nobody in the group ever implemented it, and the tests, thinking they would require more time.
+        We overestimated the map task (story 4), because nobody in the group ever implemented it, and the tests, thinking they would require more time.
 
 - What lessons did you learn (both positive and negative) in this sprint?
 
@@ -187,4 +187,4 @@ Tests:       47 passed, 47 total
 
 - One thing you are proud of as a Team!!
 
-        We could fully complete all the estimated stories before the deadline, without rushing in the last minute.
+        We managed to fully complete all the estimated stories before the deadline, without rushing in the last minute.
