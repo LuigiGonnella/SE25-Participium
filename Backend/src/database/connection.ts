@@ -2,6 +2,8 @@ import "reflect-metadata";
 import { DataSource } from "typeorm";
 import { CONFIG } from "@config";
 import { logError, logInfo } from "@services/loggingService";
+import {StaffRepository} from "@repositories/staffRepository";
+import { OfficeRepository } from "@repositories/officeRepository";
 
 export const AppDataSource = new DataSource({
     type: CONFIG.DB_TYPE as any,
@@ -18,6 +20,9 @@ export const AppDataSource = new DataSource({
 export async function initializeDatabase() {
     await AppDataSource.initialize();
     logInfo("Successfully connected to DB");
+
+    await (new OfficeRepository()).createDefaultOfficesIfNotExist();
+    await (new StaffRepository()).createDefaultAdminIfNotExists();
 }
 
 export async function closeDatabase() {

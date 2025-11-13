@@ -1,15 +1,15 @@
-import {Citizen} from "@models/dto/Citizen"
 import { CitizenRepository } from "@repositories/citizenRepository";
 import bcrypt from 'bcrypt';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
-import {createTokenDTO, mapCitizenDAOToDTO} from "@services/mapperService";
-import {Token as TokenDTO} from "@dto/Token";
-import {UnauthorizedError} from "@errors/UnauthorizedError";
-import {generateCitizenToken, generateStaffToken} from "@services/authService";
-import {Staff} from "@dto/Staff";
-import {StaffRepository} from "@repositories/staffRepository";
+import {mapCitizenDAOToDTO, mapStaffDAOToDTO} from "@services/mapperService";
+import { StaffRole } from '@models/dao/staffDAO';
+import { StaffRepository } from "@repositories/staffRepository";
+import {NotFoundError} from "@errors/NotFoundError";
+import { Request, Response, NextFunction } from 'express';
+import passport from 'passport';
+import {BadRequestError} from "@errors/BadRequestError";
 
 // storage configuration
 const storage = multer.diskStorage({
@@ -41,8 +41,6 @@ export const uploadProfilePicture = multer({
         }
     }
 });
-
-
 
 export async function register(
     email: string,
@@ -77,26 +75,62 @@ export async function register(
 
 }
 
-export async function getToken(userDto: {username: string, password: string}, type: 'CITIZEN' | 'STAFF'): Promise<TokenDTO> {
-    if(type === 'CITIZEN') {
-        const citizenRepo = new CitizenRepository();
-        const citizenDao = await citizenRepo.getCitizenByUsername(userDto.username) || await citizenRepo.getCitizenByEmail(userDto.username);
-        if (citizenDao === null || !await bcrypt.compare(userDto.password, citizenDao.password)) {
-            throw new UnauthorizedError("Invalid username/password");
-        }
-        return createTokenDTO(
-            generateCitizenToken(citizenDao as Citizen)
-        );
-    } else if (type === 'STAFF') {
-        const staffRepo = new StaffRepository();
-        const staffDao = await staffRepo.getStaffByUsername(userDto.username);
-        if (staffDao === null || !await bcrypt.compare(userDto.password, staffDao.password)) {
-            throw new UnauthorizedError("Invalid username/password");
-        }
-        return createTokenDTO(
-            generateStaffToken(staffDao as Staff)
-        );
-    } else {
-        throw new UnauthorizedError("Invalid user type");
+export async function registerMunicipalityUser(
+    username: string,
+    name: string,
+    surname: string,
+    password: string,
+    role: string,
+    officeName: string
+) {
+    const staffRepo = new StaffRepository();
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    if (!(role in StaffRole)) {
+        throw new NotFoundError(`Invalid staff role: ${role}`);
     }
+
+    const validRole = StaffRole[role as keyof typeof StaffRole];
+
+    const staffDAO = await staffRepo.createStaff(
+        username,
+        name,
+        surname,
+        hashedPassword,
+        validRole,
+        officeName,
+    );
+
+    return mapStaffDAOToDTO(staffDAO);
+}
+
+export async function login(req: Request, res: Response, next: NextFunction) {
+    const rawType = req.query.type;
+
+    if (rawType !== 'CITIZEN' && rawType !== 'STAFF') {
+        throw new BadRequestError('Invalid or missing query parameter');
+    }
+
+    const strategy = rawType === 'CITIZEN' ? 'citizen-local' : 'staff-local';
+
+    passport.authenticate(strategy, (err: any, user: any, info: any) => {
+        if (err) {
+            return next(err);
+        }
+
+        if (!user) {
+            return res.status(401).json({
+                message: info?.message || 'Authentication failed',
+                error: 'Invalid credentials'
+            });
+        }
+
+        req.login(user, (err) => {
+            if (err) {
+                return next(err);
+            }
+
+            return res.status(200).json(user);
+        });
+    })(req, res, next);
 }

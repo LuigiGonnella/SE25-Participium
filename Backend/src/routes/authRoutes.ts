@@ -1,20 +1,39 @@
-import {uploadProfilePicture, register, getToken} from '@controllers/authController';
-import { CitizenToJSON } from '@models/dto/Citizen';
+import {register, uploadProfilePicture, registerMunicipalityUser, login} from '@controllers/authController';
+import {CitizenToJSON} from '@models/dto/Citizen';
 import {Router} from "express";
-import {authenticateUser} from "@middlewares/authMiddleware";
-import {getLoggedUser} from "@services/authService";
+import {isAuthenticated} from '@middlewares/authMiddleware';
+import { StaffToJSON } from '@models/dto/Staff';
+import { StaffRole } from '@models/dao/staffDAO';
 
 const router = Router();
 
 router.post('/register', uploadProfilePicture.single('profilePicture'), async (req, res, next) => {
     try {
+        // Validate required fields
+        const { email, username, name, surname, password } = req.body;
+        
+        if (!email || !email.trim() || !email.includes('@')) {
+            return res.status(400).json({ error: 'Invalid or missing email' });
+        }
+        if (!username || !username.trim()) {
+            return res.status(400).json({ error: 'Invalid or missing username' });
+        }
+        if (!name || !name.trim()) {
+            return res.status(400).json({ error: 'Invalid or missing name' });
+        }
+        if (!surname || !surname.trim()) {
+            return res.status(400).json({ error: 'Invalid or missing surname' });
+        }
+        if (!password || !password.trim()) {
+            return res.status(400).json({ error: 'Invalid or missing password' });
+        }
         const citizen = await register(
-            req.body.email,
-            req.body.username,
-            req.body.name,
-            req.body.surname,
-            req.body.password,
-            req.body.receive_emails === 'true', // from string to boolean
+            email,
+            username,
+            name,
+            surname,
+            password,
+            req.body.receive_emails,
             req.file, // multer puts file in req.file
             req.body.telegram_username
         );
@@ -24,25 +43,51 @@ router.post('/register', uploadProfilePicture.single('profilePicture'), async (r
     }
 });
 
-router.post('/sessions', async (req, res, next) => {
-    try {
-        const rawType = req.query.type;
-        if (rawType !== 'CITIZEN' && rawType !== 'STAFF') {
-            return res.status(400).json({ message: 'Invalid or missing query parameter: type' });
-        }
-        const type = rawType as 'CITIZEN' | 'STAFF';
-        res.status(200).json(await getToken(req.body, type));
+router.post('/register-municipality', isAuthenticated([StaffRole.ADMIN]), async (req, res, next) => {
+    try { //JSON request
+        const staff = await registerMunicipalityUser(
+            req.body.username,
+            req.body.name,
+            req.body.surname,
+            req.body.password,
+            req.body.role,
+            req.body.officeName 
+        );
+        res.status(201).json(StaffToJSON(staff)); // does not expose password
     } catch (error) {
         next(error);
     }
 });
 
-router.get('/sessions/current', authenticateUser([]), async (req, res, next) => {
+router.post('/login', async (req, res, next) => {
     try {
-        res.status(200).json(await getLoggedUser(req.headers.authorization));
+        // Validate required fields
+        const { username, password } = req.body;
+        
+        if (!username || !username.trim()) {
+            return res.status(400).json({ error: 'Invalid or missing username' });
+        }
+        if (!password || !password.trim()) {
+            return res.status(400).json({ error: 'Invalid or missing password' });
+        }
+
+        await login(req, res, next);
     } catch (error) {
         next(error);
     }
-})
+});
+
+router.delete('/logout', (req, res) => {
+    req.logout((err) => {
+        if (err) {
+            return res.status(500).json({ message: 'Logout failed' });
+        }
+        res.status(204).send();
+    });
+});
+
+router.get('/me', isAuthenticated(['CITIZEN', 'STAFF']), (req, res) => {
+    res.status(200).json(req.user);
+});
 
 export default router;

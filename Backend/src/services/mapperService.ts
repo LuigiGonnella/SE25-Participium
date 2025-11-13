@@ -1,5 +1,4 @@
 import { ErrorDTO } from "@models/dto/ErrorDTO";
-import { Token as TokenDTO } from "@models/dto/Token";
 import type { Citizen as CitizenDTO } from "@models/dto/Citizen";
 import type { Staff as StaffDTO } from "@models/dto/Staff";
 import type { Office as OfficeDTO } from "@models/dto/Office";
@@ -19,12 +18,6 @@ export function createErrorDTO(
   }) as ErrorDTO;
 }
 
-export function createTokenDTO(token: string): TokenDTO {
-  return removeNullAttributes({
-    token: token
-  }) as TokenDTO;
-}
-
 function removeNullAttributes<T extends object>(dto: T): Partial<T> {
   return Object.fromEntries(
     Object.entries(dto).filter(
@@ -40,7 +33,6 @@ function removeNullAttributes<T extends object>(dto: T): Partial<T> {
 
 export function mapCitizenDAOToDTO(citizenDAO: CitizenDAO): CitizenDTO {
   return removeNullAttributes({
-    id: citizenDAO.id,
     email: citizenDAO.email,
     username: citizenDAO.username,
     name: citizenDAO.name,
@@ -53,18 +45,16 @@ export function mapCitizenDAOToDTO(citizenDAO: CitizenDAO): CitizenDTO {
 
 export function mapStaffDAOToDTO(staffDAO: StaffDAO): StaffDTO {
   return removeNullAttributes({
-    id: staffDAO.id,
     username: staffDAO.username,
     name: staffDAO.name,
     surname: staffDAO.surname,
     role: staffDAO.role,
-    officeId: staffDAO.office.id
+    officeName: staffDAO.office.name
   }) as StaffDTO;
 }
 
 export function mapOfficeDAOToDTO(officeDAO: OfficeDAO): OfficeDTO {
   return removeNullAttributes({
-    id: officeDAO.id,
     name: officeDAO.name,
     description: officeDAO.description,
     category: officeDAO.category,

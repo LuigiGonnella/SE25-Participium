@@ -1,11 +1,11 @@
 import {Column, Entity, ManyToOne, PrimaryGeneratedColumn} from "typeorm";
 import {OfficeDAO} from "./officeDAO";
 
-enum StaffRole {
-    ADMIN = "admin",
-    MPRO = "municipal public relations officer",
-    MA = "municipal administrator",
-    TOSM = "technical office staff member"
+export enum StaffRole {
+    ADMIN = "Admin",
+    MPRO = "Municipal Public Relations Officer",
+    MA = "Municipal Administrator",
+    TOSM = "Technical Office Staff Member"
 }
 
 @Entity("staff")
@@ -26,7 +26,7 @@ export class StaffDAO {
     @Column({ nullable: false })
     password: string;
 
-    @Column({ nullable: true })
+    @Column({ type: "simple-enum", enum: StaffRole, nullable: false })
     role: StaffRole;
 
     @ManyToOne(() => OfficeDAO, (office) => office.members, {onDelete: "SET NULL", nullable: true})

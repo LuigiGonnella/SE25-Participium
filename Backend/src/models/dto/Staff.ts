@@ -3,12 +3,7 @@
  * @export
  * @enum {string}
  */
-export enum StaffRole {
-    ADMIN = "admin",
-    MPRO = "municipal public relations officer",
-    MA = "municipal administrator",
-    TOSM = "technical office staff member"
-}
+import {StaffRole} from "@dao/staffDAO";
 
 /**
  * 
@@ -45,13 +40,13 @@ export interface Staff {
      * @type {StaffRole}
      * @memberof Staff
      */
-    role?: StaffRole;
+    role: StaffRole;
     /**
-     * Office ID this staff member belongs to (if any)
-     * @type {number}
+     * Office Name this staff member belongs to
+     * @type {string}
      * @memberof Staff
      */
-    officeId?: number;
+    officeName: string;
 }
 
 /**
@@ -62,6 +57,8 @@ export function instanceOfStaff(value: object): value is Staff {
     if (!('username' in value) || value['username'] === undefined) return false;
     if (!('name' in value) || value['name'] === undefined) return false;
     if (!('surname' in value) || value['surname'] === undefined) return false;
+    if (!('role' in value) || value['role'] === undefined) return false;
+    if (!('officeName' in value) || value['officeName'] === undefined) return false;
     return true;
 }
 
@@ -79,7 +76,7 @@ export function StaffFromJSONTyped(json: any, ignoreDiscriminator: boolean): Sta
         'name': json['name'],
         'surname': json['surname'],
         'role': json['role'] == null ? undefined : json['role'],
-        'officeId': json['officeId'] == null ? undefined : json['officeId'],
+        'officeName': json['officeName'] == null ? undefined : json['officeName'],
     };
 }
 
@@ -98,6 +95,6 @@ export function StaffToJSONTyped(value?: Staff | null, ignoreDiscriminator: bool
         'name': value['name'],
         'surname': value['surname'],
         'role': value['role'],
-        'officeId': value['officeId'],
+        'officeName': value['officeName'],
     };
 }
