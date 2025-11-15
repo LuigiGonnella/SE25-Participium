@@ -3,7 +3,7 @@ import { CitizenDAO } from "./citizenDAO";
 import { OfficeCategory } from "./officeDAO";
 import { StaffDAO } from "./staffDAO";
 
-enum Status {
+export enum Status {
     PENDING = "Pending",
     ASSIGNED = "Assigned",
     IN_PROGRESS = "In Progress",

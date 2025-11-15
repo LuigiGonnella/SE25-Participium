@@ -2,9 +2,12 @@ import { ErrorDTO } from "@models/dto/ErrorDTO";
 import type { Citizen as CitizenDTO } from "@models/dto/Citizen";
 import type { Staff as StaffDTO } from "@models/dto/Staff";
 import type { Office as OfficeDTO } from "@models/dto/Office";
+import type { Report as ReportDTO } from "@models/dto/Report";
 import { CitizenDAO } from "@models/dao/citizenDAO";
 import {StaffDAO} from "@dao/staffDAO";
 import {OfficeDAO} from "@dao/officeDAO";
+import { ReportDAO } from "@models/dao/reportDAO";
+import { report } from "process";
 
 export function createErrorDTO(
   code: number,
@@ -60,4 +63,21 @@ export function mapOfficeDAOToDTO(officeDAO: OfficeDAO): OfficeDTO {
     category: officeDAO.category,
     members: officeDAO.members?.map(member => mapStaffDAOToDTO(member))
   }) as OfficeDTO;
+}
+
+//REPORT DTO
+
+export function mapReportDAOToDTO(reportDAO: ReportDAO): ReportDTO {
+  return removeNullAttributes({
+    id: reportDAO.id,
+    citizenUsername: reportDAO.anonymous ? undefined : reportDAO.citizen.username,
+    timestamp: reportDAO.timestamp,
+    status: reportDAO.status,
+    title: reportDAO.title,
+    description: reportDAO.description,
+    category: reportDAO.category,
+    coordinates: [reportDAO.latitude, reportDAO.longitude],
+    photos: [reportDAO.photo1, reportDAO.photo2, reportDAO.photo3].filter(photo => photo !== undefined),
+    comment: reportDAO.comment
+  }) as ReportDTO;
 }
