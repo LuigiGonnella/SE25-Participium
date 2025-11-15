@@ -1,6 +1,7 @@
 import { Column, Entity, PrimaryGeneratedColumn, ManyToOne } from "typeorm";
 import { CitizenDAO } from "./citizenDAO";
 import { OfficeCategory } from "./officeDAO";
+import { StaffDAO } from "./staffDAO";
 
 enum Status {
     PENDING = "Pending",
@@ -55,5 +56,8 @@ export class ReportDAO {
 
     @Column({ nullable: true, type: "text" })
     comment?: string;
+
+    @ManyToOne(() => StaffDAO, { nullable: true })
+    assignedStaff?: StaffDAO;
 
 }
