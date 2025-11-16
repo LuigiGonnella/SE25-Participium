@@ -7,7 +7,6 @@ import { CitizenDAO } from "@models/dao/citizenDAO";
 import {StaffDAO} from "@dao/staffDAO";
 import {OfficeDAO} from "@dao/officeDAO";
 import { ReportDAO } from "@models/dao/reportDAO";
-import { report } from "process";
 
 export function createErrorDTO(
   code: number,
