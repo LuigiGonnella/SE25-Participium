@@ -24,7 +24,7 @@ export class ReportDAO {
     @Column( "datetime", { nullable: false, default: () => "CURRENT_TIMESTAMP" })
     timestamp?: Date;
 
-    @Column({ type: "simple-enum", enum: Status, nullable: false })
+    @Column({ type: "simple-enum", enum: Status, nullable: false, default: Status.PENDING })
     status: Status;
 
     @Column({ nullable: false })
@@ -33,7 +33,7 @@ export class ReportDAO {
     @Column({ nullable: false })
     description: string;
 
-    @Column({ type: "simple-enum", enum: OfficeCategory, unique: true, nullable: false })
+    @Column({ type: "simple-enum", enum: OfficeCategory, nullable: false })
     category: OfficeCategory;
 
     @Column({ nullable: false, type: "double" })
