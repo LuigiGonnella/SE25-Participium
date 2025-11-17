@@ -1,4 +1,4 @@
-import {ReportRepository} from "@repositories/reportRepository";
+import {ReportFilters, ReportRepository} from "@repositories/reportRepository";
 import {CitizenRepository} from "@repositories/citizenRepository";
 import {NotFoundError} from "@errors/NotFoundError";
 import {BadRequestError} from "@errors/BadRequestError";
@@ -6,6 +6,8 @@ import {ReportDAO} from "@dao/reportDAO";
 import multer from "multer";
 import fs from "fs";
 import path from "path";
+import { mapReportDAOToDTO } from "@services/mapperService";
+import { Report } from "@models/dto/Report";
 
 const repo = new ReportRepository();
 const citizenRepo = new CitizenRepository();
@@ -86,4 +88,9 @@ export async function createReport(body: any, citizen: string, photos: Express.M
         photo2,
         photo3
     );
+}
+
+export async function getReports(filters?: ReportFilters): Promise<Report[]> {
+    const reportDAOs = await repo.getReports(filters);
+    return reportDAOs.map(mapReportDAOToDTO);
 }
