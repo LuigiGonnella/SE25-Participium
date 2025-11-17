@@ -1,8 +1,21 @@
-import {useEffect} from "react";
-import L, {type LatLngExpression, type LeafletMouseEvent} from "leaflet";
+import {useEffect, useState} from "react";
+import L, {LatLng, type LatLngExpression, type LeafletMouseEvent} from "leaflet";
 import "leaflet/dist/leaflet.css";
+import {Button, Col, Row, Spinner} from "design-react-kit";
+import ReportForm from "./ReportForm.tsx";
+import {isCitizen, type User} from "../models/Models.ts";
 
-export default function TurinMaskedMap() {
+interface MapProps {
+    isLoggedIn: boolean;
+    user?: User;
+}
+
+export default function TurinMaskedMap({isLoggedIn, user}: MapProps) {
+    const [isLoaded, setIsLoaded] = useState<boolean>(false);
+    const [newReportMode, setNewReportMode] = useState<boolean>(false);
+    const [mapInstance, setMapInstance] = useState<L.Map | null>(null);
+    const [selectedCoordinates, setSelectedCoordinates] = useState<LatLng | null>(null);
+    const [streetName, setStreetName] = useState<string>("");
 
     function pointInPolygon(point: L.Point, polygon: L.Point[]): boolean {
         let inside = false;
@@ -23,6 +36,8 @@ export default function TurinMaskedMap() {
             minZoom: 11,
             maxZoom: 18,
         }).setView([45.0703, 7.6869], 12);
+
+        setMapInstance(map);
 
         // --- Base tiles ---
         L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -110,6 +125,7 @@ export default function TurinMaskedMap() {
 
                             if (pointInPolygon(point, polyPoints)) {
                                 inside = true;
+                                setSelectedCoordinates(latlng);
                                 break;
                             }
                         }
@@ -138,10 +154,13 @@ export default function TurinMaskedMap() {
                             .addTo(map)
                             .bindPopup(`<b>${street}</b>`)
                             .openPopup();
+
+                        setStreetName(street);
                     } catch (error) {
                         console.error("Reverse geocoding failed:", error);
                     }
                 });
+                setIsLoaded(true);
             })
             .catch((err) => console.error("Failed to load Turin boundary:", err));
 
@@ -151,5 +170,56 @@ export default function TurinMaskedMap() {
         };
     }, []);
 
-    return <div id="map" className="d-flex flex-grow-1"/>;
+    useEffect(() => {
+        if (mapInstance) {
+            setTimeout(() => {
+                mapInstance.invalidateSize();
+            }, 100);
+        }
+    }, [newReportMode, mapInstance]);
+
+    const changeMode = () => {
+        setNewReportMode((prev) => !prev);
+    }
+
+    return (
+        <Row className="d-flex flex-grow-1 position-relative vw-100 g-0">
+            {!isLoaded && (
+                <div
+                    className="position-absolute top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center"
+                    style={{
+                        zIndex: 2000,
+                        backgroundColor: 'rgba(255, 255, 255, 0.9)'
+                    }}
+                >
+                    <Spinner active />
+                </div>
+            )}
+            <Col className={"d-flex flex-column justify-content-end" + (newReportMode ? "col-12 col-lg-7" : "col-12")} style={{pointerEvents: isLoaded ? 'auto' : 'none'}}>
+                <div id="map" className="d-flex flex-grow-1"/>
+                {!newReportMode && isLoggedIn && isCitizen(user) && selectedCoordinates && (
+                    <Button
+                        className="btn-primary rounded-5 position-absolute bottom-0 start-50 translate-middle-x mb-3"
+                        style={{zIndex: 1000}}
+                        onClick={changeMode}
+                    >
+                        <i className="bi bi-plus-lg">&nbsp;</i>
+                        New Report
+                    </Button>
+                )}
+            </Col>
+            {newReportMode && (
+                <Col className="col-12 col-lg-5 p-0 position-absolute position-lg-relative h-100"
+                     style={{
+                         zIndex: 1001,
+                         top: 0,
+                         right: 0,
+                         backgroundColor: 'white'
+                     }}>
+                    <ReportForm coordinates={selectedCoordinates} street={streetName} toggleReportView={changeMode}/>
+                </Col>
+            )}
+        </Row>
+    );
+
 }

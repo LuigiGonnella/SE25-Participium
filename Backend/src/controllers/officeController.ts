@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { OfficeRepository } from "@repositories/officeRepository";
 import AppError from "@models/errors/AppError";
+import {BadRequestError} from "@errors/BadRequestError";
 
 export class OfficeController {
   static async createOffice(req: Request, res: Response) {
@@ -8,7 +9,7 @@ export class OfficeController {
       const { name, description, category } = req.body;
 
       if (!name || !category) {
-        throw new AppError("Name and category are required", 400);
+        throw new BadRequestError("Name and category are required");
       }
 
       const officeRepo = new OfficeRepository();

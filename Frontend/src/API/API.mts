@@ -1,4 +1,4 @@
-import type {Citizen, Staff, Credentials, NewCitizen, NewStaff, Office, User} from "../models/Models.ts";
+import type {Citizen, Staff, Credentials, NewCitizen, NewStaff, Office, User, NewReport, Report} from "../models/Models.ts";
 import {handleAPIError} from "../services/ErrorHandler.ts";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:8080/api/v1";
@@ -94,5 +94,52 @@ const getOffices = async (): Promise<Office[]> => {
     return handleAPIError(response, 'Get Offices');
 };
 
-const API = { login, register, getUserInfo, logout, municipalityRegister, getOffices };
+const createReport = async (newReport: NewReport): Promise<Report> => {
+    if (!newReport.title || !newReport.description || !newReport.category ||
+        newReport.latitude === undefined || newReport.longitude === undefined) {
+        return handleAPIError(
+            new Response(null, { status: 400 }),
+            'Create Report: Missing required fields'
+        );
+    }
+
+    if (!newReport.photos || newReport.photos.length === 0) {
+        return handleAPIError(
+            new Response(null, { status: 400 }),
+            'Create Report: At least one photo is required'
+        );
+    }
+
+    if (newReport.photos.length > 3) {
+        return handleAPIError(
+            new Response(null, { status: 400 }),
+            'Create Report: Maximum 3 photos allowed'
+        );
+    }
+
+    const formData = new FormData();
+    formData.append('title', newReport.title);
+    formData.append('description', newReport.description);
+    formData.append('category', newReport.category);
+    formData.append('latitude', newReport.latitude.toString());
+    formData.append('longitude', newReport.longitude.toString());
+    formData.append('anonymous', newReport.anonymous.toString());
+
+    newReport.photos.forEach((photo) => {
+        formData.append('photos', photo);
+    });
+
+    const response = await fetch(`${BACKEND_URL}/reports`, {
+        method: 'POST',
+        credentials: 'include',
+        body: formData,
+    });
+
+    if (response.ok) {
+        return await response.json();
+    }
+    return handleAPIError(response, 'Create Report');
+};
+
+const API = { login, register, getUserInfo, logout, municipalityRegister, getOffices, createReport };
 export default API;
