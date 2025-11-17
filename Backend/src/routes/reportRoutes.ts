@@ -3,7 +3,6 @@ import {isAuthenticated} from "@middlewares/authMiddleware";
 import {mapReportDAOToDTO} from "@services/mapperService";
 import {createReport, uploadReportPictures, getReports} from "@controllers/reportController";
 import {Citizen} from "@dto/Citizen";
-import { Report, ReportToJSON } from "@models/dto/Report";
 import { ReportFilters } from "@repositories/reportRepository";
 import { BadRequestError } from "@errors/BadRequestError";
 import { Status } from "@models/dao/reportDAO";
@@ -38,7 +37,7 @@ router.get('/', isAuthenticated(['STAFF']), async (req, res, next) => {
         }
 
         if (title) {
-            filters.title = String(title).trim();
+            filters.title = String(title).trim().replace(/_/g, ' ');
         }
 
         if (staff_username) {
@@ -71,18 +70,28 @@ router.get('/', isAuthenticated(['STAFF']), async (req, res, next) => {
 
         if (status) {
             const statusValue = String(status);
-            if (!Object.values(Status).includes(statusValue as Status)) {
+            
+            const validStatus = Object.keys(Status)
+                .filter(key => isNaN(Number(key)))
+                .find(key => key.toUpperCase() === statusValue.toUpperCase());
+           
+            if (!validStatus) {
                 throw new BadRequestError('Invalid status.');
             }
-            filters.status = statusValue as Status;
+            filters.status = Status[validStatus as keyof typeof Status];
         }
 
         if (category) {
             const categoryValue = String(category);
-            if (!Object.values(OfficeCategory).includes(categoryValue as OfficeCategory)) {
+
+            const validCategory = Object.keys(OfficeCategory)
+                .filter(key => isNaN(Number(key)))
+                .find(key => key.toUpperCase() === categoryValue.toUpperCase());
+           
+            if (!validCategory) {
                 throw new BadRequestError('Invalid category.');
             }
-            filters.category = categoryValue as OfficeCategory;
+            filters.category = OfficeCategory[validCategory as keyof typeof OfficeCategory];
         }
 
         const reports = await getReports(filters);
