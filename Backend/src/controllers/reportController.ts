@@ -102,6 +102,14 @@ export async function updateReport(reportId: number,
                                     updatedCategory?: OfficeCategory,
                                     assignedStaffUsername?: string
                                 ): Promise<Report> {
+                                     if (
+    (updatedStatus === Status.REJECTED || updatedStatus === Status.RESOLVED) &&
+    (!comment || !comment.trim())
+  ) {
+    throw new BadRequestError(
+      "A comment is required when rejecting or resolving a report."
+    );
+  }
     const updatedReportDAO = await repo.updateReport(reportId, updatedStatus, comment, updatedCategory, assignedStaffUsername);
     return mapReportDAOToDTO(updatedReportDAO);
 }

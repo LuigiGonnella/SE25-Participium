@@ -104,8 +104,8 @@ router.get('/', isAuthenticated(['STAFF']), async (req, res, next) => {
     }
 });
 
-// PATCH MPRO: changing category and status reports
-router.patch('/:reportId', isAuthenticated([StaffRole.MPRO]), async (req, res, next) => {
+// PATCH MPRO: change status, category and (optionally) assigned staff
+router.patch('/:reportId/manage', isAuthenticated([StaffRole.MPRO]), async (req, res, next) => {
     try {
 
         const reportId = parseInt(req.params.reportId);
@@ -158,56 +158,60 @@ router.patch('/:reportId', isAuthenticated([StaffRole.MPRO]), async (req, res, n
 });
 
 // PATCH TOSM: self assignment of reports
-router.patch('/:reportId', isAuthenticated([StaffRole.TOSM]), async (req, res, next) => {
+router.patch(
+  "/:reportId/work",
+  isAuthenticated([StaffRole.TOSM]),
+  async (req, res, next) => {
     try {
+      const reportId = parseInt(req.params.reportId);
+      if (isNaN(reportId)) {
+        throw new BadRequestError("Invalid reportId.");
+      }
 
-        const reportId = parseInt(req.params.reportId);
-        if (isNaN(reportId)) {
-            throw new BadRequestError('Invalid reportId.');
+      const { status, comment, category, staff } = req.body;
+
+      let updatedStatus: Status;
+
+      if (category) {
+        throw new BadRequestError(
+          "Technical Office Staff Members cannot change the report category."
+        );
+      }
+
+      if (staff) {
+        throw new BadRequestError(
+          "Technical Office Staff Members cannot assign the report to another staff member."
+        );
+      }
+
+      if (status) {
+        const statusValue = String(status);
+        const validStatus = Object.keys(Status)
+          .filter((key) => isNaN(Number(key)))
+          .find((key) => key.toUpperCase() === statusValue.toUpperCase());
+
+        if (!validStatus) {
+          throw new BadRequestError("Invalid status.");
         }
+        updatedStatus = Status[validStatus as keyof typeof Status];
+      } else {
+        throw new BadRequestError("Status is required.");
+      }
 
-        const { status, comment, category, staff } = req.body;
+      const assignedStaffUsername = String((req.user as any).username).trim();
 
-        let updatedStatus: Status;
-        let updatedCategory: OfficeCategory | undefined;
-        let assignedStaffUsername: string | undefined;
+      const report = await updateReport(
+        reportId,
+        updatedStatus,
+        comment,
+        undefined,
+        assignedStaffUsername
+      );
 
-        if (status) {
-            const statusValue = String(status);           
-            const validStatus = Object.keys(Status)
-                .filter(key => isNaN(Number(key)))
-                .find(key => key.toUpperCase() === statusValue.toUpperCase());
-           
-            if (!validStatus) {
-                throw new BadRequestError('Invalid status.');
-            }
-            updatedStatus = Status[validStatus as keyof typeof Status];
-        } else {
-            throw new BadRequestError('Status is required.');
-        }
-
-        if (category) {
-            const categoryValue = String(category);
-
-            const validCategory = Object.keys(OfficeCategory)
-                .filter(key => isNaN(Number(key)))
-                .find(key => key.toUpperCase() === categoryValue.toUpperCase());
-           
-            if (!validCategory) {
-                throw new BadRequestError('Invalid category.');
-            }
-            updatedCategory = OfficeCategory[validCategory as keyof typeof OfficeCategory];
-        }
-
-        if (staff) {
-            assignedStaffUsername = String(staff).trim();
-        }
-
-        const report = await updateReport(reportId, updatedStatus, comment, updatedCategory, assignedStaffUsername);
-        res.status(200).json(report);
+      res.status(200).json(report);
     } catch (err) {
-        next(err);
+      next(err);
     }
-});
-
+  }
+);
 export default router;
