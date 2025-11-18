@@ -1,12 +1,13 @@
 import {Router} from "express";
 import {isAuthenticated} from "@middlewares/authMiddleware";
 import {mapReportDAOToDTO} from "@services/mapperService";
-import {createReport, uploadReportPictures, getReports} from "@controllers/reportController";
+import {createReport, uploadReportPictures, getReports, updateReport} from "@controllers/reportController";
 import {Citizen} from "@dto/Citizen";
 import { ReportFilters } from "@repositories/reportRepository";
 import { BadRequestError } from "@errors/BadRequestError";
 import { Status } from "@models/dao/reportDAO";
 import { OfficeCategory } from "@models/dao/officeDAO";
+import { StaffRole } from "@models/dao/staffDAO";
 
 const router = Router();
 
@@ -99,6 +100,112 @@ router.get('/', isAuthenticated(['STAFF']), async (req, res, next) => {
 
     }
     catch(err) {
+        next(err);
+    }
+});
+
+// PATCH MPRO: changing category and status reports
+router.patch('/:reportId', isAuthenticated([StaffRole.MPRO]), async (req, res, next) => {
+    try {
+
+        const reportId = parseInt(req.params.reportId);
+        if (isNaN(reportId)) {
+            throw new BadRequestError('Invalid reportId.');
+        }
+
+        const { status, comment, category, staff } = req.body;
+
+        let updatedStatus: Status;
+        let updatedCategory: OfficeCategory | undefined;
+        let assignedStaffUsername: string | undefined;
+
+        if (status) {
+            const statusValue = String(status);           
+            const validStatus = Object.keys(Status)
+                .filter(key => isNaN(Number(key)))
+                .find(key => key.toUpperCase() === statusValue.toUpperCase());
+           
+            if (!validStatus) {
+                throw new BadRequestError('Invalid status.');
+            }
+            updatedStatus = Status[validStatus as keyof typeof Status];
+        } else {
+            throw new BadRequestError('Status is required.');
+        }
+
+        if (category) {
+            const categoryValue = String(category);
+
+            const validCategory = Object.keys(OfficeCategory)
+                .filter(key => isNaN(Number(key)))
+                .find(key => key.toUpperCase() === categoryValue.toUpperCase());
+           
+            if (!validCategory) {
+                throw new BadRequestError('Invalid category.');
+            }
+            updatedCategory = OfficeCategory[validCategory as keyof typeof OfficeCategory];
+        }
+
+        if (staff) {
+            assignedStaffUsername = String(staff).trim();
+        }
+
+        const report = await updateReport(reportId, updatedStatus, comment, updatedCategory, assignedStaffUsername);
+        res.status(200).json(report);
+    } catch (err) {
+        next(err);
+    }
+});
+
+// PATCH TOSM: self assignment of reports
+router.patch('/:reportId', isAuthenticated([StaffRole.TOSM]), async (req, res, next) => {
+    try {
+
+        const reportId = parseInt(req.params.reportId);
+        if (isNaN(reportId)) {
+            throw new BadRequestError('Invalid reportId.');
+        }
+
+        const { status, comment, category, staff } = req.body;
+
+        let updatedStatus: Status;
+        let updatedCategory: OfficeCategory | undefined;
+        let assignedStaffUsername: string | undefined;
+
+        if (status) {
+            const statusValue = String(status);           
+            const validStatus = Object.keys(Status)
+                .filter(key => isNaN(Number(key)))
+                .find(key => key.toUpperCase() === statusValue.toUpperCase());
+           
+            if (!validStatus) {
+                throw new BadRequestError('Invalid status.');
+            }
+            updatedStatus = Status[validStatus as keyof typeof Status];
+        } else {
+            throw new BadRequestError('Status is required.');
+        }
+
+        if (category) {
+            const categoryValue = String(category);
+
+            const validCategory = Object.keys(OfficeCategory)
+                .filter(key => isNaN(Number(key)))
+                .find(key => key.toUpperCase() === categoryValue.toUpperCase());
+           
+            if (!validCategory) {
+                throw new BadRequestError('Invalid category.');
+            }
+            updatedCategory = OfficeCategory[validCategory as keyof typeof OfficeCategory];
+        }
+
+        if (staff) {
+            assignedStaffUsername = String(staff).trim();
+        }
+
+        const report = await updateReport(reportId, updatedStatus, comment, updatedCategory, assignedStaffUsername);
+        res.status(200).json(report);
+    } catch (err) {
         next(err);
     }
 });

@@ -1,8 +1,12 @@
-import {Between, LessThan, MoreThanOrEqual, Repository} from "typeorm";
+import {Between, Repository} from "typeorm";
 import {AppDataSource} from "@database";
 import {ReportDAO, Status} from "@dao/reportDAO";
 import {CitizenDAO} from "@dao/citizenDAO";
 import {OfficeCategory} from "@dao/officeDAO";
+import { findOrThrowNotFound } from "@utils";
+import { StaffDAO, StaffRole } from "@dao/staffDAO";
+import { NotFoundError } from "@models/errors/NotFoundError";
+import { BadRequestError } from "@models/errors/BadRequestError";
 
 export interface ReportFilters {
     citizen_username?: string;
@@ -16,9 +20,11 @@ export interface ReportFilters {
 
 export class ReportRepository {
     private repo: Repository<ReportDAO>;
+    private staffRepo: Repository<StaffDAO>;
 
     constructor() {
         this.repo = AppDataSource.getRepository(ReportDAO);
+        this.staffRepo = AppDataSource.getRepository(StaffDAO);
     }
 
     async create(
@@ -83,5 +89,68 @@ export class ReportRepository {
         });
 
         return reports;
+    }
+
+    async updateReport(reportId: number,
+                        updatedStatus: Status,
+                        comment: string,
+                        updatedCategory?: OfficeCategory,
+                        assignedStaffUsername?: string): Promise<ReportDAO> {
+        
+
+        const updatedReport = await this.repo.findOne({ 
+            where: { id: reportId },
+            relations: ['citizen', 'assignedStaff']
+        });
+
+        if(!updatedReport)
+            throw new NotFoundError(`Report with id '${reportId}' not found`);
+
+
+        let assignedStaff: StaffDAO | undefined = undefined;
+
+        if (assignedStaffUsername) {
+            const staff = await this.staffRepo.findOne({
+                where: { username: assignedStaffUsername },
+                relations: ['office']
+            });
+
+            if (!staff) {
+                throw new NotFoundError(`Staff with username '${assignedStaffUsername}' not found`);
+            }
+
+            // Only TOSM can be assigned to reports
+            if(staff.role !== StaffRole.TOSM)
+                throw new BadRequestError(`Staff '${assignedStaffUsername}' isn't a ${StaffRole.TOSM}`);
+
+            if(updatedCategory) {
+                //if category is provided, check if it matches staff's office category
+                if(staff.office.category !== updatedCategory)
+                    throw new BadRequestError(
+                        `Staff '${assignedStaffUsername}' works in office with category '${staff.office.category}' ` +
+                        `but new report category is '${updatedCategory}'`
+                );
+            } else {
+                // If no updated category is provided, use the staff's office category
+                updatedCategory = staff.office.category;
+            }
+            assignedStaff = staff;
+        }
+        
+        
+        await this.repo.update(
+            {id: reportId},
+            {
+                status: updatedStatus,
+                comment,
+                ...(updatedCategory && { category: updatedCategory }),
+                ...(assignedStaff && { assignedStaff })
+            }
+        );
+
+        return await this.repo.findOneOrFail({ 
+            where: { id: reportId },
+            relations: ['citizen', 'assignedStaff']
+        });
     }
 }
