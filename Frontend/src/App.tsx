@@ -7,6 +7,8 @@ import {LoginForm} from './components/LoginPage';
 import DefaultLayout from './components/DefaultLayout';
 import TurinMaskedMap from './components/Map';
 import { RegistrationForm, MunicipalityRegistrationForm } from './components/RegistrationPage';
+import ReportListPage from "./components/ReportListPage";
+import ReportDetailPage from "./components/ReportDetailPage";
 import 'bootstrap-italia/dist/css/bootstrap-italia.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.min.css';
 import 'typeface-titillium-web/index.css';
@@ -94,6 +96,13 @@ function App() {
                            <MunicipalityRegistrationForm handleStaffRegistration={handleMunicipalityRegistration}/>
                            : <Navigate replace to="/"/>}/>
                 <Route path="/map" element={<TurinMaskedMap isLoggedIn={loggedIn} user={user}/>} />
+                <Route path="/reports" element={loggedIn && isStaff(user) ?
+                            <ReportListPage user={user}/>
+                           : <Navigate replace to="/login"/> }/>
+
+                <Route path="/reports/:id" element={loggedIn && isStaff(user)?
+                           <ReportDetailPage user={user} />
+                           : <Navigate replace to="/login"/>}/>
             </Route>
         </Routes>
     )

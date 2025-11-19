@@ -140,6 +140,48 @@ const createReport = async (newReport: NewReport): Promise<Report> => {
     }
     return handleAPIError(response, 'Create Report');
 };
+const getReports = async (filters?: Record<string, string>): Promise<Report[]> => {
+    const query = filters
+        ? "?" + new URLSearchParams(filters).toString()
+        : "";
 
-const API = { login, register, getUserInfo, logout, municipalityRegister, getOffices, createReport };
+    const response = await fetch(`${BACKEND_URL}/reports${query}`, {
+        credentials: "include",
+    });
+
+    if (response.ok) return await response.json();
+    return handleAPIError(response, "Get Reports");
+};
+
+const getReportById = async (id: number): Promise<Report> => {
+    const response = await fetch(`${BACKEND_URL}/reports/${id}`, {
+        credentials: "include",
+    });
+
+    if (response.ok) return await response.json();
+    return handleAPIError(response, "Get Report Details");
+};
+
+const updateReport = async (
+    id: number,
+    data: any,
+    role: string
+): Promise<Report> => {
+    const endpoint =
+        role === "Municipal Public Relations Officer"
+            ? `/reports/${id}/manage`
+            : `/reports/${id}/work`;
+
+    const response = await fetch(`${BACKEND_URL}${endpoint}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(data),
+    });
+
+    if (response.ok) return await response.json();
+    return handleAPIError(response, "Update Report");
+};
+
+const API = { login, register, getUserInfo, logout, municipalityRegister, getOffices, createReport, getReports, getReportById, updateReport };
 export default API;

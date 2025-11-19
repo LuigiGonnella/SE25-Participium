@@ -96,6 +96,12 @@ export async function getReports(filters?: ReportFilters): Promise<Report[]> {
     return reportDAOs.map(mapReportDAOToDTO);
 }
 
+export async function getReportById(reportId: number): Promise<Report> {
+    const dao = await repo.getReportById(reportId);
+    return mapReportDAOToDTO(dao);
+}
+
+
 export async function updateReport(reportId: number,
                                     updatedStatus: Status,
                                     comment: string,
