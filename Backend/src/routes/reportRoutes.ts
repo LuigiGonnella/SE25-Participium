@@ -204,10 +204,7 @@ router.patch(
         if(updatedStatus === Status.IN_PROGRESS || updatedStatus === Status.SUSPENDED){
             if(comment)
                 throw new BadRequestError("Comments can only be added when report is resolved.");
-        } else if(updatedStatus === Status.RESOLVED){
-            if(!comment)
-                throw new BadRequestError("A comment is required when resolving a report.");
-        } else {
+        } else if(updatedStatus !== Status.RESOLVED){
             throw new BadRequestError(`Invalid status for ${StaffRole.TOSM}.`);
         }
 
