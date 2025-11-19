@@ -96,20 +96,20 @@ export async function getReports(filters?: ReportFilters): Promise<Report[]> {
     return reportDAOs.map(mapReportDAOToDTO);
 }
 
-export async function updateReport(reportId: number,
+export async function updateReportAsMPRO(reportId: number,
                                     updatedStatus: Status,
-                                    comment: string,
+                                    comment?: string,
                                     updatedCategory?: OfficeCategory,
-                                    assignedStaffUsername?: string
                                 ): Promise<Report> {
-                                     if (
-    (updatedStatus === Status.REJECTED || updatedStatus === Status.RESOLVED) &&
-    (!comment || !comment.trim())
-  ) {
-    throw new BadRequestError(
-      "A comment is required when rejecting or resolving a report."
-    );
-  }
-    const updatedReportDAO = await repo.updateReport(reportId, updatedStatus, comment, updatedCategory, assignedStaffUsername);
+    const updatedReportDAO = await repo.updateReportAsMPRO(reportId, updatedStatus, comment, updatedCategory);
+    return mapReportDAOToDTO(updatedReportDAO);
+}
+
+export async function updateReportAsTOSM(reportId: number,
+                                    updatedStatus: Status,
+                                    comment?: string,
+                                    staffUsername?: string
+                                ): Promise<Report> {
+    const updatedReportDAO = await repo.updateReportAsTOSM(reportId, updatedStatus, comment, staffUsername);
     return mapReportDAOToDTO(updatedReportDAO);
 }
