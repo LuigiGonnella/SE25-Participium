@@ -201,7 +201,7 @@ router.patch(
         throw new BadRequestError("Status is required.");
       }
 
-        if(updatedStatus === Status.IN_PROGRESS || updatedStatus === Status.SUSPENDED){
+        if(updatedStatus === Status.ASSIGNED || updatedStatus === Status.IN_PROGRESS || updatedStatus === Status.SUSPENDED){
             if(comment)
                 throw new BadRequestError("Comments can only be added when report is resolved.");
         } else if(updatedStatus !== Status.RESOLVED){

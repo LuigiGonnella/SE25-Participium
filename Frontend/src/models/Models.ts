@@ -120,6 +120,7 @@ export interface Report {
     photo3?: string;
     anonymous: boolean;
     comment?: string;
+    assignedStaff?: string;
 }
 
 export interface NewReport {

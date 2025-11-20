@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Alert, Spinner } from "react-bootstrap";
+import { Alert, Spinner, Button } from "react-bootstrap";
 import API from "../API/API.mts";
 import type { Report, User } from "../models/Models.ts";
+import { ReportStatus, isStaff } from "../models/Models.ts";
 
 interface ReportListProps {
     user: User;
@@ -12,6 +13,7 @@ export default function ReportListPage({ user }: ReportListProps) {
     const [reports, setReports] = useState<Report[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string>();
+    const [assigningId, setAssigningId] = useState<number | null>(null);
 
     // FILTER STATE
     const [statusFilter, setStatusFilter] = useState("");
@@ -34,6 +36,25 @@ export default function ReportListPage({ user }: ReportListProps) {
     useEffect(() => {
         loadReports();
     }, [statusFilter]);
+
+    const handleAssign = async (reportId: number, e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        setAssigningId(reportId);
+        try {
+            await API.assignReportToSelf(reportId);
+            await loadReports();
+        } catch (err: any) {
+            setError(err.details || "Failed to assign report");
+        } finally {
+            setAssigningId(null);
+        }
+    };
+
+    const isTOSM = isStaff(user) && user.role === "Technical Office Staff Member";
+    const canAssign = (report: Report) => 
+        isTOSM && report.status === ReportStatus.PENDING && !report.assignedStaff;
 
     return (
         <div className="container py-4">
@@ -72,26 +93,47 @@ export default function ReportListPage({ user }: ReportListProps) {
             {!loading && reports.length > 0 && (
                 <div className="list-group">
                     {reports.map((r) => (
-                        <Link
+                        <div
                             key={r.id}
-                            to={`/reports/${r.id}`}
-                            className="list-group-item list-group-item-action p-3"
+                            className="list-group-item list-group-item-action p-3 d-flex justify-content-between align-items-center"
                         >
-                            <div className="d-flex justify-content-between">
-                                <div>
-                                    <h5>{r.title}</h5>
-                                    <p className="text-muted mb-1">
-                                        Status: <strong>{r.status}</strong>
-                                    </p>
-                                    <p className="text-muted mb-0">
-                                        Category: {r.category}
-                                    </p>
+                            <Link
+                                to={`/reports/${r.id}`}
+                                className="flex-grow-1 text-decoration-none text-dark"
+                            >
+                                <div className="d-flex justify-content-between">
+                                    <div>
+                                        <h5>{r.title}</h5>
+                                        <p className="text-muted mb-1">
+                                            Status: <strong>{r.status}</strong>
+                                        </p>
+                                        <p className="text-muted mb-0">
+                                            Category: {r.category}
+                                        </p>
+                                        {r.assignedStaff && (
+                                            <p className="text-muted mb-0">
+                                                Assigned to: {r.assignedStaff}
+                                            </p>
+                                        )}
+                                    </div>
+                                    <div className="text-end">
+                                        <small>{new Date(r.timestamp).toLocaleString()}</small>
+                                    </div>
                                 </div>
-                                <div className="text-end">
-                                    <small>{new Date(r.timestamp).toLocaleString()}</small>
-                                </div>
-                            </div>
-                        </Link>
+                            </Link>
+                            
+                            {canAssign(r) && (
+                                <Button
+                                    variant="primary"
+                                    size="sm"
+                                    onClick={(e) => handleAssign(r.id, e)}
+                                    disabled={assigningId === r.id}
+                                    className="ms-3"
+                                >
+                                    {assigningId === r.id ? "Assigning..." : "Assign"}
+                                </Button>
+                            )}
+                        </div>
                     ))}
                 </div>
             )}
@@ -102,3 +144,4 @@ export default function ReportListPage({ user }: ReportListProps) {
         </div>
     );
 }
+

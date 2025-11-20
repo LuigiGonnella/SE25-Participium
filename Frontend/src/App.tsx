@@ -9,6 +9,8 @@ import TurinMaskedMap from './components/Map';
 import { RegistrationForm, MunicipalityRegistrationForm } from './components/RegistrationPage';
 import ReportListPage from "./components/ReportListPage";
 import ReportDetailPage from "./components/ReportDetailPage";
+import StaffProfile from "./components/StaffProfile";
+import CitizenProfile from "./components/CitizenProfile";
 import 'bootstrap-italia/dist/css/bootstrap-italia.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.min.css';
 import 'typeface-titillium-web/index.css';
@@ -103,6 +105,12 @@ function App() {
                 <Route path="/reports/:id" element={loggedIn && isStaff(user)?
                            <ReportDetailPage user={user} />
                            : <Navigate replace to="/login"/>}/>
+                
+                <Route path="/profile" element={
+                    loggedIn && user ? (
+                        isStaff(user) ? <StaffProfile user={user} /> : <CitizenProfile user={user} />
+                    ) : <Navigate replace to="/login"/>
+                }/>
             </Route>
         </Routes>
     )
