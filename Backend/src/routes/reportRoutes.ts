@@ -1,7 +1,7 @@
 import {Router} from "express";
 import {isAuthenticated} from "@middlewares/authMiddleware";
 import {mapReportDAOToDTO} from "@services/mapperService";
-import {createReport, uploadReportPictures, getReports, updateReport,getReportById, updateReportAsTOSM} from "@controllers/reportController";
+import {createReport, uploadReportPictures, getReports, updateReportAsTOSM, updateReportAsMPRO} from "@controllers/reportController";
 import {Citizen} from "@dto/Citizen";
 import { ReportFilters } from "@repositories/reportRepository";
 import { BadRequestError } from "@errors/BadRequestError";
@@ -103,21 +103,6 @@ router.get('/', isAuthenticated(['STAFF']), async (req, res, next) => {
         next(err);
     }
 });
-// GET single report by ID
-router.get('/:reportId', isAuthenticated(['STAFF']), async (req, res, next) => {
-    try {
-        const reportId = parseInt(req.params.reportId);
-
-        if (isNaN(reportId)) {
-            throw new BadRequestError('Invalid reportId.');
-        }
-
-        const report = await getReportById(reportId);
-        res.status(200).json(report);
-    } catch (err) {
-        next(err);
-    }
-});
 
 // PATCH MPRO: change status, category and (optionally) assigned staff
 router.patch('/:reportId/manage', isAuthenticated([StaffRole.MPRO]), async (req, res, next) => {
@@ -172,7 +157,7 @@ router.patch('/:reportId/manage', isAuthenticated([StaffRole.MPRO]), async (req,
             updatedCategory = OfficeCategory[validCategory as keyof typeof OfficeCategory];
         }
 
-        const report = await updateReport(reportId, updatedStatus, comment, updatedCategory);
+        const report = await updateReportAsMPRO(reportId, updatedStatus, comment, updatedCategory);
         res.status(200).json(report);
     } catch (err) {
         next(err);
