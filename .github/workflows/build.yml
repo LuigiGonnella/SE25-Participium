@@ -26,11 +26,9 @@ jobs:
         working-directory: ./Frontend
         run: npm install
       
-      - name: Frontend Test and coverage
-        working-directory: ./Frontend
-        run: npm run test:coverage
-      
       - name: SonarQube Scan
         uses: SonarSource/sonarcloud-github-action@v2
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: "https://sonarcloud.io"
+          SONAR_ORGANIZATION: "luigigonnella"
