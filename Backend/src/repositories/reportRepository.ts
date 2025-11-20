@@ -107,9 +107,38 @@ export class ReportRepository {
 
     async updateReport(reportId: number,
                         updatedStatus: Status,
-                        comment: string,
-                        updatedCategory?: OfficeCategory,
-                        assignedStaffUsername?: string): Promise<ReportDAO> {
+                        comment?: string,
+                        updatedCategory?: OfficeCategory): Promise<ReportDAO> {
+        
+
+        const updatedReport = await this.repo.findOne({ 
+            where: { id: reportId },
+            relations: ['citizen', 'assignedStaff']
+        });
+
+        if(!updatedReport)
+            throw new NotFoundError(`Report with id '${reportId}' not found`);
+        
+        
+        await this.repo.update(
+            {id: reportId},
+            {
+                status: updatedStatus,
+                ...(comment !== undefined && { comment }),
+                ...(updatedCategory && { category: updatedCategory })
+            }
+        );
+
+        return await this.repo.findOneOrFail({ 
+            where: { id: reportId },
+            relations: ['citizen', 'assignedStaff']
+        });
+    }
+
+    async updateReportAsTOSM(reportId: number,
+                        updatedStatus: Status,
+                        comment?: string,
+                        staffUsername?: string): Promise<ReportDAO> {
         
 
         const updatedReport = await this.repo.findOne({ 
@@ -123,41 +152,31 @@ export class ReportRepository {
 
         let assignedStaff: StaffDAO | undefined = undefined;
 
-        if (assignedStaffUsername) {
+        if (staffUsername) {
             const staff = await this.staffRepo.findOne({
-                where: { username: assignedStaffUsername },
+                where: { username: staffUsername },
                 relations: ['office']
             });
 
             if (!staff) {
-                throw new NotFoundError(`Staff with username '${assignedStaffUsername}' not found`);
+                throw new NotFoundError(`Staff with username '${staffUsername}' not found`);
             }
 
-            // Only TOSM can be assigned to reports
-            if(staff.role !== StaffRole.TOSM)
-                throw new BadRequestError(`Staff '${assignedStaffUsername}' isn't a ${StaffRole.TOSM}`);
-
-            if(updatedCategory) {
-                //if category is provided, check if it matches staff's office category
-                if(staff.office.category !== updatedCategory)
+            //check if staff's office category matches report category
+            if(staff.office.category !== updatedReport.category)
                     throw new BadRequestError(
-                        `Staff '${assignedStaffUsername}' works in office with category '${staff.office.category}' ` +
-                        `but new report category is '${updatedCategory}'`
+                        `Staff '${staffUsername}' works in office with category '${staff.office.category}' ` +
+                        `but report category is '${updatedReport.category}'`
                 );
-            } else {
-                // If no updated category is provided, use the staff's office category
-                updatedCategory = staff.office.category;
-            }
+
             assignedStaff = staff;
         }
-        
         
         await this.repo.update(
             {id: reportId},
             {
                 status: updatedStatus,
-                comment,
-                ...(updatedCategory && { category: updatedCategory }),
+                ...(comment !== undefined && { comment }),
                 ...(assignedStaff && { assignedStaff })
             }
         );

@@ -1,7 +1,7 @@
 import {Router} from "express";
 import {isAuthenticated} from "@middlewares/authMiddleware";
 import {mapReportDAOToDTO} from "@services/mapperService";
-import {createReport, uploadReportPictures, getReports, updateReport,getReportById} from "@controllers/reportController";
+import {createReport, uploadReportPictures, getReports, updateReport,getReportById, updateReportAsTOSM} from "@controllers/reportController";
 import {Citizen} from "@dto/Citizen";
 import { ReportFilters } from "@repositories/reportRepository";
 import { BadRequestError } from "@errors/BadRequestError";
@@ -128,24 +128,35 @@ router.patch('/:reportId/manage', isAuthenticated([StaffRole.MPRO]), async (req,
             throw new BadRequestError('Invalid reportId.');
         }
 
-        const { status, comment, category, staff } = req.body;
+        const { status, comment, category } = req.body;
 
         let updatedStatus: Status;
         let updatedCategory: OfficeCategory | undefined;
-        let assignedStaffUsername: string | undefined;
 
         if (status) {
             const statusValue = String(status);           
             const validStatus = Object.keys(Status)
                 .filter(key => isNaN(Number(key)))
                 .find(key => key.toUpperCase() === statusValue.toUpperCase());
-           
+                
             if (!validStatus) {
                 throw new BadRequestError('Invalid status.');
             }
+
             updatedStatus = Status[validStatus as keyof typeof Status];
+            
         } else {
             throw new BadRequestError('Status is required.');
+        }
+
+        if(updatedStatus === Status.PENDING || updatedStatus === Status.ASSIGNED){
+            if(comment)
+                throw new BadRequestError("Comments can only be added when report is rejected.");
+        } else if(updatedStatus === Status.REJECTED){
+            if(!comment)
+                throw new BadRequestError("A comment is required when rejecting a report.");
+        } else {
+            throw new BadRequestError(`Invalid status for ${StaffRole.MPRO}.`);
         }
 
         if (category) {
@@ -161,11 +172,7 @@ router.patch('/:reportId/manage', isAuthenticated([StaffRole.MPRO]), async (req,
             updatedCategory = OfficeCategory[validCategory as keyof typeof OfficeCategory];
         }
 
-        if (staff) {
-            assignedStaffUsername = String(staff).trim();
-        }
-
-        const report = await updateReport(reportId, updatedStatus, comment, updatedCategory, assignedStaffUsername);
+        const report = await updateReport(reportId, updatedStatus, comment, updatedCategory);
         res.status(200).json(report);
     } catch (err) {
         next(err);
@@ -183,15 +190,9 @@ router.patch(
         throw new BadRequestError("Invalid reportId.");
       }
 
-      const { status, comment, category, staff } = req.body;
+      const { status, comment, staff } = req.body;
 
       let updatedStatus: Status;
-
-      if (category) {
-        throw new BadRequestError(
-          "Technical Office Staff Members cannot change the report category."
-        );
-      }
 
       if (staff) {
         throw new BadRequestError(
@@ -208,19 +209,27 @@ router.patch(
         if (!validStatus) {
           throw new BadRequestError("Invalid status.");
         }
+
         updatedStatus = Status[validStatus as keyof typeof Status];
+        
       } else {
         throw new BadRequestError("Status is required.");
       }
 
-      const assignedStaffUsername = String((req.user as any).username).trim();
+        if(updatedStatus === Status.IN_PROGRESS || updatedStatus === Status.SUSPENDED){
+            if(comment)
+                throw new BadRequestError("Comments can only be added when report is resolved.");
+        } else if(updatedStatus !== Status.RESOLVED){
+            throw new BadRequestError(`Invalid status for ${StaffRole.TOSM}.`);
+        }
 
-      const report = await updateReport(
+      const staffUsername = String((req.user as any).username).trim();
+
+      const report = await updateReportAsTOSM(
         reportId,
         updatedStatus,
         comment,
-        undefined,
-        assignedStaffUsername
+        staffUsername
       );
 
       res.status(200).json(report);
