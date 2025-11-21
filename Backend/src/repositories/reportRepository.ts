@@ -104,8 +104,10 @@ export class ReportRepository {
 
         if(!updatedReport)
             throw new NotFoundError(`Report with id '${reportId}' not found`);
-        
-        
+
+        if(updatedReport.status !== Status.PENDING)
+            throw new BadRequestError("Cannot update a report that is not pending.");
+
         await this.repo.update(
             {id: reportId},
             {
@@ -135,6 +137,17 @@ export class ReportRepository {
         if(!updatedReport)
             throw new NotFoundError(`Report with id '${reportId}' not found`);
 
+        if(updatedReport.status === Status.PENDING)
+            throw new BadRequestError("Cannot update a report that is not assigned.");
+
+        if(updatedReport.status === Status.REJECTED)
+            throw new BadRequestError("Cannot update a rejected report.");
+
+        if(updatedReport.status === Status.RESOLVED)
+            throw new BadRequestError("Cannot update a resolved report.");
+
+        if(updatedReport.status === Status.SUSPENDED && updatedStatus !== Status.RESOLVED)
+            throw new BadRequestError("Cannot resolve a suspended report.");
 
         let assignedStaff: StaffDAO | undefined = undefined;
 

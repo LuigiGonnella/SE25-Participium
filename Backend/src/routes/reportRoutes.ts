@@ -134,15 +134,14 @@ router.patch('/:reportId/manage', isAuthenticated([StaffRole.MPRO]), async (req,
             throw new BadRequestError('Status is required.');
         }
 
-        if(updatedStatus === Status.PENDING || updatedStatus === Status.ASSIGNED){
-            if(comment)
-                throw new BadRequestError("Comments can only be added when report is rejected.");
-        } else if(updatedStatus === Status.REJECTED){
-            if(!comment)
-                throw new BadRequestError("A comment is required when rejecting a report.");
-        } else {
+        if(updatedStatus !== Status.PENDING && updatedStatus !== Status.ASSIGNED && updatedStatus !== Status.REJECTED)
             throw new BadRequestError(`Invalid status for ${StaffRole.MPRO}.`);
-        }
+
+        if((updatedStatus === Status.PENDING || updatedStatus === Status.ASSIGNED) && comment)
+            throw new BadRequestError("Comments can only be added when report is rejected.");  
+        
+        if(updatedStatus === Status.REJECTED && !comment)
+            throw new BadRequestError("A comment is required when rejecting a report.");
 
         if (category) {
             const categoryValue = String(category);
@@ -201,12 +200,11 @@ router.patch(
         throw new BadRequestError("Status is required.");
       }
 
-        if(updatedStatus === Status.ASSIGNED || updatedStatus === Status.IN_PROGRESS || updatedStatus === Status.SUSPENDED){
-            if(comment)
-                throw new BadRequestError("Comments can only be added when report is resolved.");
-        } else if(updatedStatus !== Status.RESOLVED){
-            throw new BadRequestError(`Invalid status for ${StaffRole.TOSM}.`);
-        }
+      if(updatedStatus !== Status.IN_PROGRESS && updatedStatus !== Status.SUSPENDED && updatedStatus !== Status.RESOLVED)
+        throw new BadRequestError(`Invalid status for ${StaffRole.TOSM}.`);
+
+      if((updatedStatus !== Status.RESOLVED) && comment)
+            throw new BadRequestError("Comments can only be added when report is resolved.");
 
       const staffUsername = String((req.user as any).username).trim();
 
