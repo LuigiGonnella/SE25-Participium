@@ -188,7 +188,7 @@ const assignReportToSelf = async (reportId: number): Promise<Report> => {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ status: "ASSIGNED" }),
+        body: JSON.stringify({ status: "IN_PROGRESS" }),
     });
 
     if (response.ok) return await response.json();

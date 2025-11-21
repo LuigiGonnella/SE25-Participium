@@ -19,7 +19,7 @@ export default function StaffProfile({ user }: StaffProfileProps) {
             try {
                 const filters = { 
                     staff_username: user.username,
-                    status: "ASSIGNED"
+                    status: "IN_PROGRESS"
                 };
                 const data = await API.getReports(filters);
                 setMyReports(data);

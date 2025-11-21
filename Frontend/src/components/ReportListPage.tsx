@@ -54,7 +54,7 @@ export default function ReportListPage({ user }: ReportListProps) {
 
     const isTOSM = isStaff(user) && user.role === "Technical Office Staff Member";
     const canAssign = (report: Report) => 
-        isTOSM && report.status === ReportStatus.PENDING && !report.assignedStaff;
+        isTOSM && report.status === ReportStatus.PENDING && ReportStatus.ASSIGNED && !report.assignedStaff;
 
     return (
         <div className="container py-4">
@@ -130,7 +130,7 @@ export default function ReportListPage({ user }: ReportListProps) {
                                     disabled={assigningId === r.id}
                                     className="ms-3"
                                 >
-                                    {assigningId === r.id ? "Assigning..." : "Assign"}
+                                    {assigningId === r.id ? "Assigning..." : "Assign To Me"}
                                 </Button>
                             )}
                         </div>
