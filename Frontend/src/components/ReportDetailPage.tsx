@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams } from "react-router";
 import API from "../API/API.mts";
 import type { Report, User } from "../models/Models.ts";
 import {
@@ -7,6 +7,7 @@ import {
   StaffRole,
   ReportStatus,
   OfficeCategory,
+  isMPRO,
 } from "../models/Models.ts";
 
 interface ReportDetailPageProps {
@@ -22,14 +23,10 @@ export default function ReportDetailPage({ user }: ReportDetailPageProps) {
   // Form state for update actions
   const [statusInput, setStatusInput] = useState<string>("");
   const [categoryInput, setCategoryInput] = useState<string>("");
-  const [staffInput, setStaffInput] = useState<string>("");
   const [commentInput, setCommentInput] = useState<string>("");
 
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState("");
-
-  const isMpro = isStaff(user) && user.role === StaffRole.MPRO;
-  const isTosm = isStaff(user) && user.role === StaffRole.TOSM;
 
   useEffect(() => {
     const load = async () => {
@@ -49,7 +46,7 @@ export default function ReportDetailPage({ user }: ReportDetailPageProps) {
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!report || !user || !isStaff(user)) return;
+    if (!report || !user || !isMPRO(user)) return;
 
     setSaving(true);
     setError("");
@@ -58,13 +55,15 @@ export default function ReportDetailPage({ user }: ReportDetailPageProps) {
     try {
       const payload: any = {
         status: statusInput || report.status,
-        comment: commentInput || "",
       };
 
-      // MPRO can also change category and assign staff
-      if (isMpro) {
-        if (categoryInput) payload.category = categoryInput; // send enum KEY like "WSO"
-        if (staffInput) payload.staff = staffInput;
+      if (statusInput === ReportStatus.REJECTED) {
+        if (!commentInput.trim()) {
+          setError("Comment is required when rejecting a report");
+          setSaving(false);
+          return;
+        }
+        payload.comment = commentInput.trim();
       }
 
       const updated = await API.updateReport(report.id, payload, user.role);
@@ -84,17 +83,11 @@ export default function ReportDetailPage({ user }: ReportDetailPageProps) {
   if (error) return <p className="p-5 text-danger text-center">{error}</p>;
   if (!report) return <p className="p-5 text-center">Report not found</p>;
 
-  const tosmStatusOptions = [
+  const MPROStatusOptions = [
+    ReportStatus.PENDING,
     ReportStatus.ASSIGNED,
-    ReportStatus.IN_PROGRESS,
-    ReportStatus.SUSPENDED,
-    ReportStatus.RESOLVED,
+    ReportStatus.REJECTED,
   ];
-
-  const allStatusOptions = Object.values(ReportStatus);
-
-  const categoryOptions = Object.entries(OfficeCategory) as [string, string][];
-
 
 return (
   <div className="container py-4">
@@ -128,12 +121,14 @@ return (
         </div>
 
         <h5>Citizen</h5>
+        <p>{report.citizen?.name} {report.citizen?.surname}</p>
+        {/*  
         {report.anonymous ? (
           <p><i>Anonymous report</i></p>
         ) : (
           <p>{report.citizen?.name} {report.citizen?.surname}</p>
         )}
-
+        */}
         {report.comment && (
           <>
             <h5 className="mt-4">Comment</h5>
@@ -143,8 +138,8 @@ return (
 
       </div>
 
-      {/* RIGHT COLUMN — MANAGE REPORT (ONLY FOR STAFF) */}
-      {(isMpro || isTosm) && (
+      {/* RIGHT COLUMN — MANAGE REPORT */}
+      {
         <div className="col-md-4">
           <div className="card shadow-sm p-3">
 
@@ -165,52 +160,28 @@ return (
                   required
                 >
                   <option value="" disabled>Select status</option>
-                  {(isMpro ? allStatusOptions : tosmStatusOptions).map((s) => (
+                  {(MPROStatusOptions).map((s) => (
                     <option key={s} value={s}>{s}</option>
                   ))}
                 </select>
               </div>
 
-              {/* MPRO OPTIONS */}
-              {isMpro && (
-                <>
-                  <div className="mb-3">
-                    <label className="form-label fw-bold">Category</label>
-                    <select
-                      className="form-select"
-                      value={categoryInput}
-                      onChange={(e) => setCategoryInput(e.target.value)}
-                    >
-                      <option value="">Keep current</option>
-                      {categoryOptions.map(([key, label]) => (
-                        <option key={key} value={key}>{label}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="mb-3">
-                    <label className="form-label fw-bold">Assign Staff</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      value={staffInput}
-                      onChange={(e) => setStaffInput(e.target.value)}
-                      placeholder="username"
-                    />
-                  </div>
-                </>
-              )}
-
-              {/* COMMENT */}
+              {/* COMMENT - only on REJECTED status */}
+              {statusInput === ReportStatus.REJECTED && (
               <div className="mb-3">
-                <label className="form-label fw-bold">Comment</label>
+                <label className="form-label fw-bold">
+                 Comment <span className="text-danger">*</span>
+                 </label>
                 <textarea
                   className="form-control"
                   rows={3}
                   value={commentInput}
                   onChange={(e) => setCommentInput(e.target.value)}
+                  required={statusInput === ReportStatus.REJECTED}
+                  placeholder = "Explain rejection's motivation"
                 />
               </div>
+              )}
 
               <button
                 type="submit"
@@ -223,7 +194,7 @@ return (
             </form>
           </div>
         </div>
-      )}
+      }
     </div>
 
   </div>

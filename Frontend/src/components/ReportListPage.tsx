@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import { Alert, Spinner } from "react-bootstrap";
 import API from "../API/API.mts";
 import type { Report, User } from "../models/Models.ts";
@@ -51,10 +51,7 @@ export default function ReportListPage({ user }: ReportListProps) {
                     <option value="">All statuses</option>
                     <option value="PENDING">Pending</option>
                     <option value="ASSIGNED">Assigned</option>
-                    <option value="IN_PROGRESS">In Progress</option>
-                    <option value="SUSPENDED">Suspended</option>
                     <option value="REJECTED">Rejected</option>
-                    <option value="RESOLVED">Resolved</option>
                 </select>
             </div>
 

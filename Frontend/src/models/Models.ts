@@ -27,6 +27,14 @@ export function isStaff(user: User | undefined): user is Staff {
     return user !== undefined && 'type' in user && user.type === 'STAFF';
 }
 
+export function isMPRO(user: User | undefined): user is Staff {
+    return isStaff(user) && user.role ===  'Municipal Public Relations Officer';
+}
+
+export function isTOSM(user: User | undefined): user is Staff {
+    return isStaff(user) && user.role === 'Technical Office Staff Member';
+}
+
 export function isCitizen(user: User | undefined): user is Citizen {
     return user !== undefined && 'type' in user && user.type === 'CITIZEN';
 }
