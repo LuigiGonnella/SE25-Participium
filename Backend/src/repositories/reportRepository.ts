@@ -91,6 +91,18 @@ export class ReportRepository {
         return reports;
     }
 
+    async getReportById(reportId: number): Promise<ReportDAO> {
+        const report = await this.repo.findOne({
+            where: { id: reportId },
+            relations: ['citizen', 'assignedStaff']
+        });
+
+        if (!report) {
+            throw new NotFoundError(`Report with id '${reportId}' not found`);
+        }
+        return report;
+    }
+
     async updateReportAsMPRO(reportId: number,
                         updatedStatus: Status,
                         comment?: string,
