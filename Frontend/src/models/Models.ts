@@ -27,6 +27,14 @@ export function isStaff(user: User | undefined): user is Staff {
     return user !== undefined && 'type' in user && user.type === 'STAFF';
 }
 
+export function isMPRO(user: User | undefined): user is Staff {
+    return isStaff(user) && user.role ===  'Municipal Public Relations Officer';
+}
+
+export function isTOSM(user: User | undefined): user is Staff {
+    return isStaff(user) && user.role === 'Technical Office Staff Member';
+}
+
 export function isCitizen(user: User | undefined): user is Citizen {
     return user !== undefined && 'type' in user && user.type === 'CITIZEN';
 }
@@ -107,20 +115,16 @@ export enum ReportStatus {
 
 export interface Report {
     id: number;
-    citizen?: Citizen;
+    citizenUsername?: string;
     timestamp: string;
     status: ReportStatus;
     title: string;
     description: string;
     category: OfficeCategory;
-    latitude: number;
-    longitude: number;
-    photo1: string;
-    photo2?: string;
-    photo3?: string;
-    anonymous: boolean;
+    coordinates: number[];
+    photos: string[];
     comment?: string;
-    assignedStaff?: string;
+    AssignedStaff?: string;
 }
 
 export interface NewReport {
