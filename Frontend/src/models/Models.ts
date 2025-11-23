@@ -115,19 +115,16 @@ export enum ReportStatus {
 
 export interface Report {
     id: number;
-    citizen?: Citizen;
+    citizenUsername?: string;
     timestamp: string;
     status: ReportStatus;
     title: string;
     description: string;
     category: OfficeCategory;
-    latitude: number;
-    longitude: number;
-    photo1: string;
-    photo2?: string;
-    photo3?: string;
-    anonymous: boolean;
+    coordinates: number[]; 
+    photos: (string | null)[];
     comment?: string;
+    assignedStaff?: Staff;
 }
 
 export interface NewReport {
