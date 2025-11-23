@@ -95,6 +95,7 @@ export default function CitizenProfile({ user }: CitizenProfileProps) {
                                 label="Receive email notifications"
                                 checked={receiveEmails}
                                 onChange={(e) => setReceiveEmails(e.target.checked)}
+                                id="receiveEmailsCheckbox"
                             />
                         </Form.Group>
 
