@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import { Alert, Spinner, Card, Row, Col, Form, Button } from "react-bootstrap";
 import API from "../API/API.mts";
 import type { Report, Staff } from "../models/Models.ts";
