@@ -7,6 +7,7 @@ import { findOrThrowNotFound } from "@utils";
 import { StaffDAO, StaffRole } from "@dao/staffDAO";
 import { NotFoundError } from "@models/errors/NotFoundError";
 import { BadRequestError } from "@models/errors/BadRequestError";
+import { NotificationRepository } from "./notificationRepository";
 
 export interface ReportFilters {
     citizen_username?: string;
@@ -21,10 +22,12 @@ export interface ReportFilters {
 export class ReportRepository {
     private repo: Repository<ReportDAO>;
     private staffRepo: Repository<StaffDAO>;
+    private notificationRepo: NotificationRepository;
 
     constructor() {
         this.repo = AppDataSource.getRepository(ReportDAO);
         this.staffRepo = AppDataSource.getRepository(StaffDAO);
+        this.notificationRepo = new NotificationRepository();
     }
 
     async create(
@@ -133,10 +136,37 @@ export class ReportRepository {
             }
         );
 
-        return await this.repo.findOneOrFail({ 
+        const result = await this.repo.findOneOrFail({ 
             where: { id: reportId },
             relations: ['citizen', 'assignedStaff']
         });
+
+        // Create notification for citizen if report status changed
+        if (result.citizen && updatedStatus !== updatedReport.status) {
+            let notificationTitle = "";
+            let notificationMessage = "";
+
+            if (updatedStatus === Status.ASSIGNED) {
+                notificationTitle = "Report Assigned";
+                notificationMessage = `Your report "${result.title}" has been assigned to the appropriate office.`;
+            } else if (updatedStatus === Status.REJECTED) {
+                notificationTitle = "Report Rejected";
+                notificationMessage = `Your report "${result.title}" has been rejected.`;
+                if (comment) {
+                    notificationMessage += ` Reason: ${comment}`;
+                }
+            }
+
+            if (notificationTitle) {
+                await this.notificationRepo.createNotificationForCitizen(
+                    result.citizen.username,
+                    notificationTitle,
+                    notificationMessage
+                );
+            }
+        }
+
+        return result;
     }
 
     async updateReportAsTOSM(reportId: number,
@@ -196,9 +226,39 @@ export class ReportRepository {
             }
         );
 
-        return await this.repo.findOneOrFail({ 
+        const result = await this.repo.findOneOrFail({ 
             where: { id: reportId },
             relations: ['citizen', 'assignedStaff']
         });
+
+        // Create notification for citizen if report status changed
+        if (result.citizen && updatedStatus !== updatedReport.status) {
+            let notificationTitle = "";
+            let notificationMessage = "";
+
+            if (updatedStatus === Status.IN_PROGRESS) {
+                notificationTitle = "Report In Progress";
+                notificationMessage = `Your report "${result.title}" has been assigned to ${staffUsername} and is now in progress.`;
+            } else if (updatedStatus === Status.SUSPENDED) {
+                notificationTitle = "Report Suspended";
+                notificationMessage = `Your report "${result.title}" has been suspended.`;
+            } else if (updatedStatus === Status.RESOLVED) {
+                notificationTitle = "Report Resolved";
+                notificationMessage = `Your report "${result.title}" has been marked as resolved.`;
+                if (comment) {
+                    notificationMessage += ` Comment: ${comment}`;
+                }
+            }
+
+            if (notificationTitle) {
+                await this.notificationRepo.createNotificationForCitizen(
+                    result.citizen.username,
+                    notificationTitle,
+                    notificationMessage
+                );
+            }
+        }
+
+        return result;
     }
 }

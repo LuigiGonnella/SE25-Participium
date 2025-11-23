@@ -81,7 +81,7 @@ export default function ReportListPage({ user }: ReportListProps) {
     };
 
     const canAssign = (report: Report) => 
-        isTOSM(user) && report.status === ReportStatus.PENDING && ReportStatus.ASSIGNED && !report.AssignedStaff;
+        isTOSM(user) && report.status === ReportStatus.ASSIGNED && !report.AssignedStaff;
 
     return (
         <div className="container py-4">

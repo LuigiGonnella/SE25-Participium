@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Card, Row, Col, Form, Button } from "react-bootstrap";
 import type { Citizen } from "../models/Models.ts";
-import defaultProfile from "../../public/default-profile.png";
+import defaultProfile from "../../assets/default-profile.png";
 
 interface CitizenProfileProps {
     user: Citizen;
