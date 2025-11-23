@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams } from "react-router";
 import API from "../API/API.mts";
 import type { Report, User } from "../models/Models.ts";
 import {
-  isStaff,
-  StaffRole,
   ReportStatus,
-  OfficeCategory,
+  isMPRO,
 } from "../models/Models.ts";
+
+const BACKEND_BASE_URL = import.meta.env.VITE_BACKEND_URL?.replace('/api/v1', '') || "http://localhost:8080";
 
 interface ReportDetailPageProps {
   user?: User;
@@ -21,15 +21,10 @@ export default function ReportDetailPage({ user }: ReportDetailPageProps) {
 
   // Form state for update actions
   const [statusInput, setStatusInput] = useState<string>("");
-  const [categoryInput, setCategoryInput] = useState<string>("");
-  const [staffInput, setStaffInput] = useState<string>("");
   const [commentInput, setCommentInput] = useState<string>("");
 
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState("");
-
-  const isMpro = isStaff(user) && user.role === StaffRole.MPRO;
-  const isTosm = isStaff(user) && user.role === StaffRole.TOSM;
 
   useEffect(() => {
     const load = async () => {
@@ -49,7 +44,7 @@ export default function ReportDetailPage({ user }: ReportDetailPageProps) {
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!report || !user || !isStaff(user)) return;
+    if (!report || !user || !isMPRO(user)) return;
 
     setSaving(true);
     setError("");
@@ -58,13 +53,15 @@ export default function ReportDetailPage({ user }: ReportDetailPageProps) {
     try {
       const payload: any = {
         status: statusInput || report.status,
-        comment: commentInput || "",
       };
 
-      // MPRO can also change category and assign staff
-      if (isMpro) {
-        if (categoryInput) payload.category = categoryInput; // send enum KEY like "WSO"
-        if (staffInput) payload.staff = staffInput;
+      if (statusInput === ReportStatus.REJECTED) {
+        if (!commentInput.trim()) {
+          setError("Comment is required when rejecting a report");
+          setSaving(false);
+          return;
+        }
+        payload.comment = commentInput.trim();
       }
 
       const updated = await API.updateReport(report.id, payload, user.role);
@@ -84,17 +81,11 @@ export default function ReportDetailPage({ user }: ReportDetailPageProps) {
   if (error) return <p className="p-5 text-danger text-center">{error}</p>;
   if (!report) return <p className="p-5 text-center">Report not found</p>;
 
-  const tosmStatusOptions = [
+  const MPROStatusOptions = [
+    ReportStatus.PENDING,
     ReportStatus.ASSIGNED,
-    ReportStatus.IN_PROGRESS,
-    ReportStatus.SUSPENDED,
-    ReportStatus.RESOLVED,
+    ReportStatus.REJECTED,
   ];
-
-  const allStatusOptions = Object.values(ReportStatus);
-
-  const categoryOptions = Object.entries(OfficeCategory) as [string, string][];
-
 
 return (
   <div className="container py-4">
@@ -117,23 +108,25 @@ return (
 
         <h5>Location</h5>
         <p>
-          Lat: {report.latitude}, Lng: {report.longitude}
+          Lat: {report.coordinates?.[0] ?? 'N/A'}, Lng: {report.coordinates?.[1] ?? 'N/A'}
         </p>
 
         <h5>Photos</h5>
         <div className="d-flex gap-3 flex-wrap mb-3">
-          <img src={report.photo1} width={150} />
-          {report.photo2 && <img src={report.photo2} width={150} />}
-          {report.photo3 && <img src={report.photo3} width={150} />}
+          {report.photos?.[0] && <img src={`${BACKEND_BASE_URL}${report.photos[0]}`} width={150} alt="Photo 1" />}
+          {report.photos?.[1] && <img src={`${BACKEND_BASE_URL}${report.photos[1]}`} width={150} alt="Photo 2" />}
+          {report.photos?.[2] && <img src={`${BACKEND_BASE_URL}${report.photos[2]}`} width={150} alt="Photo 3" />}
         </div>
 
         <h5>Citizen</h5>
+        <p>{report.citizenUsername ?? 'Anonymous'}</p>
+        {/*  
         {report.anonymous ? (
           <p><i>Anonymous report</i></p>
         ) : (
           <p>{report.citizen?.name} {report.citizen?.surname}</p>
         )}
-
+        */}
         {report.comment && (
           <>
             <h5 className="mt-4">Comment</h5>
@@ -143,8 +136,8 @@ return (
 
       </div>
 
-      {/* RIGHT COLUMN — MANAGE REPORT (ONLY FOR STAFF) */}
-      {(isMpro || isTosm) && (
+      {/* RIGHT COLUMN — MANAGE REPORT */}
+      {
         <div className="col-md-4">
           <div className="card shadow-sm p-3">
 
@@ -165,52 +158,28 @@ return (
                   required
                 >
                   <option value="" disabled>Select status</option>
-                  {(isMpro ? allStatusOptions : tosmStatusOptions).map((s) => (
+                  {(MPROStatusOptions).map((s) => (
                     <option key={s} value={s}>{s}</option>
                   ))}
                 </select>
               </div>
 
-              {/* MPRO OPTIONS */}
-              {isMpro && (
-                <>
-                  <div className="mb-3">
-                    <label className="form-label fw-bold">Category</label>
-                    <select
-                      className="form-select"
-                      value={categoryInput}
-                      onChange={(e) => setCategoryInput(e.target.value)}
-                    >
-                      <option value="">Keep current</option>
-                      {categoryOptions.map(([key, label]) => (
-                        <option key={key} value={key}>{label}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="mb-3">
-                    <label className="form-label fw-bold">Assign Staff</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      value={staffInput}
-                      onChange={(e) => setStaffInput(e.target.value)}
-                      placeholder="username"
-                    />
-                  </div>
-                </>
-              )}
-
-              {/* COMMENT */}
+              {/* COMMENT - only on REJECTED status */}
+              {statusInput === ReportStatus.REJECTED && (
               <div className="mb-3">
-                <label className="form-label fw-bold">Comment</label>
+                <label className="form-label fw-bold">
+                 Comment <span className="text-danger">*</span>
+                 </label>
                 <textarea
                   className="form-control"
                   rows={3}
                   value={commentInput}
                   onChange={(e) => setCommentInput(e.target.value)}
+                  required={statusInput === ReportStatus.REJECTED}
+                  placeholder = "Explain rejection's motivation"
                 />
               </div>
+              )}
 
               <button
                 type="submit"
@@ -223,7 +192,7 @@ return (
             </form>
           </div>
         </div>
-      )}
+      }
     </div>
 
   </div>

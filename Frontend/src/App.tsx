@@ -21,7 +21,8 @@ import {
     type NewStaff,
     type Credentials,
     type User,
-    isStaff, StaffRole
+    isStaff, StaffRole,
+    isMPRO, isTOSM
 } from "./models/Models.ts";
 
 
@@ -98,11 +99,11 @@ function App() {
                            <MunicipalityRegistrationForm handleStaffRegistration={handleMunicipalityRegistration}/>
                            : <Navigate replace to="/"/>}/>
                 <Route path="/map" element={<TurinMaskedMap isLoggedIn={loggedIn} user={user}/>} />
-                <Route path="/reports" element={loggedIn && isStaff(user) ?
+                <Route path="/reports" element={loggedIn && (isMPRO(user) || isTOSM(user)) ?
                             <ReportListPage user={user}/>
                            : <Navigate replace to="/login"/> }/>
 
-                <Route path="/reports/:id" element={loggedIn && isStaff(user)?
+                <Route path="/reports/:id" element={loggedIn && (isMPRO(user) || isTOSM(user))?
                            <ReportDetailPage user={user} />
                            : <Navigate replace to="/login"/>}/>
                 

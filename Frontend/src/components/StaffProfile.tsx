@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import { Alert, Spinner, Card, Row, Col } from "react-bootstrap";
 import API from "../API/API.mts";
 import type { Report, Staff } from "../models/Models.ts";
+import { isTOSM } from "../models/Models.ts";
+
 
 interface StaffProfileProps {
     user: Staff;
@@ -54,47 +55,56 @@ export default function StaffProfile({ user }: StaffProfileProps) {
                 </Card.Body>
             </Card>
 
-            {/* MY REPORTS SECTION */}
-            <h4 className="mb-3">My Reports</h4>
+            {/* MY REPORTS SECTION - ONLY FOR TOSM */}
+            {isTOSM(user) && (
+                <>
+                    <h4 className="mb-3">My Reports</h4>
 
-            {loading && (
-                <div className="text-center mt-5">
-                    <Spinner animation="border" />
-                </div>
-            )}
+                    {loading && (
+                        <div className="text-center mt-5">
+                            <Spinner animation="border" />
+                        </div>
+                    )}
 
-            {!loading && error && <Alert variant="danger">{error}</Alert>}
+                    {!loading && error && <Alert variant="danger">{error}</Alert>}
 
-            {!loading && myReports.length > 0 && (
-                <div className="list-group">
-                    {myReports.map((r) => (
-                        <Link
-                            key={r.id}
-                            to={`/reports/${r.id}`}
-                            className="list-group-item list-group-item-action p-3"
-                        >
-                            <div className="d-flex justify-content-between">
-                                <div>
-                                    <h5>{r.title}</h5>
-                                    <p className="text-muted mb-1">
-                                        Status: <strong>{r.status}</strong>
-                                    </p>
-                                    <p className="text-muted mb-0">
-                                        Category: {r.category}
-                                    </p>
+                    {!loading && myReports.length > 0 && (
+                        <div className="list-group">
+                            {myReports.map((r) => (
+                                <div className="d-flex justify-content-between">
+                                    <div>
+                                        <h5>{r.title}</h5>
+                                        <p className="text-muted mb-1">
+                                            Status: <strong>{r.status}</strong>
+                                        </p>
+                                        <p className="text-muted mb-0">
+                                            Category: <strong>{r.category}</strong>
+                                        </p>
+                                        {r.AssignedStaff && (
+                                            <p className="text-muted mb-0">
+                                                Assigned to: <strong>{r.AssignedStaff}</strong>
+                                            </p>
+                                        )}
+                                    </div>
+                                    <div className="text-muted">
+                                        <small>{new Date(r.timestamp).toLocaleString()}</small>
+                                    </div>
                                 </div>
-                                <div className="text-end">
-                                    <small>{new Date(r.timestamp).toLocaleString()}</small>
-                                </div>
-                            </div>
-                        </Link>
-                    ))}
-                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {!loading && myReports.length === 0 && (
+                        <Alert variant="info">You have no reports assigned to you.</Alert>
+                    )}
+                </>
             )}
 
-            {!loading && myReports.length === 0 && (
-                <Alert variant="info">You have no reports assigned to you.</Alert>
-            )}
+            
+
+            
         </div>
+        
     );
+    
 }

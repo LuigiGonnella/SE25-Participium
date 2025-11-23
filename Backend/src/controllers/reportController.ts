@@ -9,6 +9,7 @@ import path from "path";
 import { mapReportDAOToDTO } from "@services/mapperService";
 import { Report } from "@models/dto/Report";
 import { OfficeCategory } from "@models/dao/officeDAO";
+import { report } from "process";
 
 const repo = new ReportRepository();
 const citizenRepo = new CitizenRepository();
@@ -94,6 +95,11 @@ export async function createReport(body: any, citizen: string, photos: Express.M
 export async function getReports(filters?: ReportFilters): Promise<Report[]> {
     const reportDAOs = await repo.getReports(filters);
     return reportDAOs.map(mapReportDAOToDTO);
+}
+
+export async function getReportById(reportId: number): Promise<Report> {
+    const reportDAO = await repo.getReportById(reportId);
+    return mapReportDAOToDTO(reportDAO);
 }
 
 export async function updateReportAsMPRO(reportId: number,

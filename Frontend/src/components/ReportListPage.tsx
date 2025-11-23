@@ -1,9 +1,23 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import { Alert, Spinner, Button } from "react-bootstrap";
 import API from "../API/API.mts";
-import type { Report, User } from "../models/Models.ts";
-import { ReportStatus, isStaff } from "../models/Models.ts";
+import type { Report, User, Staff } from "../models/Models.ts";
+import { ReportStatus, isMPRO, isTOSM } from "../models/Models.ts";
+
+const getOfficeCategoryFromName = (officeName: string): string | undefined => {
+    const mapping: Record<string, string> = {
+        "Water Supply Office": "WSO",
+        "Architectural Barriers Office": "ABO",
+        "Sewer System Office": "SSO",
+        "Public Lighting Office": "PLO",
+        "Waste Office": "WO",
+        "Road Signs and Traffic Lights Office": "RSTLO",
+        "Roads and Urban Furnishings Office": "RUFO",
+        "Public Green Areas and Playgrounds Office": "PGAPO",
+    };
+    return mapping[officeName];
+};
 
 interface ReportListProps {
     user: User;
@@ -21,11 +35,25 @@ export default function ReportListPage({ user }: ReportListProps) {
     const loadReports = async () => {
         setLoading(true);
         try {
-            const filters: any = {};
-            if (statusFilter) filters.status = statusFilter;
+            if (isMPRO(user)) { //can see all reports
+                const filters: any = {};
+                if (statusFilter) filters.status = statusFilter;
 
-            const data = await API.getReports(filters);
-            setReports(data);
+                const data = await API.getReports(filters);
+                setReports(data);
+            }
+            else if (isTOSM(user)) { //can see only his office reports
+                const filters: any = {};
+                if (statusFilter) filters.status = statusFilter;
+                
+                // Filter by office category
+                const category = getOfficeCategoryFromName((user as Staff).officeName);
+                if (category) filters.category = category;
+
+                const data = await API.getReports(filters);
+                setReports(data);
+            }
+            
         } catch (err: any) {
             setError(err.details || "Failed to load reports");
         } finally {
@@ -52,9 +80,8 @@ export default function ReportListPage({ user }: ReportListProps) {
         }
     };
 
-    const isTOSM = isStaff(user) && user.role === "Technical Office Staff Member";
     const canAssign = (report: Report) => 
-        isTOSM && report.status === ReportStatus.PENDING && ReportStatus.ASSIGNED && !report.assignedStaff;
+        isTOSM(user) && report.status === ReportStatus.PENDING && ReportStatus.ASSIGNED && !report.AssignedStaff;
 
     return (
         <div className="container py-4">
@@ -72,10 +99,7 @@ export default function ReportListPage({ user }: ReportListProps) {
                     <option value="">All statuses</option>
                     <option value="PENDING">Pending</option>
                     <option value="ASSIGNED">Assigned</option>
-                    <option value="IN_PROGRESS">In Progress</option>
-                    <option value="SUSPENDED">Suspended</option>
                     <option value="REJECTED">Rejected</option>
-                    <option value="RESOLVED">Resolved</option>
                 </select>
             </div>
 
@@ -95,9 +119,9 @@ export default function ReportListPage({ user }: ReportListProps) {
                     {reports.map((r) => (
                         <div
                             key={r.id}
-                            className="list-group-item list-group-item-action p-3 d-flex justify-content-between align-items-center"
+                            className="list-group-item p-3 d-flex justify-content-between align-items-center"
                         >
-                            <Link
+                            {isMPRO(user) &&  <Link
                                 to={`/reports/${r.id}`}
                                 className="flex-grow-1 text-decoration-none text-dark"
                             >
@@ -108,11 +132,11 @@ export default function ReportListPage({ user }: ReportListProps) {
                                             Status: <strong>{r.status}</strong>
                                         </p>
                                         <p className="text-muted mb-0">
-                                            Category: {r.category}
+                                            Category: <strong>{r.category}</strong>
                                         </p>
-                                        {r.assignedStaff && (
+                                        {r.AssignedStaff && (
                                             <p className="text-muted mb-0">
-                                                Assigned to: {r.assignedStaff}
+                                                Assigned to: <strong>{r.AssignedStaff}</strong>
                                             </p>
                                         )}
                                     </div>
@@ -120,7 +144,30 @@ export default function ReportListPage({ user }: ReportListProps) {
                                         <small>{new Date(r.timestamp).toLocaleString()}</small>
                                     </div>
                                 </div>
-                            </Link>
+                            </Link>}
+
+                            {isTOSM(user) &&  
+                                <div className="d-flex justify-content-between">
+                                    <div>
+                                        <h5>{r.title}</h5>
+                                        <p className="text-muted mb-1">
+                                            Status: <strong>{r.status}</strong>
+                                        </p>
+                                        <p className="text-muted mb-0">
+                                            Category: <strong>{r.category}</strong>
+                                        </p>
+                                        {r.AssignedStaff && (
+                                            <p className="text-muted mb-0">
+                                                Assigned to: <strong>{r.AssignedStaff}</strong>
+                                            </p>
+                                        )}
+                                    </div>
+                                    <div className="text-muted">
+                                        <small>{new Date(r.timestamp).toLocaleString()}</small>
+                                    </div>
+                                </div>
+                            }
+                            
                             
                             {canAssign(r) && (
                                 <Button
