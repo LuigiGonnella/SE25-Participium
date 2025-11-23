@@ -67,6 +67,8 @@ export interface Report {
      * @memberof Report
      */
     comment?: string;  
+
+    AssignedStaff?: string;
 }
 
 export function ReportToJSON(json: any): Report {
@@ -89,5 +91,6 @@ export function ReportToJSONTyped(value?: Report | null, ignoreDiscriminator: bo
         'coordinates': value['coordinates'],
         'photos': value['photos'],
         'comment': value['comment'],
+        'AssignedStaff': value['AssignedStaff'],
     };
 }

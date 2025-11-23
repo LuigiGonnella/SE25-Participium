@@ -7,6 +7,7 @@ import { findOrThrowNotFound } from "@utils";
 import { StaffDAO, StaffRole } from "@dao/staffDAO";
 import { NotFoundError } from "@models/errors/NotFoundError";
 import { BadRequestError } from "@models/errors/BadRequestError";
+import { NotificationRepository } from "./notificationRepository";
 
 export interface ReportFilters {
     citizen_username?: string;
@@ -21,10 +22,12 @@ export interface ReportFilters {
 export class ReportRepository {
     private repo: Repository<ReportDAO>;
     private staffRepo: Repository<StaffDAO>;
+    private notificationRepo: NotificationRepository;
 
     constructor() {
         this.repo = AppDataSource.getRepository(ReportDAO);
         this.staffRepo = AppDataSource.getRepository(StaffDAO);
+        this.notificationRepo = new NotificationRepository();
     }
 
     async create(
@@ -53,41 +56,45 @@ export class ReportRepository {
         });
     }
 
+    
+
     async getReports(filters?: ReportFilters): Promise<ReportDAO[]> {
-        const where: any = {};
+        const qb = this.repo.createQueryBuilder('report')
+            .leftJoinAndSelect('report.citizen', 'citizen')
+            .leftJoinAndSelect('report.assignedStaff', 'staff');
 
         if (filters?.citizen_username) {
-            where.citizen = { username: filters.citizen_username };
+            qb.andWhere('citizen.username = :citizenUsername', { citizenUsername: filters.citizen_username });
         }
 
-        if (filters?.status){
-            where.status = filters.status;
+        if (filters?.status) {
+            qb.andWhere('report.status = :status', { status: filters.status });
         }
 
         if (filters?.title) {
-            where.title = filters.title;
+            qb.andWhere('report.title = :title', { title: filters.title });
         }
 
         if (filters?.category) {
-            where.category = filters.category;
+            qb.andWhere('report.category = :category', { category: filters.category });
         }
 
         if (filters?.staff_username) {
-            where.assignedStaff = { username: filters.staff_username };
+            qb.andWhere('staff.username = :staffUsername', { staffUsername: filters.staff_username });
         }
 
         if (filters?.fromDate && filters?.toDate) {
             const endDate = new Date(filters.toDate);
             endDate.setDate(endDate.getDate() + 1);
-            where.timestamp = Between(filters.fromDate, endDate);
+            qb.andWhere('report.timestamp BETWEEN :fromDate AND :toDate', { 
+                fromDate: filters.fromDate, 
+                toDate: endDate 
+            });
         }
 
-        const reports = await this.repo.find({
-            where,
-            relations: ['citizen', 'assignedStaff'],
-            order: { timestamp: 'ASC' },
-        });
+        qb.orderBy('report.timestamp', 'ASC');
 
+        const reports = await qb.getMany();
         return reports;
     }
 
@@ -129,10 +136,37 @@ export class ReportRepository {
             }
         );
 
-        return await this.repo.findOneOrFail({ 
+        const result = await this.repo.findOneOrFail({ 
             where: { id: reportId },
             relations: ['citizen', 'assignedStaff']
         });
+
+        // Create notification for citizen if report status changed
+        if (result.citizen && updatedStatus !== updatedReport.status) {
+            let notificationTitle = "";
+            let notificationMessage = "";
+
+            if (updatedStatus === Status.ASSIGNED) {
+                notificationTitle = "Report Assigned";
+                notificationMessage = `Your report "${result.title}" has been assigned to the appropriate office.`;
+            } else if (updatedStatus === Status.REJECTED) {
+                notificationTitle = "Report Rejected";
+                notificationMessage = `Your report "${result.title}" has been rejected.`;
+                if (comment) {
+                    notificationMessage += ` Reason: ${comment}`;
+                }
+            }
+
+            if (notificationTitle) {
+                await this.notificationRepo.createNotificationForCitizen(
+                    result.citizen.username,
+                    notificationTitle,
+                    notificationMessage
+                );
+            }
+        }
+
+        return result;
     }
 
     async updateReportAsTOSM(reportId: number,
@@ -192,9 +226,39 @@ export class ReportRepository {
             }
         );
 
-        return await this.repo.findOneOrFail({ 
+        const result = await this.repo.findOneOrFail({ 
             where: { id: reportId },
             relations: ['citizen', 'assignedStaff']
         });
+
+        // Create notification for citizen if report status changed
+        if (result.citizen && updatedStatus !== updatedReport.status) {
+            let notificationTitle = "";
+            let notificationMessage = "";
+
+            if (updatedStatus === Status.IN_PROGRESS) {
+                notificationTitle = "Report In Progress";
+                notificationMessage = `Your report "${result.title}" has been assigned to ${staffUsername} and is now in progress.`;
+            } else if (updatedStatus === Status.SUSPENDED) {
+                notificationTitle = "Report Suspended";
+                notificationMessage = `Your report "${result.title}" has been suspended.`;
+            } else if (updatedStatus === Status.RESOLVED) {
+                notificationTitle = "Report Resolved";
+                notificationMessage = `Your report "${result.title}" has been marked as resolved.`;
+                if (comment) {
+                    notificationMessage += ` Comment: ${comment}`;
+                }
+            }
+
+            if (notificationTitle) {
+                await this.notificationRepo.createNotificationForCitizen(
+                    result.citizen.username,
+                    notificationTitle,
+                    notificationMessage
+                );
+            }
+        }
+
+        return result;
     }
 }

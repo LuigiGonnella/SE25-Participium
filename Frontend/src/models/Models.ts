@@ -121,10 +121,10 @@ export interface Report {
     title: string;
     description: string;
     category: OfficeCategory;
-    coordinates: number[]; 
-    photos: (string | null)[];
+    coordinates: number[];
+    photos: string[];
     comment?: string;
-    assignedStaff?: Staff;
+    AssignedStaff?: string;
 }
 
 export interface NewReport {

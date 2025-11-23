@@ -184,5 +184,17 @@ const updateReport = async (
     return handleAPIError(response, "Update Report");
 };
 
-const API = { login, register, getUserInfo, logout, municipalityRegister, getOffices, createReport, getReports, getReportById, updateReport };
+const assignReportToSelf = async (reportId: number): Promise<Report> => {
+    const response = await fetch(`${BACKEND_URL}/reports/${reportId}/work`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ status: "IN_PROGRESS" }),
+    });
+
+    if (response.ok) return await response.json();
+    return handleAPIError(response, "Assign Report");
+};
+
+const API = { login, register, getUserInfo, logout, municipalityRegister, getOffices, createReport, getReports, getReportById, updateReport, assignReportToSelf };
 export default API;
