@@ -1,4 +1,4 @@
-import {Between, Repository} from "typeorm";
+import {And, Between, Not, Repository} from "typeorm";
 import {AppDataSource} from "@database";
 import {ReportDAO, Status} from "@dao/reportDAO";
 import {CitizenDAO} from "@dao/citizenDAO";
@@ -95,6 +95,18 @@ export class ReportRepository {
         qb.orderBy('report.timestamp', 'ASC');
 
         const reports = await qb.getMany();
+        return reports;
+    }
+
+    // Get approved reports for map view
+    async getMapReports(): Promise<ReportDAO[]> {
+
+        const reports = await this.repo.find({
+            where: { status: And(Not(Status.PENDING), Not(Status.REJECTED)) },
+            relations: ['citizen', 'assignedStaff'],
+            order: { timestamp: 'ASC' },
+        });
+
         return reports;
     }
 

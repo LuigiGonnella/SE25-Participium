@@ -1,7 +1,7 @@
 import {Router} from "express";
 import {isAuthenticated} from "@middlewares/authMiddleware";
 import {mapReportDAOToDTO} from "@services/mapperService";
-import {createReport, uploadReportPictures, getReports, getReportById, updateReportAsTOSM, updateReportAsMPRO} from "@controllers/reportController";
+import {createReport, uploadReportPictures, getReports, getReportById, updateReportAsTOSM, updateReportAsMPRO, getMapReports} from "@controllers/reportController";
 import {Citizen} from "@dto/Citizen";
 import { ReportFilters } from "@repositories/reportRepository";
 import { BadRequestError } from "@errors/BadRequestError";
@@ -99,6 +99,16 @@ router.get('/', isAuthenticated(['STAFF']), async (req, res, next) => {
         const reports = await getReports(filters);
         res.status(200).json(reports);
 
+    }
+    catch(err) {
+        next(err);
+    }
+});
+
+router.get('/', isAuthenticated(['CITIZEN']), async (req, res, next) => {
+    try{
+        const reports = await getMapReports();
+        res.status(200).json(reports);
     }
     catch(err) {
         next(err);
