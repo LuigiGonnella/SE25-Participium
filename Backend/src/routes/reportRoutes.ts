@@ -1,7 +1,15 @@
 import {Router} from "express";
 import {isAuthenticated} from "@middlewares/authMiddleware";
 import {mapReportDAOToDTO} from "@services/mapperService";
-import {createReport, uploadReportPictures, getReports, getReportById, updateReportAsTOSM, updateReportAsMPRO} from "@controllers/reportController";
+import {
+    createReport,
+    uploadReportPictures,
+    getReports,
+    getReportById,
+    updateReportAsTOSM,
+    updateReportAsMPRO,
+    addMessageToReport
+} from "@controllers/reportController";
 import {Citizen} from "@dto/Citizen";
 import { ReportFilters } from "@repositories/reportRepository";
 import { BadRequestError } from "@errors/BadRequestError";
@@ -9,6 +17,7 @@ import { Status } from "@models/dao/reportDAO";
 import { OfficeCategory } from "@models/dao/officeDAO";
 import { StaffRole } from "@models/dao/staffDAO";
 import { NotFoundError } from "@models/errors/NotFoundError";
+import {Staff} from "@dto/Staff";
 
 const router = Router();
 
@@ -236,4 +245,26 @@ router.patch(
     }
   }
 );
+
+// add message to report
+router.post('/:reportId/messages', isAuthenticated(['CITIZEN', 'STAFF']), async (req, res, next) => {
+    try {
+        const user = req.user as ((Citizen | Staff) & { type: 'CITIZEN' | 'STAFF' });
+        const reportId = parseInt(req.params.reportId);
+        if (isNaN(reportId)) {
+            throw new BadRequestError('Invalid reportId.');
+        }
+
+        const { message } = req.body;
+
+        if (!message || typeof message !== 'string' || message.trim() === '') {
+            throw new BadRequestError('Message cannot be empty.');
+        }
+
+        res.status(201).json(await addMessageToReport(reportId, user.username, user.type, message.trim()));
+    } catch (err) {
+        next(err);
+    }
+});
+
 export default router;

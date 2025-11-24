@@ -9,7 +9,8 @@ import path from "path";
 import { mapReportDAOToDTO } from "@services/mapperService";
 import { Report } from "@models/dto/Report";
 import { OfficeCategory } from "@models/dao/officeDAO";
-import { report } from "process";
+import {findOrThrowNotFound} from "@utils";
+import {StaffDAO} from "@dao/staffDAO";
 
 const repo = new ReportRepository();
 const citizenRepo = new CitizenRepository();
@@ -78,6 +79,8 @@ export async function createReport(body: any, citizen: string, photos: Express.M
     const lat = parseFloat(latitude);
     const lon = parseFloat(longitude);
 
+    //TODO: must be inside Turin perimeter
+
     return await repo.create(
         citizenDAO,
         title,
@@ -117,5 +120,26 @@ export async function updateReportAsTOSM(reportId: number,
                                     staffUsername?: string
                                 ): Promise<Report> {
     const updatedReportDAO = await repo.updateReportAsTOSM(reportId, updatedStatus, comment, staffUsername);
+    return mapReportDAOToDTO(updatedReportDAO);
+}
+
+export async function addMessageToReport(reportId: number, username: string, userType: 'CITIZEN' | 'STAFF', message: string): Promise<Report> {
+    const reportDAO = findOrThrowNotFound(
+        [await repo.getReportById(reportId)],
+        () => true,
+        `Report with id ${reportId} not found`
+    );
+
+    let assignedStaff: StaffDAO | undefined = undefined;
+    if (userType === 'STAFF') {
+        if(reportDAO.assignedStaff?.username !== username)
+            throw new BadRequestError(`Staff member ${username} is not assigned to report ${reportId}`);
+        assignedStaff = reportDAO.assignedStaff;
+    } else if (userType === 'CITIZEN' && reportDAO.citizen?.username !== username) {
+        throw new BadRequestError(`Citizen ${username} is not the owner of report ${reportId}`);
+    }
+
+    const updatedReportDAO = await repo.addMessageToReport(reportDAO, message, assignedStaff);
+
     return mapReportDAOToDTO(updatedReportDAO);
 }

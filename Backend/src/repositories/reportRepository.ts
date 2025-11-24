@@ -8,6 +8,7 @@ import { StaffDAO, StaffRole } from "@dao/staffDAO";
 import { NotFoundError } from "@models/errors/NotFoundError";
 import { BadRequestError } from "@models/errors/BadRequestError";
 import { NotificationRepository } from "./notificationRepository";
+import {MessageDAO} from "@dao/messageDAO";
 
 export interface ReportFilters {
     citizen_username?: string;
@@ -101,7 +102,7 @@ export class ReportRepository {
     async getReportById(reportId: number): Promise<ReportDAO> {
         const report = await this.repo.findOne({
             where: { id: reportId },
-            relations: ['citizen', 'assignedStaff']
+            relations: ['citizen', 'assignedStaff', 'messages', 'messages.staff']
         });
 
         if (!report) {
@@ -260,5 +261,19 @@ export class ReportRepository {
         }
 
         return result;
+    }
+
+    async addMessageToReport(report: ReportDAO, message: string, assignedStaff: StaffDAO | undefined): Promise<ReportDAO> {
+        const messageDAO = new MessageDAO();
+
+        messageDAO.report = report;
+        messageDAO.message = message;
+        messageDAO.staff = assignedStaff;
+
+        report.messages = [...report.messages, messageDAO];
+
+        await this.repo.save(report);
+
+        return this.getReportById(report.id);
     }
 }

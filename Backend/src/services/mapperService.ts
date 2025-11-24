@@ -3,12 +3,14 @@ import type { Citizen as CitizenDTO } from "@models/dto/Citizen";
 import type { Staff as StaffDTO } from "@models/dto/Staff";
 import type { Office as OfficeDTO } from "@models/dto/Office";
 import type { Report as ReportDTO } from "@models/dto/Report";
+import type { Message as MessageDTO } from "@models/dto/Message";
 import { CitizenDAO } from "@models/dao/citizenDAO";
 import {StaffDAO} from "@dao/staffDAO";
 import {OfficeDAO} from "@dao/officeDAO";
 import { ReportDAO } from "@models/dao/reportDAO";
 import { NotificationDAO } from "@dao/notificationDAO";
 import { Notification } from "@models/dto/Notification";
+import {MessageDAO} from "@dao/messageDAO";
 
 
 export function createErrorDTO(
@@ -82,6 +84,7 @@ export function mapReportDAOToDTO(reportDAO: ReportDAO): ReportDTO {
         photos: [reportDAO.photo1, reportDAO.photo2, reportDAO.photo3].filter(Boolean) as string[],
         comment: reportDAO.comment,
         AssignedStaff: reportDAO.assignedStaff?.username,
+        messages: reportDAO.messages.map(mapMessageToDTO)
     }) as ReportDTO;
 }
 
@@ -93,7 +96,16 @@ export function mapNotificationDAOToDTO(dao: NotificationDAO): Notification {
         title: dao.title,
         message: dao.message,
         isRead: dao.isRead,
+        reportId: dao.report.id,
         citizenUsername: dao.citizen?.username,
         staffUsername: dao.staff?.username
     };
+}
+
+export function mapMessageToDTO(messageDAO: MessageDAO): MessageDTO {
+    return removeNullAttributes({
+        timestamp: messageDAO.timestamp.toISOString(),
+        message: messageDAO.message,
+        staffUsername: messageDAO.staff?.username
+    }) as MessageDTO;
 }
