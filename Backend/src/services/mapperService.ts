@@ -7,6 +7,9 @@ import { CitizenDAO } from "@models/dao/citizenDAO";
 import {StaffDAO} from "@dao/staffDAO";
 import {OfficeDAO} from "@dao/officeDAO";
 import { ReportDAO } from "@models/dao/reportDAO";
+import { NotificationDAO } from "@dao/notificationDAO";
+import { Notification } from "@models/dto/Notification";
+
 
 export function createErrorDTO(
   code: number,
@@ -80,4 +83,17 @@ export function mapReportDAOToDTO(reportDAO: ReportDAO): ReportDTO {
         comment: reportDAO.comment,
         AssignedStaff: reportDAO.assignedStaff?.username,
     }) as ReportDTO;
+}
+
+//NOTIFICATION DTO
+
+export function mapNotificationDAOToDTO(dao: NotificationDAO): Notification {
+    return {
+        timestamp: dao.timestamp.toISOString(),
+        title: dao.title,
+        message: dao.message,
+        isRead: dao.isRead,
+        citizenUsername: dao.citizen?.username,
+        staffUsername: dao.staff?.username
+    };
 }

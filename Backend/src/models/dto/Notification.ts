@@ -41,3 +41,16 @@ export interface Notification {
      */
     staffUsername?: string;
 }
+
+export interface Notification {
+    timestamp: string;
+    title: string;
+    message: string;
+    isRead: boolean;
+    citizenUsername?: string;
+    staffUsername?: string;
+}
+
+export function NotificationToJSON(n: Notification) {
+    return n;
+}
