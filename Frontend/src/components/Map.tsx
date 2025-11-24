@@ -6,6 +6,7 @@ import "leaflet/dist/leaflet.css";
 import {Button, Col, Row, Spinner} from "design-react-kit";
 import ReportForm from "./ReportForm.tsx";
 import {isCitizen, type Report, type User} from "../models/Models.ts";
+import ReportDetailsPanel from "./ReportDetailsPanel.tsx";
 
 // Fix per le icone di default di Leaflet
 import icon from 'leaflet/dist/images/marker-icon.png';
@@ -57,10 +58,11 @@ async function getStreetName(selectedCoordinates: LatLng): Promise<string> {
     return "Unnamed street";
 }
 
-function MapClickHandler({ holes, setCoordinates, newReportMode}: {
+function MapClickHandler({ holes, setCoordinates, newReportMode, selectedReport}: {
     holes: L.LatLngExpression[][],
     setCoordinates: (latlng: LatLng | null) => void,
-    newReportMode: boolean
+    newReportMode: boolean,
+    selectedReport: Report | undefined
 }) {
     useMapEvents({
         click: async (e) => {
@@ -97,7 +99,7 @@ function MapClickHandler({ holes, setCoordinates, newReportMode}: {
                 map.invalidateSize();
             }, 100);
         }
-    }, [newReportMode, map]);
+    }, [newReportMode, map, selectedReport]);
 
     return null;
 }
@@ -109,7 +111,8 @@ export default function TurinMaskedMap({isLoggedIn, user}: MapProps) {
     const [streetName, setStreetName] = useState<string>("");
     const [turinGeoJSON, setTurinGeoJSON] = useState<any>(null);
     const [holes, setHoles] = useState<L.LatLngExpression[][]>([]);
-
+    const [selectedReport, setSelectedReport] = useState<Report>();
+    
     const [reports, setReports] = useState<Report[]>([]);
 
     useEffect(() => {
@@ -186,7 +189,7 @@ export default function TurinMaskedMap({isLoggedIn, user}: MapProps) {
                     <Spinner active/>
                 </div>
             )}
-            <Col className={"d-flex flex-column justify-content-end" + (newReportMode ? " col-12 col-lg-7" : " col-12")}
+            <Col className={"d-flex flex-column justify-content-end" + (newReportMode || selectedReport ? " col-12 col-lg-7" : " col-12")}
                  style={{pointerEvents: isLoaded ? 'auto' : 'none'}}>
                 <MapContainer
                     center={[45.0703, 7.6869]}
@@ -200,7 +203,7 @@ export default function TurinMaskedMap({isLoggedIn, user}: MapProps) {
                         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                     />
-                    {reports.length > 0 && <ClusterMarkers reports={reports} />}
+                    {reports.length > 0 && <ClusterMarkers reports={reports} setSelectedReport={ setSelectedReport } setNewReportMode={ setNewReportMode } />}
 
                     {isLoaded && (
                         <>
@@ -236,6 +239,7 @@ export default function TurinMaskedMap({isLoggedIn, user}: MapProps) {
                                 holes={holes}
                                 setCoordinates={setSelectedCoordinates}
                                 newReportMode={newReportMode}
+                                selectedReport={selectedReport}
                             />
                         </>
                     )}
@@ -245,7 +249,7 @@ export default function TurinMaskedMap({isLoggedIn, user}: MapProps) {
                     <Button
                         className="btn-primary rounded-5 position-absolute bottom-0 start-50 translate-middle-x mb-3"
                         style={{zIndex: 1000}}
-                        onClick={() => setNewReportMode(true)}
+                        onClick={() => { setNewReportMode(true); setSelectedReport(undefined); }}
                     >
                         <i className="bi bi-plus-lg">&nbsp;</i>
                         New Report
@@ -267,11 +271,24 @@ export default function TurinMaskedMap({isLoggedIn, user}: MapProps) {
                     />
                 </Col>
             )}
+
+            {selectedReport && (
+                <Col className="col-12 col-lg-5 p-0 position-absolute position-lg-relative h-100"
+                     style={{
+                         zIndex: 1001,
+                         top: 0,
+                         right: 0,
+                         backgroundColor: 'white'
+                     }}>                
+                     <ReportDetailsPanel report={selectedReport} onClose={() => setSelectedReport(undefined)} />
+                </Col>
+            )}
+
         </Row>
     );
 }
 
-function ClusterMarkers({reports}: { reports: Report[] }) {
+function ClusterMarkers({reports, setSelectedReport, setNewReportMode}: { reports: Report[], setSelectedReport: (report: Report | undefined) => void , setNewReportMode: (newReportMode: boolean) => void}) {
 
     const [bounds, setBounds] = useState<[number, number, number, number] | undefined>(undefined);
     const [zoom, setZoom] = useState<number>(12);
@@ -357,7 +374,7 @@ function ClusterMarkers({reports}: { reports: Report[] }) {
                     eventHandlers={{
                         mouseover: (e) => { e.target.openPopup(); },
                         mouseout: (e) => { e.target.closePopup(); },
-                        click: (_) => { /*TODO: open report details*/ }
+                        click: () => { setSelectedReport(reports.find(r => r.id === cluster.properties.reportId) || undefined); setNewReportMode(false); }
                     }}
                 >
                     <Popup closeButton={false} >
