@@ -8,7 +8,7 @@ import { BadRequestError } from "@errors/BadRequestError";
 import { Status } from "@models/dao/reportDAO";
 import { OfficeCategory } from "@models/dao/officeDAO";
 import { StaffRole } from "@models/dao/staffDAO";
-import { NotFoundError } from "@models/errors/NotFoundError";
+import {Staff} from "@dto/Staff";
 
 const router = Router();
 
@@ -105,7 +105,7 @@ router.get('/', isAuthenticated(['STAFF']), async (req, res, next) => {
     }
 });
 
-router.get('/', isAuthenticated(['CITIZEN']), async (req, res, next) => {
+router.get('/public', isAuthenticated(['CITIZEN']), async (req, res, next) => {
     try{
         const reports = await getMapReports();
         res.status(200).json(reports);
@@ -163,8 +163,8 @@ router.patch('/:reportId/manage', isAuthenticated([StaffRole.MPRO]), async (req,
             throw new BadRequestError(`Invalid status for ${StaffRole.MPRO}.`);
 
         if((updatedStatus === Status.PENDING || updatedStatus === Status.ASSIGNED) && comment)
-            throw new BadRequestError("Comments can only be added when report is rejected.");  
-        
+            throw new BadRequestError("Comments can only be added when report is rejected.");
+
         if(updatedStatus === Status.REJECTED && !comment)
             throw new BadRequestError("A comment is required when rejecting a report.");
 
@@ -231,7 +231,7 @@ router.patch(
       if((updatedStatus !== Status.RESOLVED) && comment)
             throw new BadRequestError("Comments can only be added when report is resolved.");
 
-      const staffUsername = String((req.user as any).username).trim();
+      const staffUsername = String((req.user as Staff).username).trim();
 
       const report = await updateReportAsTOSM(
         reportId,
