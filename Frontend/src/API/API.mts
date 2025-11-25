@@ -235,5 +235,24 @@ const markNotificationAsRead = async (notificationId: number): Promise<null> => 
     return handleAPIError(response, "Mark Notification as Read");
 }
 
-const API = { login, register, getUserInfo, logout, municipalityRegister, getOffices, createReport, getReports, getMapReports, getReportById, updateReport, assignReportToSelf, getNotifications, markNotificationAsRead };
+const createMessage = async (reportId: number, message: string): Promise<Report> => {
+    const response = await fetch(`${BACKEND_URL}/reports/${reportId}/messages`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ message }),
+    });
+    if (response.ok) return await response.json();
+    return handleAPIError(response, "Create Message");
+};
+
+const getAllMessages = async (reportId: number): Promise<any[]> => {
+    const response = await fetch(`${BACKEND_URL}/reports/${reportId}/messages`, {
+        credentials: "include",
+    });
+    if (response.ok) return await response.json();
+    return handleAPIError(response, "Get All Messages");
+}
+
+const API = { login, register, getUserInfo, logout, municipalityRegister, getOffices, createReport, getReports, getMapReports, getReportById, updateReport, assignReportToSelf, getNotifications, markNotificationAsRead, createMessage, getAllMessages };
 export default API;
