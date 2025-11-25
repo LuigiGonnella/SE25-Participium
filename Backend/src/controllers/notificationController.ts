@@ -7,7 +7,7 @@ export async function getNotificationsOfUser(user: any) {
     if (!user) return [];
 
     let daoList;
-    if (user.role === "CITIZEN") {
+    if (user.type === "CITIZEN") {
         daoList = await repo.getNotificationsForCitizen(user.username);
     } else {
         daoList = await repo.getNotificationsForStaff(user.username);

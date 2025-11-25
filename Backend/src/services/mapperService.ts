@@ -84,7 +84,7 @@ export function mapReportDAOToDTO(reportDAO: ReportDAO): ReportDTO {
         photos: [reportDAO.photo1, reportDAO.photo2, reportDAO.photo3].filter(Boolean) as string[],
         comment: reportDAO.comment,
         AssignedStaff: reportDAO.assignedStaff?.username,
-        messages: reportDAO.messages.map(mapMessageToDTO)
+        messages: reportDAO.messages?.map(mapMessageToDTO)
     }) as ReportDTO;
 }
 
@@ -92,6 +92,7 @@ export function mapReportDAOToDTO(reportDAO: ReportDAO): ReportDTO {
 
 export function mapNotificationDAOToDTO(dao: NotificationDAO): Notification {
     return {
+        id: dao.id,
         timestamp: dao.timestamp.toISOString(),
         title: dao.title,
         message: dao.message,

@@ -136,3 +136,14 @@ export interface NewReport {
     anonymous: boolean;
     photos: File[];
 }
+
+export interface Notification {
+    id: number;
+    timestamp: string;
+    reportId: number;
+    title: string;
+    message: string;
+    isRead: boolean;
+    citizenUsername?: string;
+    staffUsername?: string;
+}

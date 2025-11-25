@@ -3,6 +3,7 @@ import { NotificationDAO } from "@dao/notificationDAO";
 import { CitizenDAO } from "@dao/citizenDAO";
 import { StaffDAO } from "@dao/staffDAO";
 import { NotFoundError } from "@errors/NotFoundError";
+import {ReportDAO} from "@dao/reportDAO";
 
 export class NotificationRepository {
     private repo = AppDataSource.getRepository(NotificationDAO);
@@ -10,21 +11,22 @@ export class NotificationRepository {
     private staffRepo = AppDataSource.getRepository(StaffDAO);
 
     async createNotificationForCitizen(
-        citizenUsername: string,
+        report: ReportDAO,
         title: string,
         message: string
     ): Promise<NotificationDAO> {
         const citizen = await this.citizenRepo.findOne({
-            where: { username: citizenUsername }
+            where: { username: report.citizen.username }
         });
 
         if (!citizen) {
-            throw new NotFoundError(`Citizen with username '${citizenUsername}' not found`);
+            throw new NotFoundError(`Citizen with username '${report.citizen.username}' not found`);
         }
 
         const notification = this.repo.create({
             title,
             message,
+            report,
             citizen,
             isRead: false
         });
@@ -58,6 +60,7 @@ export class NotificationRepository {
     async getNotificationsForCitizen(citizenUsername: string): Promise<NotificationDAO[]> {
         return await this.repo.find({
             where: { citizen: { username: citizenUsername } },
+            relations: ["report"],
             order: { timestamp: "DESC" }
         });
     }

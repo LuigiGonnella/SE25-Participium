@@ -172,7 +172,7 @@ export class ReportRepository {
 
             if (notificationTitle) {
                 await this.notificationRepo.createNotificationForCitizen(
-                    result.citizen.username,
+                    result,
                     notificationTitle,
                     notificationMessage
                 );
@@ -265,7 +265,7 @@ export class ReportRepository {
 
             if (notificationTitle) {
                 await this.notificationRepo.createNotificationForCitizen(
-                    result.citizen.username,
+                    result,
                     notificationTitle,
                     notificationMessage
                 );
