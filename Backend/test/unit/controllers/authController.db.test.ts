@@ -5,6 +5,8 @@ import { register } from '@controllers/authController';
 import { CitizenDAO } from '@dao/citizenDAO';
 import { StaffDAO, StaffRole } from '@dao/staffDAO';
 import { OfficeDAO } from '@dao/officeDAO';
+import { ReportDAO } from '@dao/reportDAO';
+import { NotificationDAO } from '@dao/notificationDAO';
 import bcrypt from 'bcrypt';
 import passport from 'passport';
 import { configurePassport } from '@config/passport';
@@ -17,7 +19,7 @@ beforeAll(async () => {
     localDataSource = new DataSource({
         type: 'sqlite',
         database: ':memory:',
-        entities: [CitizenDAO, StaffDAO, OfficeDAO],
+        entities: [CitizenDAO, StaffDAO, OfficeDAO, ReportDAO, NotificationDAO],
         synchronize: true,
         logging: false
     });

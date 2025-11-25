@@ -1,11 +1,15 @@
-import {ReportRepository} from "@repositories/reportRepository";
+import {ReportFilters, ReportRepository} from "@repositories/reportRepository";
 import {CitizenRepository} from "@repositories/citizenRepository";
 import {NotFoundError} from "@errors/NotFoundError";
 import {BadRequestError} from "@errors/BadRequestError";
-import {ReportDAO} from "@dao/reportDAO";
+import {ReportDAO, Status} from "@dao/reportDAO";
 import multer from "multer";
 import fs from "fs";
 import path from "path";
+import { mapReportDAOToDTO } from "@services/mapperService";
+import { Report } from "@models/dto/Report";
+import { OfficeCategory } from "@models/dao/officeDAO";
+import { report } from "process";
 
 const repo = new ReportRepository();
 const citizenRepo = new CitizenRepository();
@@ -86,4 +90,32 @@ export async function createReport(body: any, citizen: string, photos: Express.M
         photo2,
         photo3
     );
+}
+
+export async function getReports(filters?: ReportFilters): Promise<Report[]> {
+    const reportDAOs = await repo.getReports(filters);
+    return reportDAOs.map(mapReportDAOToDTO);
+}
+
+export async function getReportById(reportId: number): Promise<Report> {
+    const reportDAO = await repo.getReportById(reportId);
+    return mapReportDAOToDTO(reportDAO);
+}
+
+export async function updateReportAsMPRO(reportId: number,
+                                    updatedStatus: Status,
+                                    comment?: string,
+                                    updatedCategory?: OfficeCategory,
+                                ): Promise<Report> {
+    const updatedReportDAO = await repo.updateReportAsMPRO(reportId, updatedStatus, comment, updatedCategory);
+    return mapReportDAOToDTO(updatedReportDAO);
+}
+
+export async function updateReportAsTOSM(reportId: number,
+                                    updatedStatus: Status,
+                                    comment?: string,
+                                    staffUsername?: string
+                                ): Promise<Report> {
+    const updatedReportDAO = await repo.updateReportAsTOSM(reportId, updatedStatus, comment, staffUsername);
+    return mapReportDAOToDTO(updatedReportDAO);
 }

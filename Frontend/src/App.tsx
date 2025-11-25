@@ -7,6 +7,10 @@ import {LoginForm} from './components/LoginPage';
 import DefaultLayout from './components/DefaultLayout';
 import TurinMaskedMap from './components/Map';
 import { RegistrationForm, MunicipalityRegistrationForm } from './components/RegistrationPage';
+import ReportListPage from "./components/ReportListPage";
+import ReportDetailPage from "./components/ReportDetailPage";
+import StaffProfile from "./components/StaffProfile";
+import CitizenProfile from "./components/CitizenProfile";
 import 'bootstrap-italia/dist/css/bootstrap-italia.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.min.css';
 import 'typeface-titillium-web/index.css';
@@ -17,7 +21,8 @@ import {
     type NewStaff,
     type Credentials,
     type User,
-    isStaff, StaffRole
+    isStaff, StaffRole,
+    isMPRO, isTOSM
 } from "./models/Models.ts";
 
 
@@ -94,6 +99,19 @@ function App() {
                            <MunicipalityRegistrationForm handleStaffRegistration={handleMunicipalityRegistration}/>
                            : <Navigate replace to="/"/>}/>
                 <Route path="/map" element={<TurinMaskedMap isLoggedIn={loggedIn} user={user}/>} />
+                <Route path="/reports" element={loggedIn && (isMPRO(user) || isTOSM(user)) ?
+                            <ReportListPage user={user}/>
+                           : <Navigate replace to="/login"/> }/>
+
+                <Route path="/reports/:id" element={loggedIn && (isMPRO(user) || isTOSM(user))?
+                           <ReportDetailPage user={user} />
+                           : <Navigate replace to="/login"/>}/>
+                
+                <Route path="/profile" element={
+                    loggedIn && user ? (
+                        isStaff(user) ? <StaffProfile user={user} /> : <CitizenProfile user={user} />
+                    ) : <Navigate replace to="/login"/>
+                }/>
             </Route>
         </Routes>
     )

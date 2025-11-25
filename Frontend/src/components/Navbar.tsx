@@ -42,7 +42,11 @@ function NavComponent({loggedIn, user, handleLogout}: NavComponentProps) {
                                 <LinkListItem inDropdown href="/map" active={ window.location.pathname === '/map' }>
                                     Map
                                 </LinkListItem>
-
+                            {loggedIn && isStaff(user) && (
+                               <LinkListItem inDropdown href="/reports" active={window.location.pathname === '/reports'} >
+                                   Reports
+                                 </LinkListItem>
+                            )}
                             {(loggedIn && isStaff(user) && user.role === StaffRole.ADMIN) && (
                                 <LinkListItem inDropdown href="/municipality-registration" active={ window.location.pathname === '/municipality-registration' }>
                                     Staff registration
