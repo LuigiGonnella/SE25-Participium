@@ -3,6 +3,7 @@ import type { Report } from "../models/Models";
 import { useEffect, useState } from "react";
 import type { LatLng } from "leaflet";
 import { STATIC_URL } from "../API/API.mts";
+import { ReportStatus } from "../models/Models.ts";
 
 interface ReportDetailsPanelProps {
     report: Report;
@@ -69,6 +70,28 @@ export default function ReportDetailsPanel({ report, onClose }: ReportDetailsPan
                     <p><strong>Category:</strong> {report.category}</p>
                     <p><strong>Street:</strong> {streetName}</p>
                     <p><strong>Coordinates:</strong> {convertToDMS(report.coordinates[0], true)}, {convertToDMS(report.coordinates[1], false)}</p>
+                    <p><strong>Status:</strong>
+                            <p>
+                              <span className={`badge ${
+                              report.status === ReportStatus.PENDING ? 'bg-primary' :
+                              report.status === ReportStatus.ASSIGNED ? 'bg-success' :
+                              report.status === ReportStatus.REJECTED ? 'bg-danger' :
+                              'bg-secondary'
+                            }`}>
+                            {report.status}
+                            </span>
+                            </p>
+                    </p>
+                    <p><strong>Citizen:</strong>
+                        <p>
+                        {report.citizenUsername ? (
+                        <>{report.citizenUsername}</>
+                        ) : (
+                        <i>Unknown</i>
+                        )}
+                        </p>
+                    </p>
+
 
                     <div className="mt-4">
                         <strong>Photos:</strong>
