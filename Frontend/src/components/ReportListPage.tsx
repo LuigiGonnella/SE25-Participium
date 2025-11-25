@@ -146,7 +146,11 @@ export default function ReportListPage({ user }: ReportListProps) {
                                 </div>
                             </Link>}
 
-                            {isTOSM(user) &&  
+                            {isTOSM(user) &&
+                                <Link
+                                    to={`/reports/${r.id}`}
+                                    className="flex-grow-1 text-decoration-none text-dark"
+                                >
                                 <div className="d-flex justify-content-between">
                                     <div>
                                         <h5>{r.title}</h5>
@@ -162,24 +166,25 @@ export default function ReportListPage({ user }: ReportListProps) {
                                             </p>
                                         )}
                                     </div>
-                                    <div className="text-muted">
-                                        <small>{new Date(r.timestamp).toLocaleString()}</small>
+                                    <div className="d-flex flex-column justify-content-between">
+                                        <div className="text-end">
+                                            <small>{new Date(r.timestamp).toLocaleString()}</small>
+                                        </div>
+                                        {canAssign(r) && (
+                                            <Button
+                                                variant="primary"
+                                                size="sm"
+                                                onClick={(e) => handleAssign(r.id, e)}
+                                                disabled={assigningId === r.id}
+                                                className="ms-3"
+                                            >
+                                                {assigningId === r.id ? "Assigning..." : "Assign To Me"}
+                                            </Button>
+                                        )}
                                     </div>
                                 </div>
+                                </Link>
                             }
-                            
-                            
-                            {canAssign(r) && (
-                                <Button
-                                    variant="primary"
-                                    size="sm"
-                                    onClick={(e) => handleAssign(r.id, e)}
-                                    disabled={assigningId === r.id}
-                                    className="ms-3"
-                                >
-                                    {assigningId === r.id ? "Assigning..." : "Assign To Me"}
-                                </Button>
-                            )}
                         </div>
                     ))}
                 </div>
