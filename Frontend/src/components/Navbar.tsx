@@ -56,7 +56,7 @@ function NavComponent({loggedIn, user, handleLogout}: NavComponentProps) {
 
     return (
         <>
-            <Header type="slim" className="pb-0" style={{position: 'sticky', top: 0, zIndex: 1000}}>
+            <Header type="slim" className="pb-0" style={{position: 'sticky', top: 0, zIndex: 1100}}>
                 <HeaderContent>
                     <HeaderBrand className="fs-5 fw-bold d-none d-lg-block pe-2" href='/' responsive>
                         Participium

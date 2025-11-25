@@ -1,7 +1,6 @@
 import { Card, Container } from "react-bootstrap";
 import type { Report } from "../models/Models";
 import { useEffect, useState } from "react";
-import type { LatLng } from "leaflet";
 import { STATIC_URL } from "../API/API.mts";
 import { ReportStatus } from "../models/Models.ts";
 
