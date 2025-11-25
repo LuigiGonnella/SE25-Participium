@@ -1,12 +1,13 @@
-import {Repository} from "typeorm";
+import {And, Between, Not, Repository} from "typeorm";
 import {AppDataSource} from "@database";
 import {ReportDAO, Status} from "@dao/reportDAO";
 import {CitizenDAO} from "@dao/citizenDAO";
 import {OfficeCategory} from "@dao/officeDAO";
-import {StaffDAO} from "@dao/staffDAO";
-import {NotFoundError} from "@models/errors/NotFoundError";
-import {BadRequestError} from "@models/errors/BadRequestError";
-import {NotificationRepository} from "./notificationRepository";
+import { findOrThrowNotFound } from "@utils";
+import { StaffDAO, StaffRole } from "@dao/staffDAO";
+import { NotFoundError } from "@models/errors/NotFoundError";
+import { BadRequestError } from "@models/errors/BadRequestError";
+import { NotificationRepository } from "./notificationRepository";
 
 export interface ReportFilters {
     citizen_username?: string;
@@ -94,6 +95,18 @@ export class ReportRepository {
         qb.orderBy('report.timestamp', 'ASC');
 
         const reports = await qb.getMany();
+        return reports;
+    }
+
+    // Get approved reports for map view
+    async getMapReports(): Promise<ReportDAO[]> {
+
+        const reports = await this.repo.find({
+            where: { status: And(Not(Status.PENDING), Not(Status.REJECTED)) },
+            relations: ['citizen', 'assignedStaff'],
+            order: { timestamp: 'ASC' },
+        });
+
         return reports;
     }
 
