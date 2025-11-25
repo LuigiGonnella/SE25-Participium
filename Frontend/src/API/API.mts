@@ -254,5 +254,35 @@ const getAllMessages = async (reportId: number): Promise<any[]> => {
     return handleAPIError(response, "Get All Messages");
 }
 
-const API = { login, register, getUserInfo, logout, municipalityRegister, getOffices, createReport, getReports, getMapReports, getReportById, updateReport, assignReportToSelf, getNotifications, markNotificationAsRead, createMessage, getAllMessages };
+const updateCitizenProfile = async (
+    username: string,
+    updates: {
+        telegram_username?: string;
+        receive_emails?: boolean;
+        profilePicture?: File;
+    }
+): Promise<Citizen> => {
+    const formData = new FormData();
+    
+    if (updates.telegram_username !== undefined) {
+        formData.append('telegram_username', updates.telegram_username);
+    }
+    if (updates.receive_emails !== undefined) {
+        formData.append('receive_emails', updates.receive_emails.toString());
+    }
+    if (updates.profilePicture) {
+        formData.append('profilePicture', updates.profilePicture);
+    }
+
+    const response = await fetch(`${BACKEND_URL}/citizens/${username}`, {
+        method: 'PATCH',
+        credentials: 'include',
+        body: formData,
+    });
+
+    if (response.ok) return await response.json();
+    return handleAPIError(response, 'Update Citizen Profile');
+};
+
+const API = { login, register, getUserInfo, logout, municipalityRegister, getOffices, createReport, getReports, getMapReports, getReportById, updateReport, assignReportToSelf, getNotifications, markNotificationAsRead, createMessage, getAllMessages, updateCitizenProfile };
 export default API;

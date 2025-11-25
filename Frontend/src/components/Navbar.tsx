@@ -10,7 +10,7 @@ import {LogoutButton} from './LoginPage';
 import {useNavigate} from "react-router";
 import {isCitizen, isStaff, type Notification, StaffRole, type User} from "../models/Models.ts";
 import {useEffect, useRef, useState} from "react";
-import API from "../API/API.mjs";
+import API, { STATIC_URL } from "../API/API.mjs";
 
 interface NavComponentProps {
     loggedIn: boolean;
@@ -142,7 +142,7 @@ function NavComponent({loggedIn, user, handleLogout}: NavComponentProps) {
                                 <div id="avatarRef" role="button" className="d-flex flex-row justify-content-center gap-2 me-3" onClick={() => navigate('/profile')}>
                                     <AvatarIcon size="sm">
                                         {isCitizen(user) && user.profilePicture ?
-                                            <img src={user.profilePicture} alt="Avatar"/>
+                                            <img src={`${STATIC_URL}${user.profilePicture}`} alt="Avatar"/>
                                         : <span className="initials">{user.name.charAt(0).toUpperCase()}{user.surname.charAt(0).toUpperCase()}</span>}
                                     </AvatarIcon>
                                     <span className="text-white">
