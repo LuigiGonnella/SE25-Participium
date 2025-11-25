@@ -288,4 +288,15 @@ export class ReportRepository {
 
         return this.getReportById(report.id);
     }
+
+    async getAllMessages(reportId: number): Promise<MessageDAO[]> {
+        const messageRepo = AppDataSource.getRepository(MessageDAO);
+
+        const messages = await messageRepo.find({
+            where: { report: { id: reportId } },
+            relations: ['staff'],
+            order: { timestamp: 'DESC' }
+        });
+        return messages;
+    }
 }
