@@ -1,7 +1,8 @@
 import type {Citizen, Staff, Credentials, NewCitizen, NewStaff, Office, User, NewReport, Report} from "../models/Models.ts";
 import {handleAPIError} from "../services/ErrorHandler.ts";
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:8080/api/v1";
+export const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:8080/api/v1";
+export const STATIC_URL = import.meta.env.VITE_STATIC_URL || "http://localhost:8080";
 
 const register = async (newCitizen: NewCitizen): Promise<Citizen> => {
     if (!newCitizen.email || !newCitizen.password || !newCitizen.username) {
@@ -140,6 +141,60 @@ const createReport = async (newReport: NewReport): Promise<Report> => {
     }
     return handleAPIError(response, 'Create Report');
 };
+const getReports = async (filters?: Record<string, string>): Promise<Report[]> => {
+    const query = filters
+        ? "?" + new URLSearchParams(filters).toString()
+        : "";
 
-const API = { login, register, getUserInfo, logout, municipalityRegister, getOffices, createReport };
+    const response = await fetch(`${BACKEND_URL}/reports${query}`, {
+        credentials: "include",
+    });
+
+    if (response.ok) return await response.json();
+    return handleAPIError(response, "Get Reports");
+};
+
+const getReportById = async (id: number): Promise<Report> => {
+    const response = await fetch(`${BACKEND_URL}/reports/${id}`, {
+        credentials: "include",
+    });
+
+    if (response.ok) return await response.json();
+    return handleAPIError(response, "Get Report Details");
+};
+
+const updateReport = async (
+    id: number,
+    data: any,
+    role: string
+): Promise<Report> => {
+    const endpoint =
+        role === "Municipal Public Relations Officer"
+            ? `/reports/${id}/manage`
+            : `/reports/${id}/work`;
+
+    const response = await fetch(`${BACKEND_URL}${endpoint}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(data),
+    });
+
+    if (response.ok) return await response.json();
+    return handleAPIError(response, "Update Report");
+};
+
+const assignReportToSelf = async (reportId: number): Promise<Report> => {
+    const response = await fetch(`${BACKEND_URL}/reports/${reportId}/work`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ status: "IN_PROGRESS" }),
+    });
+
+    if (response.ok) return await response.json();
+    return handleAPIError(response, "Assign Report");
+};
+
+const API = { login, register, getUserInfo, logout, municipalityRegister, getOffices, createReport, getReports, getReportById, updateReport, assignReportToSelf };
 export default API;

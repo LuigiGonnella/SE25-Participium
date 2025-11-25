@@ -4,3 +4,4 @@
 /coverage
 /data
 uploads/
+*.http

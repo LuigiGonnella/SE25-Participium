@@ -67,4 +67,30 @@ export interface Report {
      * @memberof Report
      */
     comment?: string;  
+
+    AssignedStaff?: string;
+}
+
+export function ReportToJSON(json: any): Report {
+    return ReportToJSONTyped(json, false);  
+}
+
+export function ReportToJSONTyped(value?: Report | null, ignoreDiscriminator: boolean = false): any {
+    if (value == null) {
+        return value;
+    }
+
+    return {
+        'id': value['id'],
+        'citizenUsername': value['citizenUsername'],
+        'timestamp': value['timestamp'],
+        'status': value['status'],
+        'title': value['title'],
+        'description': value['description'],
+        'category': value['category'],
+        'coordinates': value['coordinates'],
+        'photos': value['photos'],
+        'comment': value['comment'],
+        'AssignedStaff': value['AssignedStaff'],
+    };
 }

@@ -1,8 +1,14 @@
 import {Router} from "express";
 import {isAuthenticated} from "@middlewares/authMiddleware";
 import {mapReportDAOToDTO} from "@services/mapperService";
-import {createReport, uploadReportPictures} from "@controllers/reportController";
+import {createReport, uploadReportPictures, getReports, getReportById, updateReportAsTOSM, updateReportAsMPRO} from "@controllers/reportController";
 import {Citizen} from "@dto/Citizen";
+import { ReportFilters } from "@repositories/reportRepository";
+import { BadRequestError } from "@errors/BadRequestError";
+import { Status } from "@models/dao/reportDAO";
+import { OfficeCategory } from "@models/dao/officeDAO";
+import { StaffRole } from "@models/dao/staffDAO";
+import { NotFoundError } from "@models/errors/NotFoundError";
 
 const router = Router();
 
@@ -16,4 +22,218 @@ router.post('/', isAuthenticated(['CITIZEN']), uploadReportPictures.array("photo
     }
 });
 
+router.get('/', isAuthenticated(['STAFF']), async (req, res, next) => {
+    try{
+        const { citizen_username,
+                fromDate,
+                toDate,
+                status,
+                title,
+                category,
+                staff_username } = req.query;
+
+        const filters: ReportFilters = {};
+
+        if (citizen_username) {
+            filters.citizen_username = String(citizen_username).trim();
+        }
+
+        if (title) {
+            filters.title = String(title).trim().replace(/_/g, ' ');
+        }
+
+        if (staff_username) {
+            filters.staff_username = String(staff_username).trim();
+        }
+
+        if (fromDate && !toDate || !fromDate && toDate) {
+            throw new BadRequestError('Both fromDate and toDate must be provided together.');
+        }
+
+        if (fromDate) {
+            const date = new Date(String(fromDate));
+            if (isNaN(date.getTime())) {
+                throw new BadRequestError('Invalid fromDate format.');
+            }
+            filters.fromDate = date;
+        }
+
+        if (toDate) {
+            const date = new Date(String(toDate));
+            if (isNaN(date.getTime())) {
+                throw new BadRequestError('Invalid toDate format.');
+            }
+            filters.toDate = date;
+        }
+
+        if (filters.fromDate && filters.toDate && filters.fromDate > filters.toDate) {
+            throw new BadRequestError('fromDate cannot be after toDate.');
+        }
+
+        if (status) {
+            const statusValue = String(status);
+            
+            const validStatus = Object.keys(Status)
+                .filter(key => isNaN(Number(key)))
+                .find(key => key.toUpperCase() === statusValue.toUpperCase());
+           
+            if (!validStatus) {
+                throw new BadRequestError('Invalid status.');
+            }
+            filters.status = Status[validStatus as keyof typeof Status];
+        }
+
+        if (category) {
+            const categoryValue = String(category);
+
+            const validCategory = Object.keys(OfficeCategory)
+                .filter(key => isNaN(Number(key)))
+                .find(key => key.toUpperCase() === categoryValue.toUpperCase());
+           
+            if (!validCategory) {
+                throw new BadRequestError('Invalid category.');
+            }
+            filters.category = OfficeCategory[validCategory as keyof typeof OfficeCategory];
+        }
+
+        const reports = await getReports(filters);
+        res.status(200).json(reports);
+
+    }
+    catch(err) {
+        next(err);
+    }
+});
+
+router.get('/:reportId', isAuthenticated(['STAFF']), async (req, res, next) => {
+    try {
+        const reportId = parseInt(req.params.reportId);
+        if (isNaN(reportId)) {
+            throw new BadRequestError('Invalid reportId.');
+        }
+
+        const report = await getReportById(reportId);
+        res.status(200).json(report);
+    } catch (err) {
+        next(err);
+    }
+});
+
+// PATCH MPRO: change status, category and (optionally) assigned staff
+router.patch('/:reportId/manage', isAuthenticated([StaffRole.MPRO]), async (req, res, next) => {
+    try {
+
+        const reportId = parseInt(req.params.reportId);
+        if (isNaN(reportId)) {
+            throw new BadRequestError('Invalid reportId.');
+        }
+
+        const { status, comment, category } = req.body;
+
+        let updatedStatus: Status;
+        let updatedCategory: OfficeCategory | undefined;
+
+        if (status) {
+            const statusValue = String(status);           
+            const validStatus = Object.keys(Status)
+                .filter(key => isNaN(Number(key)))
+                .find(key => key.toUpperCase() === statusValue.toUpperCase());
+                
+            if (!validStatus) {
+                throw new BadRequestError('Invalid status.');
+            }
+
+            updatedStatus = Status[validStatus as keyof typeof Status];
+            
+        } else {
+            throw new BadRequestError('Status is required.');
+        }
+
+        if(updatedStatus !== Status.PENDING && updatedStatus !== Status.ASSIGNED && updatedStatus !== Status.REJECTED)
+            throw new BadRequestError(`Invalid status for ${StaffRole.MPRO}.`);
+
+        if((updatedStatus === Status.PENDING || updatedStatus === Status.ASSIGNED) && comment)
+            throw new BadRequestError("Comments can only be added when report is rejected.");  
+        
+        if(updatedStatus === Status.REJECTED && !comment)
+            throw new BadRequestError("A comment is required when rejecting a report.");
+
+        if (category) {
+            const categoryValue = String(category);
+
+            const validCategory = Object.keys(OfficeCategory)
+                .filter(key => isNaN(Number(key)))
+                .find(key => key.toUpperCase() === categoryValue.toUpperCase());
+           
+            if (!validCategory) {
+                throw new BadRequestError('Invalid category.');
+            }
+            updatedCategory = OfficeCategory[validCategory as keyof typeof OfficeCategory];
+        }
+
+        const report = await updateReportAsMPRO(reportId, updatedStatus, comment, updatedCategory);
+        res.status(200).json(report);
+    } catch (err) {
+        next(err);
+    }
+});
+
+// PATCH TOSM: self assignment of reports
+router.patch(
+  "/:reportId/work",
+  isAuthenticated([StaffRole.TOSM]),
+  async (req, res, next) => {
+    try {
+      const reportId = parseInt(req.params.reportId);
+      if (isNaN(reportId)) {
+        throw new BadRequestError("Invalid reportId.");
+      }
+
+      const { status, comment, staff } = req.body;
+
+      let updatedStatus: Status;
+
+      if (staff) {
+        throw new BadRequestError(
+          "Technical Office Staff Members cannot assign the report to another staff member."
+        );
+      }
+
+      if (status) {
+        const statusValue = String(status);
+        const validStatus = Object.keys(Status)
+          .filter((key) => isNaN(Number(key)))
+          .find((key) => key.toUpperCase() === statusValue.toUpperCase());
+
+        if (!validStatus) {
+          throw new BadRequestError("Invalid status.");
+        }
+
+        updatedStatus = Status[validStatus as keyof typeof Status];
+        
+      } else {
+        throw new BadRequestError("Status is required.");
+      }
+
+      if(updatedStatus !== Status.IN_PROGRESS && updatedStatus !== Status.SUSPENDED && updatedStatus !== Status.RESOLVED)
+        throw new BadRequestError(`Invalid status for ${StaffRole.TOSM}.`);
+
+      if((updatedStatus !== Status.RESOLVED) && comment)
+            throw new BadRequestError("Comments can only be added when report is resolved.");
+
+      const staffUsername = String((req.user as any).username).trim();
+
+      const report = await updateReportAsTOSM(
+        reportId,
+        updatedStatus,
+        comment,
+        staffUsername
+      );
+
+      res.status(200).json(report);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
 export default router;
