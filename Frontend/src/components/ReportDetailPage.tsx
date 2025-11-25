@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams } from "react-router";
 import API from "../API/API.mts";
 import type { Report, User } from "../models/Models.ts";
@@ -6,6 +6,7 @@ import {
   ReportStatus,
   OfficeCategory,
   isMPRO,
+  isTOSM,
 } from "../models/Models.ts";
 import {STATIC_URL} from "../API/API.mts"
 
@@ -28,6 +29,11 @@ export default function ReportDetailPage({ user }: ReportDetailPageProps) {
 
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState("");
+
+  // Message state
+  const [messageInput, setMessageInput] = useState<string>("");
+  const [messageLoading, setMessageLoading] = useState<boolean>(false);
+  const [messageError, setMessageError] = useState<string>("");
 
   const categoryOptions = Object.entries(OfficeCategory) as [string, string][];
 
@@ -103,6 +109,25 @@ export default function ReportDetailPage({ user }: ReportDetailPageProps) {
       setError(err?.details || err?.message || "Failed to update report");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!report || !user || !isTOSM(user)) return;
+    setMessageLoading(true);
+    setMessageError("");
+
+    try {
+      await API.createMessage(report.id, messageInput);
+      setMessageInput("");
+
+      const updateReport = await API.getReportById(report.id);
+      setReport(updateReport);
+  } catch (err: any) {
+      setMessageError(err?.details || "Failed to send message");
+    } finally {
+      setMessageLoading(false);
     }
   };
 
@@ -202,6 +227,29 @@ return (
                 }}/>
               )}
         </div>
+
+        {/* Message Section */}
+        {user && isTOSM(user) && (
+        <div className="card-footer">
+          <form onSubmit={handleMessage}>
+            <div className="mb-2">
+                <textarea
+                  className="form-control"
+                  rows={2}
+                  value={messageInput}
+                  onChange={(e) => setMessageInput(e.target.value)}
+                  required
+                  placeholder="Type internal note/message..."
+                  disabled={messageLoading}
+                />
+            </div>
+            {messageError && <div className="alert alert-danger py-1">{messageError}</div>}
+            <button type="submit" className="btn btn-primary" disabled={messageLoading || !messageInput.trim()}>
+              {messageLoading ? "Sending..." : "Send Message"}
+            </button>
+          </form>
+        </div>
+      )}
 
       </div>
 
