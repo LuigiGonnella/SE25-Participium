@@ -81,3 +81,53 @@ export const ROLE_OFFICE_MAP = {
     "Public Green Areas and Playgrounds Office"
   ]
 };
+
+// @ts-ignore
+export enum OfficeCategory {
+    MOO = "Municipal Organization",
+    WSO = "Water Supply",
+    ABO = "Architectural Barriers",
+    SSO = "Sewer System",
+    PLO = "Public Lighting",
+    WO = "Waste",
+    RSTLO = "Road Signs and Traffic Lights",
+    RUFO = "Roads and Urban Furnishings",
+    PGAPO = "Public Green Areas and Playgrounds",
+}
+
+// @ts-ignore
+export enum ReportStatus {
+    PENDING = "Pending",
+    ASSIGNED = "Assigned",
+    IN_PROGRESS = "In Progress",
+    SUSPENDED = "Suspended",
+    REJECTED = "Rejected",
+    RESOLVED = "Resolved",
+}
+
+export interface Report {
+    id: number;
+    citizen?: Citizen;
+    timestamp: string;
+    status: ReportStatus;
+    title: string;
+    description: string;
+    category: OfficeCategory;
+    latitude: number;
+    longitude: number;
+    photo1: string;
+    photo2?: string;
+    photo3?: string;
+    anonymous: boolean;
+    comment?: string;
+}
+
+export interface NewReport {
+    title: string;
+    description: string;
+    category: OfficeCategory;
+    latitude: number;
+    longitude: number;
+    anonymous: boolean;
+    photos: File[];
+}

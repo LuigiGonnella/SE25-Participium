@@ -6,6 +6,7 @@ const URL_AUTH = "/auth";
 const URL_CITIZENS = "/citizens";
 const URL_OFFICES = "/offices";
 const URL_STAFFS = "/staffs";
+const URL_REPORTS = "/reports";
 
 
 export const CONFIG = {
@@ -30,6 +31,7 @@ export const CONFIG = {
 		V1_CITIZENS: APP_V1_BASE_URL + URL_CITIZENS,
 		V1_OFFICES: APP_V1_BASE_URL + URL_OFFICES,
 		V1_STAFFS: APP_V1_BASE_URL + URL_STAFFS,
+		V1_REPORTS: APP_V1_BASE_URL + URL_REPORTS
 	},
 	LOG_LEVEL: process.env.LOG_LEVEL || "info",
 	LOG_PATH: process.env.LOG_PATH || "logs",
