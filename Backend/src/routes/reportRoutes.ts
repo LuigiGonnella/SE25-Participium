@@ -85,15 +85,11 @@ router.get('/', isAuthenticated(['STAFF']), async (req, res, next) => {
 
         if (category) {
             const categoryValue = String(category);
-
-            const validCategory = Object.keys(OfficeCategory)
-                .filter(key => isNaN(Number(key)))
-                .find(key => key.toUpperCase() === categoryValue.toUpperCase());
            
-            if (!validCategory) {
+            if (!(categoryValue in OfficeCategory)) {
                 throw new BadRequestError('Invalid category.');
             }
-            filters.category = OfficeCategory[validCategory as keyof typeof OfficeCategory];
+            filters.category = OfficeCategory[categoryValue as keyof typeof OfficeCategory];
         }
 
         const reports = await getReports(filters);
@@ -161,14 +157,10 @@ router.patch('/:reportId/manage', isAuthenticated([StaffRole.MPRO]), async (req,
         if (category) {
             const categoryValue = String(category);
 
-            const validCategory = Object.keys(OfficeCategory)
-                .filter(key => isNaN(Number(key)))
-                .find(key => key.toUpperCase() === categoryValue.toUpperCase());
-           
-            if (!validCategory) {
+            if (!(categoryValue in OfficeCategory) || category === 'MOO') {
                 throw new BadRequestError('Invalid category.');
             }
-            updatedCategory = OfficeCategory[validCategory as keyof typeof OfficeCategory];
+            updatedCategory = OfficeCategory[categoryValue as keyof typeof OfficeCategory];
         }
 
         const report = await updateReportAsMPRO(reportId, updatedStatus, comment, updatedCategory);

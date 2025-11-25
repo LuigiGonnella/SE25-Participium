@@ -1,13 +1,12 @@
-import {Between, Repository} from "typeorm";
+import {Repository} from "typeorm";
 import {AppDataSource} from "@database";
 import {ReportDAO, Status} from "@dao/reportDAO";
 import {CitizenDAO} from "@dao/citizenDAO";
 import {OfficeCategory} from "@dao/officeDAO";
-import { findOrThrowNotFound } from "@utils";
-import { StaffDAO, StaffRole } from "@dao/staffDAO";
-import { NotFoundError } from "@models/errors/NotFoundError";
-import { BadRequestError } from "@models/errors/BadRequestError";
-import { NotificationRepository } from "./notificationRepository";
+import {StaffDAO} from "@dao/staffDAO";
+import {NotFoundError} from "@models/errors/NotFoundError";
+import {BadRequestError} from "@models/errors/BadRequestError";
+import {NotificationRepository} from "./notificationRepository";
 
 export interface ReportFilters {
     citizen_username?: string;
@@ -126,6 +125,9 @@ export class ReportRepository {
 
         if(updatedReport.status !== Status.PENDING)
             throw new BadRequestError("Cannot update a report that is not pending.");
+
+        if(!updatedCategory && updatedReport.category === OfficeCategory.MOO)
+            throw new BadRequestError("Report cannot be assigned to Municipal Organization Office (MOO).");
 
         await this.repo.update(
             {id: reportId},

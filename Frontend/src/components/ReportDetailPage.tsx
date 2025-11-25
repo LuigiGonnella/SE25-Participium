@@ -1,13 +1,7 @@
-import { useEffect, useState } from "react";
-import { useParams } from "react-router";
-import API from "../API/API.mts";
-import type { Report, User } from "../models/Models.ts";
-import {
-  ReportStatus,
-  OfficeCategory,
-  isMPRO,
-} from "../models/Models.ts";
-import {STATIC_URL} from "../API/API.mts"
+import {useEffect, useState} from "react";
+import {useParams} from "react-router";
+import API, {STATIC_URL} from "../API/API.mts";
+import {isMPRO, OfficeCategory, type Report, ReportStatus, type User} from "../models/Models.ts";
 
 interface ReportDetailPageProps {
   user?: User;
@@ -88,7 +82,7 @@ export default function ReportDetailPage({ user }: ReportDetailPageProps) {
         payload.status = ReportStatus.ASSIGNED;
       
         if (categoryInput) {
-          payload.category = OfficeCategory[categoryInput as keyof typeof OfficeCategory];
+          payload.category = categoryInput;
         }
       }
 
@@ -287,7 +281,7 @@ return (
                     >
                       <option value="">Keep current: {report.category}</option>
                       {categoryOptions
-                          .filter(([key]) => OfficeCategory[key as keyof typeof OfficeCategory] !== report.category)
+                          .filter(([key]) => ![report.category, OfficeCategory.MOO].includes(OfficeCategory[key as keyof typeof OfficeCategory]))
                           .map(([key, label]) => (
                             <option key={key} value={key}>{label}</option>
                           ))}
