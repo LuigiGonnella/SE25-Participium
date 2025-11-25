@@ -121,7 +121,7 @@ export default function ReportListPage({ user }: ReportListProps) {
                             key={r.id}
                             className="list-group-item p-3 d-flex justify-content-between align-items-center"
                         >
-                            {isMPRO(user) &&  <Link
+                            {(isMPRO(user) || isTOSM(user)) &&  <Link
                                 to={`/reports/${r.id}`}
                                 className="flex-grow-1 text-decoration-none text-dark"
                             >
@@ -146,27 +146,6 @@ export default function ReportListPage({ user }: ReportListProps) {
                                 </div>
                             </Link>}
 
-                            {isTOSM(user) &&  
-                                <div className="d-flex justify-content-between">
-                                    <div>
-                                        <h5>{r.title}</h5>
-                                        <p className="text-muted mb-1">
-                                            Status: <strong>{r.status}</strong>
-                                        </p>
-                                        <p className="text-muted mb-0">
-                                            Category: <strong>{r.category}</strong>
-                                        </p>
-                                        {r.AssignedStaff && (
-                                            <p className="text-muted mb-0">
-                                                Assigned to: <strong>{r.AssignedStaff}</strong>
-                                            </p>
-                                        )}
-                                    </div>
-                                    <div className="text-muted">
-                                        <small>{new Date(r.timestamp).toLocaleString()}</small>
-                                    </div>
-                                </div>
-                            }
                             
                             
                             {canAssign(r) && (

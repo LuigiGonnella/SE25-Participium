@@ -154,6 +154,15 @@ const getReports = async (filters?: Record<string, string>): Promise<Report[]> =
     return handleAPIError(response, "Get Reports");
 };
 
+const getMapReports = async (): Promise<Report[]> => {
+    const response = await fetch(`${BACKEND_URL}/reports/public`, {
+        credentials: "include",
+    });
+
+    if (response.ok) return await response.json();
+    return handleAPIError(response, "Get Map Reports");
+}
+
 const getReportById = async (id: number): Promise<Report> => {
     const response = await fetch(`${BACKEND_URL}/reports/${id}`, {
         credentials: "include",
@@ -196,5 +205,5 @@ const assignReportToSelf = async (reportId: number): Promise<Report> => {
     return handleAPIError(response, "Assign Report");
 };
 
-const API = { login, register, getUserInfo, logout, municipalityRegister, getOffices, createReport, getReports, getReportById, updateReport, assignReportToSelf };
+const API = { login, register, getUserInfo, logout, municipalityRegister, getOffices, createReport, getReports, getMapReports, getReportById, updateReport, assignReportToSelf };
 export default API;
