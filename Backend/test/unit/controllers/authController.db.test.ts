@@ -9,6 +9,7 @@ import bcrypt from 'bcrypt';
 import passport from 'passport';
 import { configurePassport } from '@config/passport';
 import { AppDataSource } from "@database";
+import { ReportDAO } from '@models/dao/reportDAO';
 
 
 let localDataSource: DataSource;
@@ -17,7 +18,7 @@ beforeAll(async () => {
     localDataSource = new DataSource({
         type: 'sqlite',
         database: ':memory:',
-        entities: [CitizenDAO, StaffDAO, OfficeDAO],
+        entities: [CitizenDAO, StaffDAO, OfficeDAO, ReportDAO],
         synchronize: true,
         logging: false
     });
