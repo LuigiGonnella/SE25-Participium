@@ -4,11 +4,10 @@ import API from "../API/API.mts";
 import type { Report, User } from "../models/Models.ts";
 import {
   ReportStatus,
+  OfficeCategory,
   isMPRO,
 } from "../models/Models.ts";
 import {STATIC_URL} from "../API/API.mts"
-
-const BACKEND_BASE_URL = import.meta.env.VITE_BACKEND_URL?.replace('/api/v1', '') || "http://localhost:8080";
 
 interface ReportDetailPageProps {
   user?: User;
@@ -24,6 +23,7 @@ export default function ReportDetailPage({ user }: ReportDetailPageProps) {
 
   // Form state for update actions
   const [statusInput, setStatusInput] = useState<string>("");
+  const [categoryInput, setCategoryInput] = useState<string>("");
   const [commentInput, setCommentInput] = useState<string>("");
 
   const [saving, setSaving] = useState(false);
@@ -158,27 +158,16 @@ return (
         <p>
         {report.citizenUsername ? (
         <>{report.citizenUsername}</>
-          Lat: {report.coordinates?.[0] ?? 'N/A'}, Lng: {report.coordinates?.[1] ?? 'N/A'}
-        </p>
-
-        <h5>Photos</h5>
-        <div className="d-flex gap-3 flex-wrap mb-3">
-          {report.photos?.[0] && <img src={`${BACKEND_BASE_URL}${report.photos[0]}`} width={150} alt="Photo 1" />}
-          {report.photos?.[1] && <img src={`${BACKEND_BASE_URL}${report.photos[1]}`} width={150} alt="Photo 2" />}
-          {report.photos?.[2] && <img src={`${BACKEND_BASE_URL}${report.photos[2]}`} width={150} alt="Photo 3" />}
-        </div>
-
-        <h5>Citizen</h5>
-        <p>{report.citizenUsername ?? 'Anonymous'}</p>
-        {/*  
-        {report.anonymous ? (
-          <p><i>Anonymous report</i></p>
         ) : (
         <i>Unknown</i>
         )}
         </p>
 
-        <div className="d-block mb-3">
+        {/*}
+          Lat: {report.coordinates?.[0] ?? 'N/A'}, Lng: {report.coordinates?.[1] ?? 'N/A'}
+        </p>*/}
+
+         <div className="d-block mb-3">
             {report.photos[0] && (
               <img
                 src={`${STATIC_URL}${report.photos[0]}`}
@@ -212,11 +201,9 @@ return (
                   e.currentTarget.style.display = 'none';
                 }}/>
               )}
-      </div>
+        </div>
 
       </div>
-
-
 
       {/* RIGHT COLUMN — MANAGE REPORT */}
       { user && isMPRO(user) && report.status === ReportStatus.PENDING && (
