@@ -279,17 +279,30 @@ export class ReportRepository {
     }
 
     async addMessageToReport(report: ReportDAO, message: string, assignedStaff: StaffDAO | undefined): Promise<ReportDAO> {
+        const messageRepo = AppDataSource.getRepository(MessageDAO);
+        
         const messageDAO = new MessageDAO();
-
-        messageDAO.report = report;
         messageDAO.message = message;
         messageDAO.staff = assignedStaff;
+        messageDAO.report = report;
 
-        report.messages = [...report.messages, messageDAO];
+        // Save message directly to avoid circular reference issues
+        await messageRepo.save(messageDAO);
 
-        await this.repo.save(report);
+        // Create notification for citizen if message is from staff
+        if (assignedStaff && report.citizen) {
+            await this.notificationRepo.createNotificationForCitizen(
+                report,
+                "New message on your report",
+                `Staff member has sent a message regarding your report: "${report.title}"`
+            );
+        }
 
-        return this.getReportById(report.id);
+        // Reload report with messages to return updated data
+        return await this.repo.findOne({
+            where: { id: report.id },
+            relations: ['citizen', 'assignedStaff', 'messages', 'messages.staff']
+        }) as ReportDAO;
     }
 
     async getAllMessages(reportId: number): Promise<MessageDAO[]> {

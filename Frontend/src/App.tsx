@@ -106,7 +106,6 @@ function App() {
                 <Route path="/reports/:id" element={loggedIn && (isMPRO(user) || isTOSM(user))?
                            <ReportDetailPage user={user} />
                            : <Navigate replace to="/login"/>}/>
-                
                 <Route path="/profile" element={
                     loggedIn && user ? (
                         isStaff(user) ? <StaffProfile user={user} /> : <CitizenProfile user={user} />

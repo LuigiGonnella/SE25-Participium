@@ -53,7 +53,6 @@ export default function StaffProfile({ user }: StaffProfileProps) {
             // Reload reports
             const filters = { 
                 staff_username: user.username,
-                status: "IN_PROGRESS"
             };
             const updatedReports = await API.getReports(filters);
             setMyReports(updatedReports);

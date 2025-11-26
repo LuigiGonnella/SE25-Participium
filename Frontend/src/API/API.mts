@@ -8,7 +8,8 @@ import type {
     User,
     NewReport,
     Report,
-    Notification
+    Notification,
+    Message
 } from "../models/Models.ts";
 import {handleAPIError} from "../services/ErrorHandler.ts";
 
@@ -246,7 +247,7 @@ const createMessage = async (reportId: number, message: string): Promise<Report>
     return handleAPIError(response, "Create Message");
 };
 
-const getAllMessages = async (reportId: number): Promise<any[]> => {
+const getAllMessages = async (reportId: number): Promise<Message[]> => {
     const response = await fetch(`${BACKEND_URL}/reports/${reportId}/messages`, {
         credentials: "include",
     });

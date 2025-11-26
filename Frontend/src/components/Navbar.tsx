@@ -49,7 +49,12 @@ function NavComponent({loggedIn, user, handleLogout}: NavComponentProps) {
         try {
             await API.markNotificationAsRead(n.id);
             setIsNotifOpen(false);
-            navigate("/reports/" + n.reportId);
+            // Navigate to reports page for staff, map with report selected for citizens
+            if (user && isStaff(user)) {
+                navigate("/reports/" + n.reportId);
+            } else {
+                navigate("/map?reportId=" + n.reportId);
+            }
         } catch (e) {
             console.error(e);
         }
@@ -57,7 +62,7 @@ function NavComponent({loggedIn, user, handleLogout}: NavComponentProps) {
 
     return (
         <>
-            <Header type="slim" className="pb-0" style={{position: 'sticky', top: 0, zIndex: 1001}}>
+            <Header type="slim" className="pb-0" style={{position: 'sticky', top: 0, zIndex: 1100}}>
                 <HeaderContent>
                     <HeaderBrand className="fs-5 fw-bold d-none d-lg-block pe-2" href='/' responsive>
                         Participium
