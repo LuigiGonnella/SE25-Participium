@@ -207,7 +207,14 @@ return (
                                 </p>
 
                                 {report.comment && (
+                                    <>
+                                        {report.status === ReportStatus.REJECTED ? (
+                                            <h5>Rejection Reason</h5>
+                                        ) : (
+                                            <h5>Staff Comment</h5>
+                                        )}
                                         <p>{report.comment}</p>
+                                    </>
                                 )}
 
                                 <h5>Category</h5>
@@ -266,6 +273,7 @@ return (
                                 </Carousel>
                             </div>
                         </div>
+                        { (isTOSM(user) && report.assignedStaff === user.username) &&
                         <div className="row px-4">
                             {!loading && error && <Alert variant="danger">{error}</Alert>}
                             <div className="ms-4 pt-3">
@@ -310,7 +318,7 @@ return (
                                     </Button>
                                 )}
                             </div>
-                        </div>
+                        </div>}
                     </div>
                 </div>
 

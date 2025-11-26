@@ -121,10 +121,11 @@ export default function ReportListPage({ user }: ReportListProps) {
                         </option>
                     ))}
                 </select>
+                { isTOSM(user) &&
                 <div className="d-flex align-items-center">
-                <label>Assigned to me</label>&nbsp;
-                <input type="checkbox" onChange={(v) => setAssignedToMe(v.target.checked)}/>
-                </div>
+                    <label>Assigned to me</label>&nbsp;
+                    <input type="checkbox" onChange={(v) => setAssignedToMe(v.target.checked)}/>
+                </div>}
             </div>
 
             {/* LOADING */}
