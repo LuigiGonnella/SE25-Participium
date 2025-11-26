@@ -1,0 +1,56 @@
+/**
+ * 
+ * @export
+ * @interface Notification
+ */
+export interface Notification {
+    /**
+     * 
+     * @type {string}
+     * @memberof Notification
+     */
+    timestamp: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Notification
+     */
+    title: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Notification
+     */
+    message: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof Notification
+     */
+    isRead: boolean;
+    /**
+     * 
+     * @type {string}
+     * @memberof Report
+     */
+    citizenUsername?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Notification
+     */
+    staffUsername?: string;
+}
+
+export interface Notification {
+    timestamp: string;
+    title: string;
+    message: string;
+    isRead: boolean;
+    citizenUsername?: string;
+    staffUsername?: string;
+}
+
+export function NotificationToJSON(n: Notification) {
+    return n;
+}

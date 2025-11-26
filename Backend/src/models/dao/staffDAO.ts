@@ -1,5 +1,6 @@
-import {Column, Entity, ManyToOne, PrimaryGeneratedColumn} from "typeorm";
+import {Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn} from "typeorm";
 import {OfficeDAO} from "./officeDAO";
+import { ReportDAO } from "./reportDAO";
 
 export enum StaffRole {
     ADMIN = "Admin",
@@ -31,5 +32,8 @@ export class StaffDAO {
 
     @ManyToOne(() => OfficeDAO, (office) => office.members, {onDelete: "SET NULL", nullable: true})
     office: OfficeDAO;
+
+    @OneToMany(() => ReportDAO, (report) => report.assignedStaff)
+    assignedReports: ReportDAO[];
 
 }
