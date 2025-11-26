@@ -68,15 +68,16 @@ export function mapOfficeDAOToDTO(officeDAO: OfficeDAO): OfficeDTO {
 
 export function mapReportDAOToDTO(reportDAO: ReportDAO): ReportDTO {
   return removeNullAttributes({
-    id: reportDAO.id,
-    citizenUsername: reportDAO.anonymous ? undefined : reportDAO.citizen.username,
-    timestamp: reportDAO.timestamp,
-    status: reportDAO.status,
-    title: reportDAO.title,
-    description: reportDAO.description,
-    category: reportDAO.category,
-    coordinates: [reportDAO.latitude, reportDAO.longitude],
-    photos: [reportDAO.photo1, reportDAO.photo2, reportDAO.photo3].filter(photo => photo !== undefined),
-    comment: reportDAO.comment
-  }) as ReportDTO;
+        id: reportDAO.id,
+        citizenUsername: reportDAO.anonymous ? undefined : reportDAO.citizen?.username,
+        timestamp: reportDAO.timestamp,
+        status: reportDAO.status,
+        title: reportDAO.title,
+        description: reportDAO.description,
+        category: reportDAO.category,
+        coordinates: [reportDAO.latitude, reportDAO.longitude],
+        photos: [reportDAO.photo1, reportDAO.photo2, reportDAO.photo3].filter(Boolean) as string[],
+        comment: reportDAO.comment,
+        AssignedStaff: reportDAO.assignedStaff?.username,
+    }) as ReportDTO;
 }

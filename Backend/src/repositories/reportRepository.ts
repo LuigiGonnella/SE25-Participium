@@ -53,42 +53,58 @@ export class ReportRepository {
         });
     }
 
+    
+
     async getReports(filters?: ReportFilters): Promise<ReportDAO[]> {
-        const where: any = {};
+        const qb = this.repo.createQueryBuilder('report')
+            .leftJoinAndSelect('report.citizen', 'citizen')
+            .leftJoinAndSelect('report.assignedStaff', 'staff');
 
         if (filters?.citizen_username) {
-            where.citizen = { username: filters.citizen_username };
+            qb.andWhere('citizen.username = :citizenUsername', { citizenUsername: filters.citizen_username });
         }
 
-        if (filters?.status){
-            where.status = filters.status;
+        if (filters?.status) {
+            qb.andWhere('report.status = :status', { status: filters.status });
         }
 
         if (filters?.title) {
-            where.title = filters.title;
+            qb.andWhere('report.title = :title', { title: filters.title });
         }
 
         if (filters?.category) {
-            where.category = filters.category;
+            qb.andWhere('report.category = :category', { category: filters.category });
         }
 
         if (filters?.staff_username) {
-            where.assignedStaff = { username: filters.staff_username };
+            qb.andWhere('staff.username = :staffUsername', { staffUsername: filters.staff_username });
         }
 
         if (filters?.fromDate && filters?.toDate) {
             const endDate = new Date(filters.toDate);
             endDate.setDate(endDate.getDate() + 1);
-            where.timestamp = Between(filters.fromDate, endDate);
+            qb.andWhere('report.timestamp BETWEEN :fromDate AND :toDate', { 
+                fromDate: filters.fromDate, 
+                toDate: endDate 
+            });
         }
 
-        const reports = await this.repo.find({
-            where,
-            relations: ['citizen', 'assignedStaff'],
-            order: { timestamp: 'ASC' },
+        qb.orderBy('report.timestamp', 'ASC');
+
+        const reports = await qb.getMany();
+        return reports;
+    }
+
+    async getReportById(reportId: number): Promise<ReportDAO> {
+        const report = await this.repo.findOne({
+            where: { id: reportId },
+            relations: ['citizen', 'assignedStaff']
         });
 
-        return reports;
+        if (!report) {
+            throw new NotFoundError(`Report with id '${reportId}' not found`);
+        }
+        return report;
     }
 
     async updateReportAsMPRO(reportId: number,
@@ -104,8 +120,10 @@ export class ReportRepository {
 
         if(!updatedReport)
             throw new NotFoundError(`Report with id '${reportId}' not found`);
-        
-        
+
+        if(updatedReport.status !== Status.PENDING)
+            throw new BadRequestError("Cannot update a report that is not pending.");
+
         await this.repo.update(
             {id: reportId},
             {
@@ -135,6 +153,17 @@ export class ReportRepository {
         if(!updatedReport)
             throw new NotFoundError(`Report with id '${reportId}' not found`);
 
+        if(updatedReport.status === Status.PENDING)
+            throw new BadRequestError("Cannot update a report that is not assigned.");
+
+        if(updatedReport.status === Status.REJECTED)
+            throw new BadRequestError("Cannot update a rejected report.");
+
+        if(updatedReport.status === Status.RESOLVED)
+            throw new BadRequestError("Cannot update a resolved report.");
+
+        if(updatedReport.status === Status.SUSPENDED && updatedStatus !== Status.RESOLVED)
+            throw new BadRequestError("Cannot resolve a suspended report.");
 
         let assignedStaff: StaffDAO | undefined = undefined;
 
