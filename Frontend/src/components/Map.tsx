@@ -344,7 +344,7 @@ function ClusterMarkers({reports, selectedReport, setSelectedReport, setNewRepor
 
     const points = reports.map(r => ({
         type: "Feature",
-        properties: { cluster: false, reportId: r.id, category: r.category, status: r.status },
+        properties: { cluster: false, reportId: r.id, citizenUsername: r.citizenUsername, title: r.title, status: r.status },
         geometry: {
             type: "Point",
             coordinates: [
@@ -413,9 +413,9 @@ function ClusterMarkers({reports, selectedReport, setSelectedReport, setNewRepor
                     }}
                 >
                     <Popup closeButton={false} >
-                        <strong>Report ID:</strong> {cluster.properties.reportId}<br />
-                        <strong>Category:</strong> {cluster.properties.category}<br />
-                        <strong>Status:</strong> {cluster.properties.status}
+                        <strong>Title:</strong> {cluster.properties.title}<br />
+                        <strong>Status:</strong> {cluster.properties.status}<br />
+                        <i>by {cluster.properties.citizenUsername}</i>
                     </Popup>
                 </Marker>
             );
