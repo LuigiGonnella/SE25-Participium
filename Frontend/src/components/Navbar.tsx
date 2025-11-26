@@ -48,7 +48,12 @@ function NavComponent({loggedIn, user, handleLogout}: NavComponentProps) {
         try {
             await API.markNotificationAsRead(n.id);
             setIsNotifOpen(false);
-            navigate("/reports/" + n.reportId);
+            // Navigate to reports page for staff, map with report selected for citizens
+            if (user && isStaff(user)) {
+                navigate("/reports/" + n.reportId);
+            } else {
+                navigate("/map?reportId=" + n.reportId);
+            }
         } catch (e) {
             console.error(e);
         }
