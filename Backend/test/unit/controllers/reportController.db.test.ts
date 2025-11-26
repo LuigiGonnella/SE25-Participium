@@ -7,6 +7,7 @@ import { initializeTestDataSource, closeTestDataSource, TestDataSource } from ".
 import { BadRequestError } from "@errors/BadRequestError";
 import { NotFoundError } from "@errors/NotFoundError";
 import fs from "fs";
+import path from "path";
 
 let citizenRepo: CitizenRepository;
 let reportRepo: ReportRepository;
@@ -148,7 +149,7 @@ describe("ReportController - createReport", () => {
         expect(report.photo3).toBe("/uploads/reports/img3.jpg");
     });
 
-    it("sets photo2 and photo3 to null when only 1 photo is provided", async () => {
+    it("sets photo2 and photo3 to undefined when only 1 photo is provided", async () => {
         await citizenRepo.createCitizen(
             fakeCitizen.email,
             fakeCitizen.username,
@@ -170,7 +171,29 @@ describe("ReportController - createReport", () => {
         expect(report.photo3).toBeNull();
     });
 
-    it("parses anonymous boolean correctly", async () => {
+    it("sets photo3 to undefined when exactly 2 photos are provided", async () => {
+        await citizenRepo.createCitizen(
+            fakeCitizen.email,
+            fakeCitizen.username,
+            fakeCitizen.name,
+            fakeCitizen.surname,
+            fakeCitizen.password,
+            fakeCitizen.receive_emails,
+            fakeCitizen.profilePicture,
+            fakeCitizen.telegram_username
+        );
+
+        const files = [
+            { filename: "p1.jpg" } as Express.Multer.File,
+            { filename: "p2.jpg" } as Express.Multer.File
+        ];
+
+        const report = await createReport(fakeBody, fakeCitizen.username, files);
+
+        expect(report.photo3).toBeNull();
+    });
+
+    it("parses anonymous = true (boolean)", async () => {
         await citizenRepo.createCitizen(
             fakeCitizen.email,
             fakeCitizen.username,
@@ -191,6 +214,27 @@ describe("ReportController - createReport", () => {
         expect(report.anonymous).toBe(true);
     });
 
+    it("parses anonymous = 'false' correctly", async () => {
+        await citizenRepo.createCitizen(
+            fakeCitizen.email,
+            fakeCitizen.username,
+            fakeCitizen.name,
+            fakeCitizen.surname,
+            fakeCitizen.password,
+            fakeCitizen.receive_emails,
+            fakeCitizen.profilePicture,
+            fakeCitizen.telegram_username
+        );
+
+        const report = await createReport(
+            { ...fakeBody, anonymous: "false" },
+            fakeCitizen.username,
+            fakeFiles
+        );
+
+        expect(report.anonymous).toBe(false);
+    });
+
     it("converts latitude and longitude to numbers", async () => {
         await citizenRepo.createCitizen(
             fakeCitizen.email,
@@ -208,34 +252,34 @@ describe("ReportController - createReport", () => {
         expect(typeof report.latitude).toBe("number");
         expect(typeof report.longitude).toBe("number");
     });
-});
 
-describe("ReportController - uploadReportPictures", () => {
-    const uploadDir = "./uploads/reports";
+    describe("ReportController multer storage & fileFilter", () => {
+        const uploadDir = "./uploads/reports";
 
-    beforeEach(() => {
-        if (fs.existsSync(uploadDir)) {
-            fs.rmSync(uploadDir, { recursive: true, force: true });
-        }
-    });
-
-    it("fileFilter accepts valid image files", (done) => {
-        const file = { originalname: "image.jpg", mimetype: "image/jpeg" } as any;
-
-        (uploadReportPictures as any).fileFilter({}, file, (err: any, ok: boolean) => {
-            expect(err).toBeNull();
-            expect(ok).toBe(true);
-            done();
+        beforeEach(() => {
+            if (fs.existsSync(uploadDir)) {
+                fs.rmSync(uploadDir, { recursive: true, force: true });
+            }
         });
-    });
 
-    it("fileFilter rejects invalid file types", (done) => {
-        const file = { originalname: "file.exe", mimetype: "application/octet-stream" } as any;
+        it("fileFilter accepts valid image files", (done) => {
+            const file = { originalname: "image.jpg", mimetype: "image/jpeg" } as any;
 
-        (uploadReportPictures as any).fileFilter({}, file, (err: any) => {
-            expect(err).toBeInstanceOf(BadRequestError);
-            expect(err.message).toContain("Only JPEG, JPG, and PNG images are allowed");
-            done();
+            (uploadReportPictures as any).fileFilter({}, file, (err: any, ok: boolean) => {
+                expect(err).toBeNull();
+                expect(ok).toBe(true);
+                done();
+            });
+        });
+
+        it("fileFilter rejects invalid file types", (done) => {
+            const file = { originalname: "file.exe", mimetype: "application/octet-stream" } as any;
+
+            (uploadReportPictures as any).fileFilter({}, file, (err: any) => {
+                expect(err).toBeInstanceOf(BadRequestError);
+                expect(err.message).toContain("Only JPEG, JPG, and PNG images are allowed");
+                done();
+            });
         });
     });
 });

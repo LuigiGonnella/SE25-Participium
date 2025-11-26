@@ -28,7 +28,8 @@ jest.mock("@services/mapperService", () => ({
 }));
 
 import request from "supertest";
-import express from "express";
+import express, { Request, Response, NextFunction } from "express";
+
 import router from "@routes/reportRoutes";
 import { createReport, getReports, getReportById, updateReportAsMPRO, updateReportAsTOSM } from "@controllers/reportController";
 import { mapReportDAOToDTO } from "@services/mapperService";
@@ -43,7 +44,7 @@ describe("Report Routes", () => {
         app.use(express.json());
         app.use("/reports", router);
     });
-
+  
     describe("POST /reports", () => {
         it("creates a report successfully", async () => {
             const fakeDAO = {
@@ -73,6 +74,34 @@ describe("Report Routes", () => {
             expect(createReport).toHaveBeenCalled();
             expect(mapReportDAOToDTO).toHaveBeenCalledWith(fakeDAO);
         });
+  
+      it("calls next(err) when createReport fails", async () => {
+            const err = new Error("fail");
+            (createReport as jest.Mock).mockRejectedValue(err);
+
+            const nextMock = jest.fn();
+
+            const appWithNext = express();
+            appWithNext.use(express.json());
+            appWithNext.use("/reports", router);
+
+            appWithNext.use((e: any, req: any, res: any, next: any) => {
+                nextMock(e);
+                res.status(500).json({ error: e.message });
+            });
+
+            await request(appWithNext)
+                .post("/reports")
+                .send({
+                    title: "x",
+                    description: "x",
+                    category: "Road Signs and Traffic Lights",
+                    latitude: "45",
+                    longitude: "7",
+                });
+
+            expect(nextMock).toHaveBeenCalledWith(err);
+        }); 
 
         it("handles errors from createReport", async () => {
             (createReport as jest.Mock).mockRejectedValue(new Error("Creation failed"));

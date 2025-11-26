@@ -51,11 +51,9 @@ afterAll(async () => {
 beforeEach(async () => {
     await TestDataSource.getRepository(ReportDAO).clear();
     await TestDataSource.getRepository(CitizenDAO).clear();
-    await TestDataSource.getRepository(StaffDAO).clear();
-    await TestDataSource.getRepository(OfficeDAO).clear();
 });
 
-describe("ReportRepository - create", () => {
+describe("ReportRepository - test suite", () => {
 
     it("creates a new report successfully", async () => {
         const citizen = await citizenRepo.createCitizen(
