@@ -560,7 +560,7 @@ function MunicipalityRegistrationForm({ handleStaffRegistration }: RegistrationF
                                     required
                                 >
                                     <option disabled value="">Select a role...</option>
-                                    {Object.entries(StaffRole).map(([key, value]) => (
+                                    {Object.entries(StaffRole).filter((v) => v[1] !== StaffRole.ADMIN).map(([key, value]) => (
                                         <option key={key} value={key}>
                                             {value}
                                         </option>
