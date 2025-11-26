@@ -8,18 +8,21 @@ import ReportForm from "./ReportForm.tsx";
 import {isCitizen, type Report, type User} from "../models/Models.ts";
 import ReportDetailsPanel from "./ReportDetailsPanel.tsx";
 import { useSearchParams } from "react-router";
-
-// Fix per le icone di default di Leaflet
-import icon from 'leaflet/dist/images/marker-icon.png';
 import API from "../API/API.mjs";
 import useSupercluster from "use-supercluster";
 
 let DefaultIcon = L.icon({
-    iconUrl: icon,
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-    shadowSize: [41, 41]
+    iconUrl: "/pin.png",
+    iconSize: [40, 40],
+    iconAnchor: [20, 40],
+    popupAnchor: [0, -30],
+});
+
+const SelectedIcon = L.icon({
+    iconUrl: "/marker.png",
+    iconSize: [50, 50],
+    iconAnchor: [25, 50],
+    popupAnchor: [0, -40],
 });
 
 interface MapProps {
@@ -220,13 +223,13 @@ export default function TurinMaskedMap({isLoggedIn, user}: MapProps) {
                         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                     />
-                    {reports.length > 0 && <ClusterMarkers reports={reports} setSelectedReport={ setSelectedReport } setNewReportMode={ setNewReportMode } />}
+                    {reports.length > 0 && <ClusterMarkers reports={reports} selectedReport={selectedReport} setSelectedReport={ setSelectedReport } setNewReportMode={ setNewReportMode } />}
 
                     {isLoaded && (
                         <>
                             {selectedCoordinates && (
-                                <Marker ref={markerRef} position={selectedCoordinates}>
-                                    <Popup>
+                                <Marker ref={markerRef} icon={DefaultIcon} position={selectedCoordinates}>
+                                    <Popup eventHandlers={{remove: () => setSelectedCoordinates(null)}}>
                                         {streetName || "Loading..."}
                                     </Popup>
                                 </Marker>
@@ -305,7 +308,14 @@ export default function TurinMaskedMap({isLoggedIn, user}: MapProps) {
     );
 }
 
-function ClusterMarkers({reports, setSelectedReport, setNewReportMode}: { reports: Report[], setSelectedReport: (report: Report | undefined) => void , setNewReportMode: (newReportMode: boolean) => void}) {
+interface ClusterMarkersProps {
+    reports: Report[];
+    selectedReport?: Report;
+    setSelectedReport: (report: Report | undefined) => void;
+    setNewReportMode: (mode: boolean) => void;
+}
+
+function ClusterMarkers({reports, selectedReport, setSelectedReport, setNewReportMode}: ClusterMarkersProps) {
 
     const [bounds, setBounds] = useState<[number, number, number, number] | undefined>(undefined);
     const [zoom, setZoom] = useState<number>(12);
@@ -351,6 +361,14 @@ function ClusterMarkers({reports, setSelectedReport, setNewReportMode}: { report
         options: { radius: 200, maxZoom: 17 }
     });
 
+    useEffect(() => {
+        if (selectedReport) {
+            const lat = selectedReport.coordinates[0];
+            const lng = selectedReport.coordinates[1];
+            map.setView([lat, lng], 18, { animate: true });
+        }
+    }, [selectedReport]);
+
     return (<>
         {clusters.map(cluster => {
             const [longitude, latitude] = cluster.geometry.coordinates;
@@ -387,7 +405,7 @@ function ClusterMarkers({reports, setSelectedReport, setNewReportMode}: { report
                 <Marker
                     key={`report-${cluster.properties.reportId}`}
                     position={[latitude, longitude]}
-                    icon={DefaultIcon}
+                    icon={selectedReport && selectedReport.id === cluster.properties.reportId ? SelectedIcon : DefaultIcon}
                     eventHandlers={{
                         mouseover: (e) => { e.target.openPopup(); },
                         mouseout: (e) => { e.target.closePopup(); },

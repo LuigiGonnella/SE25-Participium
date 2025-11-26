@@ -150,7 +150,7 @@ return (
 
     <div className="row">
       {/* LEFT COLUMN — REPORT DETAILS */}
-      <div className={user && isTOSM(user) && report.AssignedStaff === user.username ? "col-md-6" : "col-md-8"}>
+      <div className={user && isTOSM(user) && report.assignedStaff === user.username ? "col-md-6" : "col-md-8"}>
 
         <h2>{report.title}</h2>
         <p className="text-muted">{new Date(report.timestamp).toLocaleString()}</p>
