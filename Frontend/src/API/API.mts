@@ -1,4 +1,16 @@
-import type {Citizen, Staff, Credentials, NewCitizen, NewStaff, Office, User, NewReport, Report} from "../models/Models.ts";
+import type {
+    Citizen,
+    Staff,
+    Credentials,
+    NewCitizen,
+    NewStaff,
+    Office,
+    User,
+    NewReport,
+    Report,
+    Notification,
+    Message
+} from "../models/Models.ts";
 import {handleAPIError} from "../services/ErrorHandler.ts";
 
 export const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:8080/api/v1";
@@ -205,5 +217,43 @@ const assignReportToSelf = async (reportId: number): Promise<Report> => {
     return handleAPIError(response, "Assign Report");
 };
 
-const API = { login, register, getUserInfo, logout, municipalityRegister, getOffices, createReport, getReports, getMapReports, getReportById, updateReport, assignReportToSelf };
+const getNotifications = async (): Promise<Notification[]> => {
+    const response = await fetch(`${BACKEND_URL}/notifications`, {
+        credentials: "include",
+    });
+
+    if (response.ok) return await response.json();
+    return handleAPIError(response, "Get Notifications");
+}
+
+const markNotificationAsRead = async (notificationId: number): Promise<null> => {
+    const response = await fetch(`${BACKEND_URL}/notifications/${notificationId}/read`, {
+        method: "PATCH",
+        credentials: "include",
+    });
+
+    if (response.ok) return null;
+    return handleAPIError(response, "Mark Notification as Read");
+}
+
+const createMessage = async (reportId: number, message: string): Promise<Report> => {
+    const response = await fetch(`${BACKEND_URL}/reports/${reportId}/messages`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ message }),
+    });
+    if (response.ok) return await response.json();
+    return handleAPIError(response, "Create Message");
+};
+
+const getAllMessages = async (reportId: number): Promise<Message[]> => {
+    const response = await fetch(`${BACKEND_URL}/reports/${reportId}/messages`, {
+        credentials: "include",
+    });
+    if (response.ok) return await response.json();
+    return handleAPIError(response, "Get All Messages");
+}
+
+const API = { login, register, getUserInfo, logout, municipalityRegister, getOffices, createReport, getReports, getMapReports, getReportById, updateReport, assignReportToSelf, getNotifications, markNotificationAsRead, createMessage, getAllMessages };
 export default API;

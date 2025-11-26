@@ -6,11 +6,12 @@ import {ReportDAO, Status} from "@dao/reportDAO";
 import multer from "multer";
 import fs from "fs";
 import path from "path";
-import { mapReportDAOToDTO } from "@services/mapperService";
+import { mapMessageToDTO, mapReportDAOToDTO } from "@services/mapperService";
 import { Report } from "@models/dto/Report";
 import { OfficeCategory } from "@models/dao/officeDAO";
 import {findOrThrowNotFound} from "@utils";
 import {StaffDAO} from "@dao/staffDAO";
+import { Message } from "@models/dto/Message";
 
 const repo = new ReportRepository();
 const citizenRepo = new CitizenRepository();
@@ -147,4 +148,14 @@ export async function addMessageToReport(reportId: number, username: string, use
     const updatedReportDAO = await repo.addMessageToReport(reportDAO, message, assignedStaff);
 
     return mapReportDAOToDTO(updatedReportDAO);
+}
+
+export async function getAllMessages(reportId: number): Promise<Message[]> {
+    const reportDAO = findOrThrowNotFound(
+        [await repo.getReportById(reportId)],
+        () => true,
+        `Report with id ${reportId} not found`
+    );
+    const messages = await repo.getAllMessages(reportId);
+    return messages.map(mapMessageToDTO);
 }

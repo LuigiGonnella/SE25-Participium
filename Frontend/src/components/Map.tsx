@@ -7,6 +7,7 @@ import {Button, Col, Row, Spinner} from "design-react-kit";
 import ReportForm from "./ReportForm.tsx";
 import {isCitizen, type Report, type User} from "../models/Models.ts";
 import ReportDetailsPanel from "./ReportDetailsPanel.tsx";
+import { useSearchParams } from "react-router";
 
 // Fix per le icone di default di Leaflet
 import icon from 'leaflet/dist/images/marker-icon.png';
@@ -105,6 +106,7 @@ function MapClickHandler({ holes, setCoordinates, newReportMode, selectedReport}
 }
 
 export default function TurinMaskedMap({isLoggedIn, user}: MapProps) {
+    const [searchParams, setSearchParams] = useSearchParams();
     const [isLoaded, setIsLoaded] = useState<boolean>(false);
     const [newReportMode, setNewReportMode] = useState<boolean>(false);
     const [selectedCoordinates, setSelectedCoordinates] = useState<LatLng | null>(null);
@@ -166,6 +168,21 @@ export default function TurinMaskedMap({isLoggedIn, user}: MapProps) {
 
         API.getMapReports().then(setReports).catch(console.error)
     }, []);
+
+    // Check for reportId in URL params and open the report details panel
+    useEffect(() => {
+        const reportIdParam = searchParams.get('reportId');
+        if (reportIdParam && reports.length > 0) {
+            const reportId = parseInt(reportIdParam);
+            const report = reports.find(r => r.id === reportId);
+            if (report) {
+                setSelectedReport(report);
+                // Remove the reportId from URL
+                searchParams.delete('reportId');
+                setSearchParams(searchParams);
+            }
+        }
+    }, [searchParams, reports, setSearchParams]);
 
     const world: L.LatLngExpression[] = [
         [90, -180],

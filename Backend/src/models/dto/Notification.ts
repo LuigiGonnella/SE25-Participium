@@ -5,6 +5,12 @@
  */
 export interface Notification {
     /**
+     *
+     * @type {number}
+     * @memberof Notification
+     */
+    id: number;
+    /**
      * 
      * @type {string}
      * @memberof Notification
@@ -29,9 +35,15 @@ export interface Notification {
      */
     isRead: boolean;
     /**
+     *
+     * @type {number}
+     * @memberof Notification
+     */
+    reportId?: number;
+    /**
      * 
      * @type {string}
-     * @memberof Report
+     * @memberof Notification
      */
     citizenUsername?: string;
     /**
@@ -39,15 +51,6 @@ export interface Notification {
      * @type {string}
      * @memberof Notification
      */
-    staffUsername?: string;
-}
-
-export interface Notification {
-    timestamp: string;
-    title: string;
-    message: string;
-    isRead: boolean;
-    citizenUsername?: string;
     staffUsername?: string;
 }
 

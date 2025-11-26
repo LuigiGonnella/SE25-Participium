@@ -125,6 +125,7 @@ export interface Report {
     photos: string[];
     comment?: string;
     AssignedStaff?: string;
+    messages?: Message[];
 }
 
 export interface NewReport {
@@ -135,4 +136,22 @@ export interface NewReport {
     longitude: number;
     anonymous: boolean;
     photos: File[];
+}
+
+export interface Notification {
+    id: number;
+    timestamp: string;
+    reportId: number;
+    title: string;
+    message: string;
+    isRead: boolean;
+    citizenUsername?: string;
+    staffUsername?: string;
+}
+
+export interface Message {
+    timestamp: string,
+    reportId: number,
+    message: string,
+    staffUsername: string
 }

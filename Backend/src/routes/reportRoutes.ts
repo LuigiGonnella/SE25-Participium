@@ -1,7 +1,7 @@
 import {Router} from "express";
 import {isAuthenticated} from "@middlewares/authMiddleware";
 import {mapReportDAOToDTO} from "@services/mapperService";
-import {createReport, uploadReportPictures, getReports, getReportById, updateReportAsTOSM, updateReportAsMPRO, getMapReports, addMessageToReport} from "@controllers/reportController";
+import {createReport, uploadReportPictures, getReports, getReportById, updateReportAsTOSM, updateReportAsMPRO, getMapReports, addMessageToReport, getAllMessages} from "@controllers/reportController";
 import {Citizen} from "@dto/Citizen";
 import { ReportFilters } from "@repositories/reportRepository";
 import { BadRequestError } from "@errors/BadRequestError";
@@ -263,6 +263,18 @@ router.post('/:reportId/messages', isAuthenticated(['CITIZEN', 'STAFF']), async 
         }
 
         res.status(201).json(await addMessageToReport(reportId, user.username, user.type, message.trim()));
+    } catch (err) {
+        next(err);
+    }
+});
+
+router.get('/:reportId/messages', isAuthenticated(['CITIZEN', 'STAFF']), async (req, res, next) => {
+    try {
+        const reportId = parseInt(req.params.reportId);
+        if (isNaN(reportId)) {
+            throw new BadRequestError('Invalid reportId.');
+        }        
+        res.status(200).json(await getAllMessages(reportId));
     } catch (err) {
         next(err);
     }

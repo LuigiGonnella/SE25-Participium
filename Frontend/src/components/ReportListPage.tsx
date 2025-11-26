@@ -32,6 +32,21 @@ export default function ReportListPage({ user }: ReportListProps) {
     // FILTER STATE
     const [statusFilter, setStatusFilter] = useState("");
 
+    const getStatusOptions = () => {
+        if (isTOSM(user)) {
+            return [
+                { value: "IN_PROGRESS", label: ReportStatus.IN_PROGRESS },
+                { value: "SUSPENDED", label: ReportStatus.SUSPENDED },
+                { value: "RESOLVED", label: ReportStatus.RESOLVED },
+            ];
+        }
+        return [
+            { value: ReportStatus.PENDING, label: "Pending" },
+            { value: ReportStatus.ASSIGNED, label: "Assigned" },
+            { value: ReportStatus.REJECTED, label: "Rejected" },
+        ];
+    };
+
     const loadReports = async () => {
         setLoading(true);
         try {
@@ -97,9 +112,11 @@ export default function ReportListPage({ user }: ReportListProps) {
                     style={{ maxWidth: "250px" }}
                 >
                     <option value="">All statuses</option>
-                    <option value="PENDING">Pending</option>
-                    <option value="ASSIGNED">Assigned</option>
-                    <option value="REJECTED">Rejected</option>
+                    {getStatusOptions().map(({ value, label }) => (
+                        <option key={value} value={value}>
+                            {label}
+                        </option>
+                    ))}
                 </select>
             </div>
 

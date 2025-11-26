@@ -1,9 +1,9 @@
 import { Card, Container } from "react-bootstrap";
-import type { Report } from "../models/Models";
+import type { Report, Message } from "../models/Models";
 import { useEffect, useState } from "react";
-import type { LatLng } from "leaflet";
 import { STATIC_URL } from "../API/API.mts";
 import { ReportStatus } from "../models/Models.ts";
+import API from "../API/API.mts";
 
 interface ReportDetailsPanelProps {
     report: Report;
@@ -45,13 +45,30 @@ const convertToDMS = (decimal: number, isLatitude: boolean): string => {
 
 export default function ReportDetailsPanel({ report, onClose }: ReportDetailsPanelProps) {
 
+    const [streetName, setStreetName] = useState<string>("");
+    const [messages, setMessages] = useState<Message[]>([]);
+    const [loadingMessages, setLoadingMessages] = useState(false);
+
     useEffect(() => {
         getStreetName(report.coordinates).then((v) => {
             setStreetName(v);
         }).catch(console.error);
     }, [report.coordinates]);
 
-    const [streetName, setStreetName] = useState<string>("");
+    useEffect(() => {
+        const loadMessages = async () => {
+            setLoadingMessages(true);
+            try {
+                const msgs = await API.getAllMessages(report.id);
+                setMessages(msgs);
+            } catch (error) {
+                console.error("Failed to load messages:", error);
+            } finally {
+                setLoadingMessages(false);
+            }
+        };
+        loadMessages();
+    }, [report.id]);
 
     return (
         <Container className="h-100 d-flex flex-column p-0">
@@ -105,6 +122,37 @@ export default function ReportDetailsPanel({ report, onClose }: ReportDetailsPan
                             }
                         </div>
                     </div>
+
+                    {/* Messages Section */}
+                    {messages.length > 0 && (
+                        <div className="mt-4">
+                            <strong>Messages</strong>
+                            <div className="mt-2 border rounded p-3" style={{ backgroundColor: "#f8f9fa", maxHeight: "300px", overflowY: "auto" }}>
+                                {loadingMessages ? (
+                                    <div className="text-center text-muted">Loading messages...</div>
+                                ) : (
+                                    <div className="d-flex flex-column gap-2">
+                                        {messages.map((msg, index) => (
+                                            <div key={index} className="d-flex flex-column p-2 rounded" style={{ backgroundColor: "white", border: "1px solid #dee2e6" }}>
+                                                <div className="d-flex justify-content-between align-items-center mb-1">
+                                                    <span className="fw-bold text-primary" style={{ fontSize: "0.9rem" }}>
+                                                        <i className="bi bi-person-circle me-1"></i>
+                                                        {msg.staffUsername}
+                                                    </span>
+                                                    <span className="text-muted" style={{ fontSize: "0.75rem" }}>
+                                                        {new Date(msg.timestamp).toLocaleString()}
+                                                    </span>
+                                                </div>
+                                                <div style={{ fontSize: "0.9rem" }}>
+                                                    {msg.message}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
 
                 </Card.Body>
             </Card>

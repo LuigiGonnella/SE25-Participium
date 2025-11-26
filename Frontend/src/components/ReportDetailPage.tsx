@@ -1,11 +1,12 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams } from "react-router";
 import API from "../API/API.mts";
-import type { Report, User } from "../models/Models.ts";
+import type { Report, User, Message } from "../models/Models.ts";
 import {
   ReportStatus,
   OfficeCategory,
   isMPRO,
+  isTOSM,
 } from "../models/Models.ts";
 import {STATIC_URL} from "../API/API.mts"
 
@@ -29,6 +30,13 @@ export default function ReportDetailPage({ user }: ReportDetailPageProps) {
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState("");
 
+  // Message state
+  const [messageInput, setMessageInput] = useState<string>("");
+  const [messageLoading, setMessageLoading] = useState<boolean>(false);
+  const [messageError, setMessageError] = useState<string>("");
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [loadingMessages, setLoadingMessages] = useState(false);
+
   const categoryOptions = Object.entries(OfficeCategory) as [string, string][];
 
   useEffect(() => {
@@ -36,6 +44,17 @@ export default function ReportDetailPage({ user }: ReportDetailPageProps) {
       try {
         const data = await API.getReportById(Number(id));
         setReport(data);
+
+        // Load messages
+        setLoadingMessages(true);
+        try {
+          const msgs = await API.getAllMessages(Number(id));
+          setMessages(msgs);
+        } catch (err) {
+          console.error("Failed to load messages:", err);
+        } finally {
+          setLoadingMessages(false);
+        }
 
         if (data.coordinates && data.coordinates.length === 2) {
           const [lat, lng] = data.coordinates;
@@ -106,16 +125,39 @@ export default function ReportDetailPage({ user }: ReportDetailPageProps) {
     }
   };
 
+  const handleMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!report || !user || !isTOSM(user)) return;
+    setMessageLoading(true);
+    setMessageError("");
+
+    try {
+      await API.createMessage(report.id, messageInput);
+      setMessageInput("");
+
+      // Reload messages
+      const msgs = await API.getAllMessages(report.id);
+      setMessages(msgs);
+
+      const updateReport = await API.getReportById(report.id);
+      setReport(updateReport);
+  } catch (err: any) {
+      setMessageError(err?.details || "Failed to send message");
+    } finally {
+      setMessageLoading(false);
+    }
+  };
+
   if (loading) return <p className="p-5 text-center">Loading...</p>;
   if (error && !report) return <p className="p-5 text-danger text-center">{error}</p>;
   if (!report) return <p className="p-5 text-center">Report not found</p>;
 
 return (
-  <div className="container py-4">
+  <div className="container-fluid py-4">
 
     <div className="row">
       {/* LEFT COLUMN — REPORT DETAILS */}
-      <div className="col-md-8">
+      <div className={user && isTOSM(user) && report.AssignedStaff === user.username ? "col-md-6" : "col-md-8"}>
 
         <h2>{report.title}</h2>
         <p className="text-muted">{new Date(report.timestamp).toLocaleString()}</p>
@@ -205,7 +247,69 @@ return (
 
       </div>
 
-      {/* RIGHT COLUMN — MANAGE REPORT */}
+      {/* RIGHT COLUMN — MESSAGES CHAT (for TOSM) */}
+      {user && isTOSM(user) && report.AssignedStaff === user.username && (
+        <div className="col-md-6">
+          <div className="card shadow-sm h-100 d-flex flex-column">
+            <div className="card-header">
+              <h5 className="mb-0">Messages</h5>
+            </div>
+            <div className="card-body flex-grow-1 d-flex flex-column" style={{ maxHeight: "calc(100vh - 250px)" }}>
+              {/* Messages Display */}
+              <div className="flex-grow-1 overflow-auto mb-3 border rounded p-3" style={{ backgroundColor: "#f8f9fa" }}>
+                {loadingMessages ? (
+                  <div className="text-center text-muted">Loading messages...</div>
+                ) : messages.length === 0 ? (
+                  <div className="text-center text-muted">No messages yet. Start the conversation!</div>
+                ) : (
+                  <div className="d-flex flex-column gap-2">
+                    {messages.map((msg, index) => (
+                      <div key={index} className="d-flex flex-column p-3 rounded shadow-sm" style={{ backgroundColor: "white" }}>
+                        <div className="d-flex justify-content-between align-items-center mb-2">
+                          <span className="fw-bold text-primary">
+                            <i className="bi bi-person-circle me-2"></i>
+                            {msg.staffUsername}
+                          </span>
+                          <span className="text-muted" style={{ fontSize: "0.85rem" }}>
+                            {new Date(msg.timestamp).toLocaleString()}
+                          </span>
+                        </div>
+                        <div className="ps-4">
+                          {msg.message}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Message Input */}
+              <div className="mt-auto">
+                <form onSubmit={handleMessage}>
+                  <div className="mb-2">
+                    <textarea
+                      className="form-control"
+                      rows={3}
+                      value={messageInput}
+                      onChange={(e) => setMessageInput(e.target.value)}
+                      required
+                      placeholder="Type your internal note here..."
+                      disabled={messageLoading}
+                    />
+                  </div>
+                  {messageError && <div className="alert alert-danger py-2 mb-2">{messageError}</div>}
+                  <button type="submit" className="btn btn-primary w-100" disabled={messageLoading || !messageInput.trim()}>
+                    <i className="bi bi-send me-2"></i>
+                    {messageLoading ? "Sending..." : "Send Message"}
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* RIGHT COLUMN — MANAGE REPORT (for MPRO) */}
       { user && isMPRO(user) && report.status === ReportStatus.PENDING && (
         <div className="col-md-4">
           <div className="card shadow-sm p-3">
