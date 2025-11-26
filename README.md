@@ -47,12 +47,10 @@ Developed as part of the Software Engineering 2 course at **Politecnico di Torin
 - **Office-Based Filtering**: TOSM users see only reports relevant to their office category
 - **Message System**: Receive and send messages on reports in order to chat with the citizens
 
-#### Technical Offices and Responsibilities
+### Offices Overview
 
 The municipality includes several technical offices, each responsible for a specific area of public infrastructure.  
 When a report is approved, the system assigns it to the correct office automatically.
-
-##### Offices Overview
 
 | Technical Office | Category | Description |
 | ---------------- | -------- | ----------- |

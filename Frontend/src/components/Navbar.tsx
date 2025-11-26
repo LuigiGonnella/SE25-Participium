@@ -57,7 +57,7 @@ function NavComponent({loggedIn, user, handleLogout}: NavComponentProps) {
 
     return (
         <>
-            <Header type="slim" className="pb-0" style={{position: 'sticky', top: 0, zIndex: 1000}}>
+            <Header type="slim" className="pb-0" style={{position: 'sticky', top: 0, zIndex: 1001}}>
                 <HeaderContent>
                     <HeaderBrand className="fs-5 fw-bold d-none d-lg-block pe-2" href='/' responsive>
                         Participium
@@ -104,7 +104,7 @@ function NavComponent({loggedIn, user, handleLogout}: NavComponentProps) {
                                             className="position-absolute bg-white shadow rounded p-2"
                                             style={{
                                                 top: "120%",
-                                                right: 0,
+                                                right: "-100px",
                                                 minWidth: "260px",
                                                 maxHeight: "300px",
                                                 overflowY: "auto",
