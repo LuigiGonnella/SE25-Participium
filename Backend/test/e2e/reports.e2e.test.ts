@@ -12,6 +12,9 @@ import { ReportRepository } from "@repositories/reportRepository";
 import { StaffRepository } from "@repositories/staffRepository";
 import { OfficeRepository } from "@repositories/officeRepository";
 import bcrypt from "bcrypt";
+import { NotificationRepository } from "@repositories/notificationRepository";
+import Test from "supertest/lib/test";
+import { NotificationDAO } from "@models/dao/notificationDAO";
 
 const getStatusKey = (status: Status): string => {
     const key = Object.keys(Status).find(
@@ -45,6 +48,7 @@ describe("Reports API E2E Tests", () => {
     let reportRepo: ReportRepository;
     let staffRepo: StaffRepository;
     let officeRepo: OfficeRepository;
+    let notificationRepo: NotificationRepository;
     let mproCookie: string;
     let tosmCookie: string;
     let staffCookie: string;
@@ -63,6 +67,7 @@ describe("Reports API E2E Tests", () => {
         reportRepo = new ReportRepository();
         staffRepo = new StaffRepository();
         officeRepo = new OfficeRepository();
+        notificationRepo = new NotificationRepository();
 
         // Create default offices
         await officeRepo.createDefaultOfficesIfNotExist();
@@ -165,6 +170,7 @@ describe("Reports API E2E Tests", () => {
 
     beforeEach(async () => {
         // Clear reports before each test
+        await TestDataSource.getRepository(NotificationDAO).clear();
         await TestDataSource.getRepository(ReportDAO).clear();
 
         // Create test reports

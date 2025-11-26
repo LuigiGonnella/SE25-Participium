@@ -3,8 +3,6 @@ import { app } from "@app";
 
 import {
     beforeAllE2e,
-    afterAllE2e,
-    beforeEachE2e,
     TEST_CITIZENS,
 } from "@test/e2e/lifecycle";
 
@@ -27,14 +25,6 @@ beforeAll(async () => {
     authCookie = loginResponse.headers["set-cookie"][0];
 });
 
-beforeEach(async () => {
-    await beforeEachE2e();
-});
-
-afterAll(async () => {
-    await afterAllE2e();
-});
-
 describe("Report Creation E2E Tests", () => {
     const sampleImage = path.join(__dirname, "sample.png"); // exists in same folder
 
@@ -44,17 +34,17 @@ describe("Report Creation E2E Tests", () => {
             .set("Cookie", authCookie)
             .field("title", "Broken Streetlight")
             .field("description", "The streetlight near my house is broken")
-            .field("category", "PLO")
-            .field("latitude", "45.0677")
-            .field("longitude", "7.6823")
-            .field("anonymous", "false")
+            .field("category", "Public Lighting")
+            .field("latitude", 45.0677)
+            .field("longitude", 7.6823)
+            .field("anonymous", false)
             .attach("photos", sampleImage)
             .expect(201);
 
         expect(res.body).toBeDefined();
         expect(res.body.title).toBe("Broken Streetlight");
-        expect(res.body.photo1).toBeDefined();
-        expect(res.body.photo1).toContain("/uploads/reports/");
+        expect(res.body.photos).toBeDefined();
+        expect(res.body.photos[0]).toContain("/uploads/reports/");
     });
 
     it("should fail when required fields are missing", async () => {
@@ -63,14 +53,15 @@ describe("Report Creation E2E Tests", () => {
             .set("Cookie", authCookie)
             .field("title", "")
             .field("description", "desc")
-            .field("category", "PLO")
-            .field("latitude", "45")
-            .field("longitude", "7")
+            .field("category", "Public Lighting")
+            .field("latitude", 45)
+            .field("longitude", 7)
             .attach("photos", sampleImage)
             .expect(400);
 
-        expect(res.body.error).toBeDefined();
-        expect(res.body.error).toContain("Missing required fields");
+        expect(res.body).toBeDefined();
+        expect(res.body.code).toBe(400);  
+        expect(res.body.message).toContain("Missing required fields");
     });
 
     it("should fail when no photo is uploaded", async () => {
@@ -79,13 +70,13 @@ describe("Report Creation E2E Tests", () => {
             .set("Cookie", authCookie)
             .field("title", "Test Report")
             .field("description", "Testing")
-            .field("category", "PLO")
+            .field("category", "Public Lighting")
             .field("latitude", "45")
             .field("longitude", "7")
             .field("anonymous", "false")
             .expect(400);
 
-        expect(res.body.error).toContain("At least one photo is required");
+        expect(res.body.message).toContain("At least one photo is required");
     });
 
     it("should reject unauthenticated user", async () => {
@@ -93,13 +84,13 @@ describe("Report Creation E2E Tests", () => {
             .post("/api/v1/reports")
             .field("title", "No Login")
             .field("description", "desc")
-            .field("category", "PLO")
+            .field("category", "Public Lighting")
             .field("latitude", "45")
             .field("longitude", "7")
             .field("anonymous", "false")
-            .attach("photos", sampleImage)
             .expect(401);
 
-        expect(res.body.error).toBeDefined();
+        expect(res.body.message).toBeDefined();
+        expect(res.body.message).toBe("Not authenticated");
     });
 });
