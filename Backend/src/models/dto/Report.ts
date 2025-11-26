@@ -69,7 +69,7 @@ export interface Report {
      */
     comment?: string;  
 
-    AssignedStaff?: string;
+    assignedStaff?: string;
 
     messages?: MessageDAO[];
 }
@@ -94,7 +94,7 @@ export function ReportToJSONTyped(value?: Report | null, ignoreDiscriminator: bo
         'coordinates': value['coordinates'],
         'photos': value['photos'],
         'comment': value['comment'],
-        'AssignedStaff': value['AssignedStaff'],
+        'assignedStaff': value['assignedStaff'],
         'messages': value['messages'],
     };
 }

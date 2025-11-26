@@ -83,7 +83,7 @@ export function mapReportDAOToDTO(reportDAO: ReportDAO): ReportDTO {
         coordinates: [reportDAO.latitude, reportDAO.longitude],
         photos: [reportDAO.photo1, reportDAO.photo2, reportDAO.photo3].filter(Boolean) as string[],
         comment: reportDAO.comment,
-        AssignedStaff: reportDAO.assignedStaff?.username,
+        assignedStaff: reportDAO.assignedStaff?.username,
         messages: reportDAO.messages?.map(mapMessageToDTO)
     }) as ReportDTO;
 }

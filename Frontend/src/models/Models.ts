@@ -124,7 +124,7 @@ export interface Report {
     coordinates: number[];
     photos: string[];
     comment?: string;
-    AssignedStaff?: string;
+    assignedStaff?: string;
 }
 
 export interface NewReport {

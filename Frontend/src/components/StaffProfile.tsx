@@ -127,9 +127,9 @@ export default function StaffProfile({ user }: StaffProfileProps) {
                                                 <p className="text-muted mb-0">
                                                     Category: <strong>{r.category}</strong>
                                                 </p>
-                                                {r.AssignedStaff && (
+                                                {r.assignedStaff && (
                                                     <p className="text-muted mb-0">
-                                                        Assigned to: <strong>{r.AssignedStaff}</strong>
+                                                        Assigned to: <strong>{r.assignedStaff}</strong>
                                                     </p>
                                                 )}
                                             </div>
