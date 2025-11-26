@@ -11,6 +11,7 @@ import bcrypt from 'bcrypt';
 import passport from 'passport';
 import { configurePassport } from '@config/passport';
 import { AppDataSource } from "@database";
+import { MessageDAO } from '@models/dao/messageDAO';
 
 
 let localDataSource: DataSource;
@@ -19,7 +20,7 @@ beforeAll(async () => {
     localDataSource = new DataSource({
         type: 'sqlite',
         database: ':memory:',
-        entities: [CitizenDAO, StaffDAO, OfficeDAO, ReportDAO, NotificationDAO],
+        entities: [CitizenDAO, StaffDAO, OfficeDAO, ReportDAO, NotificationDAO, MessageDAO],
         synchronize: true,
         logging: false
     });

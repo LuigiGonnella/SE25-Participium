@@ -10,11 +10,14 @@ import { StaffRole } from "@dao/staffDAO";
 import { NotFoundError } from "@errors/NotFoundError";
 import { BadRequestError } from "@errors/BadRequestError";
 import { initializeTestDataSource, closeTestDataSource, TestDataSource } from "../../setup/test-datasource";
+import { NotificationRepository } from "@repositories/notificationRepository";
+import { NotificationDAO } from "@models/dao/notificationDAO";
 
 let citizenRepo: CitizenRepository;
 let reportRepo: ReportRepository;
 let staffRepo: StaffRepository;
 let officeRepo: OfficeRepository;
+let notificationRepo: NotificationRepository;
 
 const fakeCitizen = {
     email: "test@example.com",
@@ -42,6 +45,7 @@ beforeAll(async () => {
     reportRepo = new ReportRepository();
     staffRepo = new StaffRepository();
     officeRepo = new OfficeRepository();
+    notificationRepo = new NotificationRepository();
 });
 
 afterAll(async () => {
@@ -49,8 +53,11 @@ afterAll(async () => {
 });
 
 beforeEach(async () => {
+    await TestDataSource.getRepository(NotificationDAO).clear();
     await TestDataSource.getRepository(ReportDAO).clear();
+    await TestDataSource.getRepository(StaffDAO).clear();
     await TestDataSource.getRepository(CitizenDAO).clear();
+    await TestDataSource.getRepository(OfficeDAO).clear();
 });
 
 describe("ReportRepository - test suite", () => {
