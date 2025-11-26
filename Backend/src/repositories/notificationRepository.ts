@@ -68,6 +68,7 @@ export class NotificationRepository {
     async getNotificationsForStaff(staffUsername: string): Promise<NotificationDAO[]> {
         return await this.repo.find({
             where: { staff: { username: staffUsername } },
+            relations: ["report"],
             order: { timestamp: "DESC" }
         });
     }
