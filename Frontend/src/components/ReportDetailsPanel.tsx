@@ -111,9 +111,11 @@ export default function ReportDetailsPanel({ report, onClose }: ReportDetailsPan
                         <div className="d-flex gap-2 flex-wrap mt-2">
                             {
                                 report.photos.map((photo, index) => (
-                                    <img src={STATIC_URL + photo}
-                                         style={{ width: "100px", height: "100px", objectFit: "cover", borderRadius: "4px" }}
-                                         key={index} />
+                                    <img
+                                        alt={"img_"+index}
+                                        src={STATIC_URL + photo}
+                                        style={{ width: "100px", height: "100px", objectFit: "cover", borderRadius: "4px" }}
+                                        key={index} />
                                 ))
                             }
                         </div>
@@ -133,7 +135,7 @@ export default function ReportDetailsPanel({ report, onClose }: ReportDetailsPan
                                                 <div className="d-flex justify-content-between align-items-center mb-1">
                                                     <span className="fw-bold text-primary" style={{ fontSize: "0.9rem" }}>
                                                         <i className="bi bi-person-circle me-1"></i>
-                                                        {msg.staffUsername}
+                                                        {msg.staffUsername ? <>{msg.staffUsername}&nbsp;<i>(Staff)</i></> : "You"}
                                                     </span>
                                                     <span className="text-muted" style={{ fontSize: "0.75rem" }}>
                                                         {new Date(msg.timestamp).toLocaleString()}
