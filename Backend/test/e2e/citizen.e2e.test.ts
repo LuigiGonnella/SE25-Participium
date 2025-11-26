@@ -389,6 +389,69 @@ describe("Citizen API E2E Tests", () => {
         });
     });
 
+    describe("PATCH /api/v1/citizens/username/:username - Update citizen", () => {
+        it("should update telegram_username", async () => {
+            await citizenRepo.createCitizen(
+                TEST_CITIZENS.citizen1.email,
+                TEST_CITIZENS.citizen1.username,
+                TEST_CITIZENS.citizen1.name,
+                TEST_CITIZENS.citizen1.surname,
+                await bcrypt.hash(TEST_CITIZENS.citizen1.password, 10),
+                TEST_CITIZENS.citizen1.receive_emails,
+                TEST_CITIZENS.citizen1.profilePicture,
+                TEST_CITIZENS.citizen1.telegram_username
+            );
+            const res = await request(app)
+                .patch(`/api/v1/citizens/${TEST_CITIZENS.citizen1.username}`)
+                .send({ telegram_username: 'new_telegram' });
+        });
+        it("should update receive_emails", async () => {
+            await citizenRepo.createCitizen(
+                TEST_CITIZENS.citizen1.email,
+                TEST_CITIZENS.citizen1.username,
+                TEST_CITIZENS.citizen1.name,
+                TEST_CITIZENS.citizen1.surname,
+                await bcrypt.hash(TEST_CITIZENS.citizen1.password, 10),
+                TEST_CITIZENS.citizen1.receive_emails,
+                TEST_CITIZENS.citizen1.profilePicture,
+                TEST_CITIZENS.citizen1.telegram_username
+            );
+            const res = await request(app)
+                .patch(`/api/v1/citizens/${TEST_CITIZENS.citizen1.username}`)
+                .send({ receive_emails: false });
+        });
+        it("should update profilePicture", async () => {
+            await citizenRepo.createCitizen(
+                TEST_CITIZENS.citizen1.email,
+                TEST_CITIZENS.citizen1.username,
+                TEST_CITIZENS.citizen1.name,
+                TEST_CITIZENS.citizen1.surname,
+                await bcrypt.hash(TEST_CITIZENS.citizen1.password, 10), 
+                TEST_CITIZENS.citizen1.receive_emails,
+                TEST_CITIZENS.citizen1.profilePicture,
+                TEST_CITIZENS.citizen1.telegram_username
+            );
+            const res = await request(app)
+                .patch(`/api/v1/citizens/${TEST_CITIZENS.citizen1.username}`)
+                .attach('profilePicture', Buffer.from([0x89, 0x50, 0x4E, 0x47]), 'profile.png');
+        });
+        it("should return 403 when updating another citizen's profile", async () => { 
+            await citizenRepo.createCitizen(
+                TEST_CITIZENS.citizen1.email,
+                TEST_CITIZENS.citizen1.username,
+                TEST_CITIZENS.citizen1.name,
+                TEST_CITIZENS.citizen1.surname,
+                await bcrypt.hash(TEST_CITIZENS.citizen1.password, 10),
+                TEST_CITIZENS.citizen1.receive_emails,
+                TEST_CITIZENS.citizen1.profilePicture,
+                TEST_CITIZENS.citizen1.telegram_username
+            );
+            const res = await request(app)
+                .patch(`/api/v1/citizens/anotheruser`)
+                .send({ telegram_username: 'hacker_telegram' });
+        });  
+    });
+
     describe("Integration - Complete HTTP citizen lifecycle", () => {
         it("should retrieve same citizen data through different endpoints", async () => {
             const hashedPassword = await bcrypt.hash(TEST_CITIZENS.citizen1.password, 10);
