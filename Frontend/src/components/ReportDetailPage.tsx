@@ -197,9 +197,12 @@ return (
                                 <h5>Status</h5>
                                 <p>
                                   <span className={`badge ${
-                                      report.status === ReportStatus.PENDING ? 'bg-primary' : 
-                                      report.status === ReportStatus.ASSIGNED ? 'bg-success' :
+                                      report.status === ReportStatus.PENDING ? 'bg-info' :
+                                      report.status === ReportStatus.ASSIGNED ? 'bg-primary' :
                                       report.status === ReportStatus.REJECTED ? 'bg-danger' :
+                                      report.status === ReportStatus.IN_PROGRESS ? 'bg-primary' :
+                                      report.status === ReportStatus.SUSPENDED ? 'bg-warning' :
+                                      report.status === ReportStatus.RESOLVED ? 'bg-success' :
                                       'bg-secondary'
                                   }`}>
                                     {report.status}

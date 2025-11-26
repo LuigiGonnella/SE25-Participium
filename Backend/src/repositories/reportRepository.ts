@@ -57,45 +57,42 @@ export class ReportRepository {
         });
     }
 
-    
-
     async getReports(filters?: ReportFilters): Promise<ReportDAO[]> {
-        const qb = this.repo.createQueryBuilder('report')
-            .leftJoinAndSelect('report.citizen', 'citizen')
-            .leftJoinAndSelect('report.assignedStaff', 'staff');
+        const where: any = {};
 
         if (filters?.citizen_username) {
-            qb.andWhere('citizen.username = :citizenUsername', { citizenUsername: filters.citizen_username });
+            where.citizen = { username: filters.citizen_username };
         }
 
-        if (filters?.status) {
-            qb.andWhere('report.status = :status', { status: filters.status });
+        if (filters?.status){
+            where.status = filters.status;
         }
 
         if (filters?.title) {
-            qb.andWhere('report.title = :title', { title: filters.title });
+            where.title = filters.title;
         }
 
         if (filters?.category) {
-            qb.andWhere('report.category = :category', { category: filters.category });
+            where.category = filters.category;
         }
 
         if (filters?.staff_username) {
-            qb.andWhere('staff.username = :staffUsername', { staffUsername: filters.staff_username });
+            where.assignedStaff = { username: filters.staff_username };
         }
 
         if (filters?.fromDate && filters?.toDate) {
             const endDate = new Date(filters.toDate);
             endDate.setDate(endDate.getDate() + 1);
-            qb.andWhere('report.timestamp BETWEEN :fromDate AND :toDate', { 
-                fromDate: filters.fromDate, 
-                toDate: endDate 
-            });
+            where.timestamp = Between(filters.fromDate, endDate);
         }
 
-        qb.orderBy('report.timestamp', 'ASC');
+        const reports = await this.repo.find({
+            where,
+            relations: ['citizen', 'assignedStaff'],
+            order: { timestamp: 'ASC' },
+        });
 
-        const reports = await qb.getMany();
+
         return reports;
     }
 
