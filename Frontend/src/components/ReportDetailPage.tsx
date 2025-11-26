@@ -1,7 +1,8 @@
 import {useEffect, useState} from "react";
 import {useParams} from "react-router";
 import API, {STATIC_URL} from "../API/API.mts";
-import {isMPRO, isTOSM, OfficeCategory, type Report, ReportStatus, type User, type Message} from "../models/Models.ts";
+import {isMPRO, isTOSM, type Message, OfficeCategory, type Report, ReportStatus, type User} from "../models/Models.ts";
+import {Card, Carousel, CarouselSlide} from "design-react-kit";
 
 interface ReportDetailPageProps {
   user?: User;
@@ -98,7 +99,7 @@ export default function ReportDetailPage({ user }: ReportDetailPageProps) {
         payload.comment = commentInput.trim();
       } else if (statusInput === ReportStatus.ASSIGNED) {
         payload.status = ReportStatus.ASSIGNED;
-      
+
         if (categoryInput) {
           payload.category = categoryInput;
         }
@@ -148,317 +149,281 @@ export default function ReportDetailPage({ user }: ReportDetailPageProps) {
 return (
   <div className="container-fluid py-4">
 
-    <div className="row">
-      {/* LEFT COLUMN — REPORT DETAILS */}
-      <div className={user && isTOSM(user) && report.assignedStaff === user.username ? "col-md-6" : "col-md-8"}>
-
-        <h2>{report.title}</h2>
-        <p className="text-muted">{new Date(report.timestamp).toLocaleString()}</p>
-
-        <h5>Status</h5>
-        <p>
-          <span className={`badge ${
-          report.status === ReportStatus.PENDING ? 'bg-primary' :
-          report.status === ReportStatus.ASSIGNED ? 'bg-success' :
-          report.status === ReportStatus.REJECTED ? 'bg-danger' :
-          'bg-secondary'
-        }`}>
-        {report.status}
-        </span>
-
-        </p>
-
-                {report.comment && (
-          <>
-            <p>{report.comment}</p>
-          </>
-        )}
-
-        <h5>Category</h5>
-        <p>{report.category}</p>
-
-        <h5>Description</h5>
-        <p>{report.description}</p>
-
-        <h5>Location</h5>
-        <p>
-            {streetName || "Loading address..."}
-            <br />
-            <small className="text-muted">
-              ({report.coordinates[0].toFixed(6)}, {report.coordinates[1].toFixed(6)})
-            </small>
-        </p>
-
-        <h5>Citizen</h5>
-        <p>
-        {report.citizenUsername ? (
-        <>{report.citizenUsername}</>
-        ) : (
-        <i>Unknown</i>
-        )}
-        </p>
-
-        {/*}
-          Lat: {report.coordinates?.[0] ?? 'N/A'}, Lng: {report.coordinates?.[1] ?? 'N/A'}
-        </p>*/}
-
-         <div className="d-block mb-3">
-            {report.photos[0] && (
-              <img
-                src={`${STATIC_URL}${report.photos[0]}`}
-                width={400}
-                alt="Photo 1"
-                className="mb-3 d-block"
-                onError={(e) => {
-                  console.error('Failed to load photo 1');
-                  e.currentTarget.style.display = 'none';
-                }}/>
-              )}
-            {report.photos[1] && (
-              <img
-                src={`${STATIC_URL}${report.photos[1]}`}
-                width={400}
-                alt="Photo 2"
-                className="mb-3 d-block"
-                onError={(e) => {
-                  console.error('Failed to load photo 2');
-                  e.currentTarget.style.display = 'none';
-                }}/>
-              )}
-            {report.photos[2] && (
-              <img
-                src={`${STATIC_URL}${report.photos[2]}`}
-                width={400}
-                alt="Photo 3"
-                className="mb-3 d-block"
-                onError={(e) => {
-                  console.error('Failed to load photo 3');
-                  e.currentTarget.style.display = 'none';
-                }}/>
-              )}
-        </div>
-
-      </div>
-
-      {/* RIGHT COLUMN — MESSAGES CHAT (for TOSM) */}
-      {user && isTOSM(user) && report.assignedStaff === user.username && (
-        <div className="col-md-6">
-          <div className="card shadow-sm h-100 d-flex flex-column">
-            <div className="card-header">
-              <h5 className="mb-0">Messages</h5>
-            </div>
-            <div className="card-body flex-grow-1 d-flex flex-column" style={{ maxHeight: "calc(100vh - 250px)" }}>
-              {/* Messages Display */}
-              <div className="flex-grow-1 overflow-auto mb-3 border rounded p-3" style={{ backgroundColor: "#f8f9fa" }}>
-                {loadingMessages ? (
-                  <div className="text-center text-muted">Loading messages...</div>
-                ) : messages.length === 0 ? (
-                  <div className="text-center text-muted">No messages yet. Start the conversation!</div>
-                ) : (
-                  <div className="d-flex flex-column gap-2">
-                    {messages.map((msg, index) => (
-                      <div key={index} className="d-flex flex-column p-3 rounded shadow-sm" style={{ backgroundColor: "white" }}>
-                        <div className="d-flex justify-content-between align-items-center mb-2">
-                          <span className="fw-bold text-primary">
-                            <i className="bi bi-person-circle me-2"></i>
-                            {msg.staffUsername}
-                          </span>
-                          <span className="text-muted" style={{ fontSize: "0.85rem" }}>
-                            {new Date(msg.timestamp).toLocaleString()}
-                          </span>
+            <div className="row">
+                {/* LEFT COLUMN — REPORT DETAILS */}
+                <div className={report.status === ReportStatus.PENDING ? "col-md-8" : "col-12"}>
+                    <div className="card shadow-sm h-100 d-flex flex-column">
+                        <div className="card-header">
+                            <h2>{report.title}</h2>
+                            <p className="text-muted">{new Date(report.timestamp).toLocaleString()}</p>
                         </div>
-                        <div className="ps-4">
-                          {msg.message}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+                        <div className="row p-4">
+                            <div className="col col-md-6 ps-3">
 
-              {/* Message Input */}
-              <div className="mt-auto">
-                <form onSubmit={handleMessage}>
-                  <div className="mb-2">
-                    <textarea
-                      className="form-control"
-                      rows={3}
-                      value={messageInput}
-                      onChange={(e) => setMessageInput(e.target.value)}
-                      required
-                      placeholder="Type your internal note here..."
-                      disabled={messageLoading}
-                    />
-                  </div>
-                  {messageError && <div className="alert alert-danger py-2 mb-2">{messageError}</div>}
-                  <button type="submit" className="btn btn-primary w-100" disabled={messageLoading || !messageInput.trim()}>
-                    <i className="bi bi-send me-2"></i>
-                    {messageLoading ? "Sending..." : "Send Message"}
-                  </button>
-                </form>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+                                <h5>Status</h5>
+                                <p>
+                                  <span className={`badge ${
+                                      report.status === ReportStatus.PENDING ? 'bg-primary' : 
+                                      report.status === ReportStatus.ASSIGNED ? 'bg-success' :
+                                      report.status === ReportStatus.REJECTED ? 'bg-danger' :
+                                      'bg-secondary'
+                                  }`}>
+                                    {report.status}
+                                  </span>
+                                </p>
 
-      {/* RIGHT COLUMN — MANAGE REPORT (for MPRO) */}
-      { user && isMPRO(user) && report.status === ReportStatus.PENDING && (
-        <div className="col-md-4">
-          <div className="card shadow-sm p-3">
+                                {report.comment && (
+                                        <p>{report.comment}</p>
+                                )}
 
-            <h4 className="mb-3">Manage Report</h4>
+                                <h5>Category</h5>
+                                <p>{report.category}</p>
 
-            {success && <div className="alert alert-success">{success}</div>}
-            {error && <div className="alert alert-danger">{error}</div>}
+                                <h5>Description</h5>
+                                <p>{report.description}</p>
 
-              {/* STATUS 
-              <div className="mb-3">
-                <label className="form-label fw-bold">Status</label>
-                <select
-                  className="form-select"
-                  value={statusInput}
-                  onChange={(e) => setStatusInput(e.target.value)}
-                  required
-                >
-                  <option value="" disabled>Select status</option>
-                  {(MPROStatusOptions).map((s) => (
-                    <option key={s} value={s}>{s}</option>
-                  ))}
-                </select>
-              </div>*/}
+                                <h5>Location</h5>
+                                <p>
+                                    {streetName || "Loading address..."}
+                                    <br/>
+                                    <small className="text-muted">
+                                        ({report.coordinates[0].toFixed(6)}, {report.coordinates[1].toFixed(6)})
+                                    </small>
+                                </p>
 
-              {
-                <div className="d-flex gap-2 mb-3">
-                  <button
-                    type="button"
-                    className={`btn btn-success btn-lg flex-fill ${
-                      statusInput === ReportStatus.ASSIGNED 
-                      ? 'btn-success'
-                      : 'btn-success opacity-50'
-                    }`}
-                    onClick={() => {
-                      if (statusInput === ReportStatus.ASSIGNED) {
-                        setStatusInput("");
-                        setCategoryInput("");
-                      } else {
-                        setStatusInput(ReportStatus.ASSIGNED);
-                        setCommentInput(""); // Reset comment se era in Reject
-                      }
-                    }}
-                  >
-                    Assign
-                  </button>
-                  <button
-                    type="button"
-                    className={`btn btn-lg flex-fill ${
-                      statusInput === ReportStatus.REJECTED 
-                      ? 'btn-danger'
-                      : 'btn-danger opacity-50'
-                    }`}
-                    onClick={() => {
-                      if (statusInput === ReportStatus.REJECTED) {
-                        setStatusInput("");
-                        setCommentInput("");
-                      } else {
-                        setStatusInput(ReportStatus.REJECTED);
-                        setCategoryInput("");
-                      }
-                    }}
-                  >
-                    Reject
-                  </button>
+                                <h5>Citizen</h5>
+                                <p>
+                                    {report.citizenUsername ? (
+                                        <>{report.citizenUsername}</>
+                                    ) : (
+                                        <i>Unknown</i>
+                                    )}
+                                </p>
+                            </div>
+
+                    <div className="col-md-6">
+                        <h5>Photos</h5>
+                        <Carousel type="landscape">
+                            {Array(3).fill(report.photos[0]).map((photo, index) => (
+                                <CarouselSlide key={index}>
+                                    <Card className="pb-0" rounded shadow="sm">
+                                        <div
+                                            style={{
+                                                position: "relative",
+                                                width: "100%",
+                                                maxHeight: "400px",      // altezza massima del riquadro
+                                                overflow: "hidden",
+                                            }}
+                                        >
+                                            <img
+                                                src={`${STATIC_URL}${photo}`}
+                                                alt={`img_${index}`}
+                                                style={{
+                                                    width: "100%",          // piena larghezza
+                                                    height: "100%",
+                                                    objectFit: "contain",   // mostra tutta la foto (orizzontale/verticale)
+                                                    display: "block",
+                                                }}
+                                            />
+                                        </div>
+                                    </Card>
+                                </CarouselSlide>
+                            ))}
+                        </Carousel>
+                    </div>
                 </div>
-              }
+                        </div>
+                    </div>
 
-              {statusInput === ReportStatus.ASSIGNED && (
-                <form onSubmit={handleUpdate}>
-                  <div className="mb-3">
-                    <label className="form-label fw-bold">
-                      Category
-                    </label>
-                    <select
-                      className="form-select"
-                      value={categoryInput}
-                      onChange={(e) => setCategoryInput(e.target.value)}
-                    >
-                      <option value="">Keep current: {report.category}</option>
-                      {categoryOptions
-                          .filter(([key]) => ![report.category, OfficeCategory.MOO].includes(OfficeCategory[key as keyof typeof OfficeCategory]))
-                          .map(([key, label]) => (
-                            <option key={key} value={key}>{label}</option>
-                          ))}
-                    </select>
-                    <small className="text-muted">
-                      Change category if needed before assignment.
-                    </small>
-                  </div>
+                <div className="col-md-4">
+                    {/* RIGHT COLUMN — MESSAGES CHAT (for TOSM) */}
+                    {user && isTOSM(user) && report.assignedStaff === user.username && (
+                        <div className="card shadow-sm h-100 d-flex flex-column">
+                            <div className="card-header">
+                                <h5 className="mb-0">Messages</h5>
+                            </div>
+                            <div className="card-body flex-grow-1 d-flex flex-column"
+                                 style={{maxHeight: "calc(100vh - 250px)"}}>
+                                {/* Messages Display */}
+                                <div className="flex-grow-1 overflow-auto mb-3 border rounded p-3"
+                                     style={{backgroundColor: "#f8f9fa"}}>
+                                    {loadingMessages ? (
+                                        <div className="text-center text-muted">Loading messages...</div>
+                                    ) : messages.length === 0 ? (
+                                        <div className="text-center text-muted">No messages yet. Start the
+                                            conversation!</div>
+                                    ) : (
+                                        <div className="d-flex flex-column-reverse gap-2">
+                                            {messages.map((msg, index) => (
+                                                <div key={index} className="d-flex flex-column p-3 rounded shadow-sm"
+                                                     style={{backgroundColor: "white"}}>
+                                                    <div className="d-flex justify-content-between align-items-center mb-2">
+                                                        <span className="fw-bold text-primary">
+                                                            <i className="bi bi-person-circle me-2"></i>
+                                                            {msg.staffUsername === user.username ? ("You") : (report.citizenUsername)}
+                                                        </span>
+                                                        <span className="text-muted" style={{fontSize: "0.85rem"}}>
+                                                            {new Date(msg.timestamp).toLocaleString()}
+                                                        </span>
+                                                    </div>
+                                                    <div className="ps-4">
+                                                        {msg.message}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
 
-                  <div className="d-flex gap-2">
-                    <button
-                      type="submit"
-                      className="btn btn-primary flex-fill"
-                      disabled={saving}
-                    >
-                      {saving ? "Saving..." : "Confirm"}
-                    </button>
-                  </div>
-                </form>
-              )}
+                                {/* Message Input */}
+                                <div className="mt-auto">
+                                    <form onSubmit={handleMessage}>
+                                        <div className="mb-2">
+                                            <textarea
+                                                className="form-control"
+                                                rows={3}
+                                                value={messageInput}
+                                                onChange={(e) => setMessageInput(e.target.value)}
+                                                required
+                                                placeholder="Type your message here..."
+                                                disabled={messageLoading}
+                                            />
+                                        </div>
+                                        {messageError && <div className="alert alert-danger py-2 mb-2">{messageError}</div>}
+                                        <button type="submit" className="btn btn-primary w-100"
+                                                disabled={messageLoading || !messageInput.trim()}>
+                                            <i className="bi bi-send me-2"></i>
+                                            {messageLoading ? "Sending..." : "Send Message"}
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
-              {/* COMMENT - only on REJECTED status 
-              {statusInput === ReportStatus.REJECTED && (
-              <div className="mb-3">
-                <label className="form-label fw-bold">
-                 Comment <span className="text-danger">*</span>
-                 </label>
-                <textarea
-                  className="form-control"
-                  rows={3}
-                  value={commentInput}
-                  onChange={(e) => setCommentInput(e.target.value)}
-                  required={statusInput === ReportStatus.REJECTED}
-                  placeholder = "Explain rejection's motivation"
-                />
-              </div>
-              )}*/}
+                    {/* RIGHT COLUMN — MANAGE REPORT (for MPRO) */}
+                    {user && isMPRO(user) && report.status === ReportStatus.PENDING && (
+                        <div className="card shadow-sm p-3">
 
-              {/* REJECT FORM */}
-              {statusInput === ReportStatus.REJECTED && (
-                <form onSubmit={handleUpdate}>
-                  <div className="mb-3">
-                    <label className="form-label fw-bold">
-                      Reason <span className="text-danger">*</span>
-                    </label>
-                    <textarea
-                      className="form-control"
-                      rows={4}
-                      value={commentInput}
-                      onChange={(e) => setCommentInput(e.target.value)}
-                      required
-                      placeholder="Explain why this report is being rejected."
-                    />
-                    <small className="text-muted">
-                      This comment will be visible to the citizen who submitted the report.
-                    </small>
-                  </div>
+                            <h4 className="mb-3">Manage Report</h4>
 
-                  <div className="d-flex gap-2">
-                    <button
-                      type="submit"
-                      className="btn btn-primary flex-fill"
-                      disabled={saving}
-                    >
-                      {saving ? "Saving..." : "Confirm"}
-                    </button>
-                  </div>
-                </form>
-              )}
-          </div>
+                            {success && <div className="alert alert-success">{success}</div>}
+                            {error && <div className="alert alert-danger">{error}</div>}
+
+                            {
+                                <div className="d-flex gap-2 mb-3">
+                                    <button
+                                        type="button"
+                                        className={`btn btn-success btn-lg flex-fill ${
+                                            statusInput === ReportStatus.ASSIGNED
+                                                ? 'btn-success'
+                                                : 'btn-success opacity-50'
+                                        }`}
+                                        onClick={() => {
+                                            if (statusInput === ReportStatus.ASSIGNED) {
+                                                setStatusInput("");
+                                                setCategoryInput("");
+                                            } else {
+                                                setStatusInput(ReportStatus.ASSIGNED);
+                                                setCommentInput(""); // Reset comment se era in Reject
+                                            }
+                                        }}
+                                    >
+                                        Assign
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className={`btn btn-lg flex-fill ${
+                                            statusInput === ReportStatus.REJECTED
+                                                ? 'btn-danger'
+                                                : 'btn-danger opacity-50'
+                                        }`}
+                                        onClick={() => {
+                                            if (statusInput === ReportStatus.REJECTED) {
+                                                setStatusInput("");
+                                                setCommentInput("");
+                                            } else {
+                                                setStatusInput(ReportStatus.REJECTED);
+                                                setCategoryInput("");
+                                            }
+                                        }}
+                                    >
+                                        Reject
+                                    </button>
+                                </div>
+                            }
+
+                            {statusInput === ReportStatus.ASSIGNED && (
+                                <form onSubmit={handleUpdate}>
+                                    <div className="mb-3">
+                                        <label className="form-label fw-bold">
+                                            Category
+                                        </label>
+                                        <select
+                                            className="form-select"
+                                            value={categoryInput}
+                                            onChange={(e) => setCategoryInput(e.target.value)}
+                                        >
+                                            <option value="">Keep current: {report.category}</option>
+                                            {categoryOptions
+                                                .filter(([key]) => ![report.category, OfficeCategory.MOO].includes(OfficeCategory[key as keyof typeof OfficeCategory]))
+                                                .map(([key, label]) => (
+                                                    <option key={key} value={key}>{label}</option>
+                                                ))}
+                                        </select>
+                                        <small className="text-muted">
+                                            Change category if needed before assignment.
+                                        </small>
+                                    </div>
+
+                                    <div className="d-flex gap-2">
+                                        <button
+                                            type="submit"
+                                            className="btn btn-primary flex-fill"
+                                            disabled={saving}
+                                        >
+                                            {saving ? "Saving..." : "Confirm"}
+                                        </button>
+                                    </div>
+                                </form>
+                            )}
+
+                            {/* REJECT FORM */}
+                            {statusInput === ReportStatus.REJECTED && (
+                                <form onSubmit={handleUpdate}>
+                                    <div className="mb-3">
+                                        <label className="form-label fw-bold">
+                                            Reason <span className="text-danger">*</span>
+                                        </label>
+                                        <textarea
+                                            className="form-control"
+                                            rows={4}
+                                            value={commentInput}
+                                            onChange={(e) => setCommentInput(e.target.value)}
+                                            required
+                                            placeholder="Explain why this report is being rejected."
+                                        />
+                                        <small className="text-muted">
+                                            This comment will be visible to the citizen who submitted the report.
+                                        </small>
+                                    </div>
+
+                                    <div className="d-flex gap-2">
+                                        <button
+                                            type="submit"
+                                            className="btn btn-primary flex-fill"
+                                            disabled={saving}
+                                        >
+                                            {saving ? "Saving..." : "Confirm"}
+                                        </button>
+                                    </div>
+                                </form>
+                            )}
+                        </div>
+                    )}
+                </div>
+            </div>
+
         </div>
-     )}
-    </div>
-
-  </div>
-  );
+    );
 }

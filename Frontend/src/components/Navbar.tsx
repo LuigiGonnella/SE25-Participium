@@ -74,30 +74,34 @@ function NavComponent({loggedIn, user, handleLogout}: NavComponentProps) {
                                 <span className="fs-5 fw-bold">Participium</span>
                                 <Icon aria-hidden icon="it-expand" />
                             </a>
-                            <LinkList className="collapse me-0" id="menu1a">
-                                <LinkListItem inDropdown href="/" active={ window.location.pathname === '/' }>
-                                    Homepage
-                                </LinkListItem>
-                                <LinkListItem inDropdown href="/map" active={ window.location.pathname === '/map' }>
-                                    Map
-                                </LinkListItem>
-                            {loggedIn && isStaff(user) && (
-                               <LinkListItem inDropdown href="/reports" active={window.location.pathname === '/reports'} >
-                                   Reports
-                                 </LinkListItem>
-                            )}
-                            {(loggedIn && isStaff(user) && user.role === StaffRole.ADMIN) && (
-                                <LinkListItem inDropdown href="/municipality-registration" active={ window.location.pathname === '/municipality-registration' }>
-                                    Staff registration
-                                </LinkListItem>
-                            )}
+                            <LinkList className="collapse me-3 pe-1" id="menu1a">
+                                {!loggedIn && (
+                                    <LinkListItem inDropdown href="/" active={ window.location.pathname === '/' }>
+                                        Homepage
+                                    </LinkListItem>
+                                )}
+                                {(loggedIn && isCitizen(user)) && (
+                                    <LinkListItem inDropdown href="/map" active={ window.location.pathname === '/map' }>
+                                        Map
+                                    </LinkListItem>
+                                )}
+                                {(loggedIn && isStaff(user)) && user!.role !== StaffRole.ADMIN && (
+                                    <LinkListItem inDropdown href="/reports" active={window.location.pathname === '/reports'} >
+                                        Reports
+                                    </LinkListItem>
+                                )}
+                                {(loggedIn && isStaff(user) && user.role === StaffRole.ADMIN) && (
+                                    <LinkListItem inDropdown href="/municipality-registration" active={ window.location.pathname === '/municipality-registration' }>
+                                        Staff registration
+                                    </LinkListItem>
+                                )}
                             </LinkList>
                         </nav>
                     </div>
                     <HeaderRightZone className={loggedIn ? "pt-1" : ""}>
                         {loggedIn && user ? (
                             <>
-                                <Container ref={notifRef} className="position-relative">
+                                {isCitizen(user) && (<Container ref={notifRef} className="position-relative pt-1">
                                     <i role="button" className="bi bi-bell-fill text-white position-relative pe-4" onClick={() => setIsNotifOpen(prevState => !prevState)}>
                                         {notifications.some(n => !n.isRead) &&
                                         <Badge color="danger" className="text-white fst-normal fw-medium position-absolute top-0 start-50 translate-middle rounded-pill">
@@ -144,8 +148,8 @@ function NavComponent({loggedIn, user, handleLogout}: NavComponentProps) {
                                             ))}
                                         </div>
                                     )}
-                                </Container>
-                                <div id="avatarRef" role="button" className="d-flex flex-row justify-content-center gap-2 me-3" onClick={() => navigate('/profile')}>
+                                </Container>)}
+                                <div id="avatarRef" role="button" className="d-flex flex-row justify-content-center gap-2 mx-2" onClick={() => navigate('/profile')}>
                                     <AvatarIcon size="sm">
                                         {isCitizen(user) && user.profilePicture ?
                                             <img src={`${STATIC_URL}${user.profilePicture}`} alt="Avatar"/>
