@@ -1,7 +1,8 @@
-import { Column, Entity, PrimaryGeneratedColumn, ManyToOne } from "typeorm";
+import {Column, Entity, PrimaryGeneratedColumn, ManyToOne, OneToMany} from "typeorm";
 import { CitizenDAO } from "./citizenDAO";
 import { OfficeCategory } from "./officeDAO";
 import { StaffDAO } from "./staffDAO";
+import {MessageDAO} from "@dao/messageDAO";
 
 export enum Status {
     PENDING = "Pending",
@@ -60,4 +61,6 @@ export class ReportDAO {
     @ManyToOne(() => StaffDAO, { nullable: true })
     assignedStaff?: StaffDAO;
 
+    @OneToMany(() => MessageDAO, (message) => message.report, { cascade: true })
+    messages: MessageDAO[];
 }

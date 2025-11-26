@@ -75,4 +75,33 @@ export class CitizenRepository {
             telegram_username
         });
     }
+
+    async updateCitizen(
+        username: string,
+        fields: {
+            telegram_username?: string;
+            receive_emails?: boolean;
+            profilePicture?: string;
+        }
+    ): Promise<CitizenDAO> {
+
+        const citizen = await this.getCitizenByUsername(username);
+        if (!citizen) {
+            throw new AppError(`Citizen with username ${username} not found`, 404);
+        }
+
+        if (fields.telegram_username !== undefined) {
+            citizen.telegram_username = fields.telegram_username;
+        }
+
+        if (fields.receive_emails !== undefined) {
+            citizen.receive_emails = fields.receive_emails;
+        }
+
+        if (fields.profilePicture !== undefined) {
+            citizen.profilePicture = fields.profilePicture;
+        }
+
+        return await this.repo.save(citizen);
+    }
 }

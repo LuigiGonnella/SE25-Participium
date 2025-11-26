@@ -1,5 +1,6 @@
 import { Status } from "@models/dao/reportDAO";
 import { OfficeCategory } from "@models/dao/officeDAO";
+import {MessageDAO} from "@dao/messageDAO";
 
 /**
  * 
@@ -69,6 +70,8 @@ export interface Report {
     comment?: string;  
 
     AssignedStaff?: string;
+
+    messages?: MessageDAO[];
 }
 
 export function ReportToJSON(json: any): Report {
@@ -92,5 +95,6 @@ export function ReportToJSONTyped(value?: Report | null, ignoreDiscriminator: bo
         'photos': value['photos'],
         'comment': value['comment'],
         'AssignedStaff': value['AssignedStaff'],
+        'messages': value['messages'],
     };
 }

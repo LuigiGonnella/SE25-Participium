@@ -1,14 +1,14 @@
 import {Router} from "express";
 import {isAuthenticated} from "@middlewares/authMiddleware";
 import {mapReportDAOToDTO} from "@services/mapperService";
-import {createReport, uploadReportPictures, getReports, getReportById, updateReportAsTOSM, updateReportAsMPRO} from "@controllers/reportController";
+import {createReport, uploadReportPictures, getReports, getReportById, updateReportAsTOSM, updateReportAsMPRO, getMapReports, addMessageToReport, getAllMessages} from "@controllers/reportController";
 import {Citizen} from "@dto/Citizen";
 import { ReportFilters } from "@repositories/reportRepository";
 import { BadRequestError } from "@errors/BadRequestError";
 import { Status } from "@models/dao/reportDAO";
 import { OfficeCategory } from "@models/dao/officeDAO";
 import { StaffRole } from "@models/dao/staffDAO";
-import { NotFoundError } from "@models/errors/NotFoundError";
+import {Staff} from "@dto/Staff";
 
 const router = Router();
 
@@ -105,6 +105,16 @@ router.get('/', isAuthenticated(['STAFF']), async (req, res, next) => {
     }
 });
 
+router.get('/public', isAuthenticated(['CITIZEN']), async (req, res, next) => {
+    try{
+        const reports = await getMapReports();
+        res.status(200).json(reports);
+    }
+    catch(err) {
+        next(err);
+    }
+});
+
 router.get('/:reportId', isAuthenticated(['STAFF']), async (req, res, next) => {
     try {
         const reportId = parseInt(req.params.reportId);
@@ -153,8 +163,8 @@ router.patch('/:reportId/manage', isAuthenticated([StaffRole.MPRO]), async (req,
             throw new BadRequestError(`Invalid status for ${StaffRole.MPRO}.`);
 
         if((updatedStatus === Status.PENDING || updatedStatus === Status.ASSIGNED) && comment)
-            throw new BadRequestError("Comments can only be added when report is rejected.");  
-        
+            throw new BadRequestError("Comments can only be added when report is rejected.");
+
         if(updatedStatus === Status.REJECTED && !comment)
             throw new BadRequestError("A comment is required when rejecting a report.");
 
@@ -221,7 +231,7 @@ router.patch(
       if((updatedStatus !== Status.RESOLVED) && comment)
             throw new BadRequestError("Comments can only be added when report is resolved.");
 
-      const staffUsername = String((req.user as any).username).trim();
+      const staffUsername = String((req.user as Staff).username).trim();
 
       const report = await updateReportAsTOSM(
         reportId,
@@ -236,4 +246,38 @@ router.patch(
     }
   }
 );
+
+// add message to report
+router.post('/:reportId/messages', isAuthenticated(['CITIZEN', 'STAFF']), async (req, res, next) => {
+    try {
+        const user = req.user as ((Citizen | Staff) & { type: 'CITIZEN' | 'STAFF' });
+        const reportId = parseInt(req.params.reportId);
+        if (isNaN(reportId)) {
+            throw new BadRequestError('Invalid reportId.');
+        }
+
+        const { message } = req.body;
+
+        if (!message || typeof message !== 'string' || message.trim() === '') {
+            throw new BadRequestError('Message cannot be empty.');
+        }
+
+        res.status(201).json(await addMessageToReport(reportId, user.username, user.type, message.trim()));
+    } catch (err) {
+        next(err);
+    }
+});
+
+router.get('/:reportId/messages', isAuthenticated(['CITIZEN', 'STAFF']), async (req, res, next) => {
+    try {
+        const reportId = parseInt(req.params.reportId);
+        if (isNaN(reportId)) {
+            throw new BadRequestError('Invalid reportId.');
+        }        
+        res.status(200).json(await getAllMessages(reportId));
+    } catch (err) {
+        next(err);
+    }
+});
+
 export default router;
