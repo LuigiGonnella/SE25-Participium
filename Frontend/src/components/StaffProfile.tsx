@@ -24,7 +24,6 @@ export default function StaffProfile({ user }: StaffProfileProps) {
             try {
                 const filters = { 
                     staff_username: user.username,
-                    status: "IN_PROGRESS"
                 };
                 const data = await API.getReports(filters);
                 setMyReports(data);
@@ -115,25 +114,30 @@ export default function StaffProfile({ user }: StaffProfileProps) {
                         <div className="list-group">
                             {myReports.map((r) => (
                                 <div key={r.id} className="list-group-item p-3">
-                                    <div className="d-flex justify-content-between">
-                                    <div >
-                                        <h5>{r.title}</h5>
-                                        <p className="text-muted mb-1">
-                                            Status: <strong>{r.status}</strong>
-                                        </p>
-                                        <p className="text-muted mb-0">
-                                            Category: <strong>{r.category}</strong>
-                                        </p>
-                                        {r.AssignedStaff && (
-                                            <p className="text-muted mb-0">
-                                                Assigned to: <strong>{r.AssignedStaff}</strong>
-                                            </p>
-                                        )}
-                                    </div>
-                                    <div className="text-muted">
-                                        <small>{new Date(r.timestamp).toLocaleString()}</small>
-                                    </div>
-                                </div>
+                                    <Link
+                                        to={`/reports/${r.id}`}
+                                        className="text-decoration-none text-dark d-block"
+                                    >
+                                        <div className="d-flex justify-content-between">
+                                            <div>
+                                                <h5>{r.title}</h5>
+                                                <p className="text-muted mb-1">
+                                                    Status: <strong>{r.status}</strong>
+                                                </p>
+                                                <p className="text-muted mb-0">
+                                                    Category: <strong>{r.category}</strong>
+                                                </p>
+                                                {r.AssignedStaff && (
+                                                    <p className="text-muted mb-0">
+                                                        Assigned to: <strong>{r.AssignedStaff}</strong>
+                                                    </p>
+                                                )}
+                                            </div>
+                                            <div className="text-end">
+                                                <small>{new Date(r.timestamp).toLocaleString()}</small>
+                                            </div>
+                                        </div>
+                                    </Link>
                                     
                                     {/* STATUS UPDATE CONTROLS */}
                                     <div className="mt-3 pt-3 border-top">

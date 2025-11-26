@@ -47,6 +47,25 @@ Developed as part of the Software Engineering 2 course at **Politecnico di Torin
 - **Office-Based Filtering**: TOSM users see only reports relevant to their office category
 - **Message System**: Receive and send messages on reports in order to chat with the citizens
 
+#### Technical Offices and Responsibilities
+
+The municipality includes several technical offices, each responsible for a specific area of public infrastructure.  
+When a report is approved, the system assigns it to the correct office automatically.
+
+##### Offices Overview
+
+| Technical Office | Category | Description |
+| ---------------- | -------- | ----------- |
+| Municipal Organization Office | Municipal Organization | Administrative or general municipal matters |
+| Water Supply Office | Water Supply | Water leaks, hydrants, public fountains |
+| Architectural Barriers Office | Architectural Barriers | Accessibility issues, ramps, physical barriers |
+| Sewer System Office | Sewer System | Drainage problems, blocked or damaged sewers |
+| Public Lighting Office | Public Lighting | Broken streetlights, malfunctioning electrical poles |
+| Waste Office | Waste | Overflowing bins, street waste issues |
+| Road Signs and Traffic Lights Office | Road Signs and Traffic Lights | Missing or damaged signs, malfunctioning traffic lights |
+| Roads and Urban Furnishings Office | Roads and Urban Furnishings | Potholes, damaged pavements, issues with urban furniture |
+| Public Green Areas and Playgrounds Office | Public Green Areas and Playgrounds | Park maintenance, playground equipment issues |
+
 ### System Features
 - **Secure Authentication**: Session-based authentication with Passport.js
 - **Image Upload & Storage**: Multer-based file handling with validation (JPEG, JPG, PNG)

@@ -1,6 +1,10 @@
 import type { Citizen as CitizenDTO } from "@models/dto/Citizen"
 import { CitizenRepository } from "@repositories/citizenRepository"
 import { mapCitizenDAOToDTO } from "@services/mapperService"
+import multer from "multer";
+import fs from "fs";
+import path from "path";
+import { BadRequestError } from "@errors/BadRequestError";
 
 
 export const citizenRepository = new CitizenRepository();
@@ -32,4 +36,45 @@ export async function getCitizenByUsername(username: string): Promise<CitizenDTO
         return null;
     }
     return mapCitizenDAOToDTO(citizenDAO);
+}
+
+const profileStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        const uploadDir = './uploads/profiles';
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        cb(null, uploadDir);
+    },
+    filename: (req, file, cb) => {
+        const uniqueName = `${Date.now()}-${Math.random().toString(36).substring(7)}${path.extname(file.originalname)}`;
+        cb(null, uniqueName);
+    }
+});
+
+export const uploadProfilePicture = multer({
+    storage: profileStorage,
+    limits: {
+        fileSize: 5 * 1024 * 1024
+    },
+    fileFilter: (req, file, cb) => {
+        const allowedTypes = /jpeg|jpg|png/;
+        const ext = path.extname(file.originalname).toLowerCase();
+        if (!allowedTypes.test(ext)) {
+            return cb(new BadRequestError("Only JPEG, JPG, PNG allowed"));
+        }
+        cb(null, true);
+    }
+});
+
+export async function updateCitizenProfile(
+    username: string,
+    updates: {
+        telegram_username?: string;
+        receive_emails?: boolean;
+        profilePicture?: string;
+    }
+) {
+    const updatedDAO = await citizenRepository.updateCitizen(username, updates);
+    return mapCitizenDAOToDTO(updatedDAO);
 }

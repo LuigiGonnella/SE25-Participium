@@ -5,6 +5,12 @@
  */
 export interface Notification {
     /**
+     *
+     * @type {number}
+     * @memberof Notification
+     */
+    id: number;
+    /**
      * 
      * @type {string}
      * @memberof Notification
@@ -29,9 +35,15 @@ export interface Notification {
      */
     isRead: boolean;
     /**
+     *
+     * @type {number}
+     * @memberof Notification
+     */
+    reportId?: number;
+    /**
      * 
      * @type {string}
-     * @memberof Report
+     * @memberof Notification
      */
     citizenUsername?: string;
     /**
@@ -40,4 +52,8 @@ export interface Notification {
      * @memberof Notification
      */
     staffUsername?: string;
+}
+
+export function NotificationToJSON(n: Notification) {
+    return n;
 }

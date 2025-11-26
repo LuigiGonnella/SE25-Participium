@@ -1,14 +1,15 @@
 import { Column, Entity, PrimaryGeneratedColumn, ManyToOne } from "typeorm";
 import { CitizenDAO } from "./citizenDAO";
 import { StaffDAO } from "./staffDAO";
+import {ReportDAO} from "@dao/reportDAO";
 
 @Entity("notification")
 export class NotificationDAO {
     @PrimaryGeneratedColumn('increment', { type: 'int', unsigned: true })
     id: number;
 
-    /* @ManyToOne(() => ReportDAO, (report) => report.members, {onDelete: "SET NULL", nullable: true})
-    report: ReportDAO; */
+    @ManyToOne(() => ReportDAO, (report) => report.id)
+    report: ReportDAO;
 
     @Column({ default: () => "CURRENT_TIMESTAMP" })
     timestamp: Date;
