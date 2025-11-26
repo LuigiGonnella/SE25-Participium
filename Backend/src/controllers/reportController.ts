@@ -1,11 +1,17 @@
-import {ReportRepository} from "@repositories/reportRepository";
+import {ReportFilters, ReportRepository} from "@repositories/reportRepository";
 import {CitizenRepository} from "@repositories/citizenRepository";
 import {NotFoundError} from "@errors/NotFoundError";
 import {BadRequestError} from "@errors/BadRequestError";
-import {ReportDAO} from "@dao/reportDAO";
+import {ReportDAO, Status} from "@dao/reportDAO";
 import multer from "multer";
 import fs from "fs";
 import path from "path";
+import { mapMessageToDTO, mapReportDAOToDTO } from "@services/mapperService";
+import { Report } from "@models/dto/Report";
+import { OfficeCategory } from "@models/dao/officeDAO";
+import {findOrThrowNotFound} from "@utils";
+import {StaffDAO} from "@dao/staffDAO";
+import { Message } from "@models/dto/Message";
 
 const repo = new ReportRepository();
 const citizenRepo = new CitizenRepository();
@@ -74,6 +80,8 @@ export async function createReport(body: any, citizen: string, photos: Express.M
     const lat = parseFloat(latitude);
     const lon = parseFloat(longitude);
 
+    //TODO: must be inside Turin perimeter
+
     return await repo.create(
         citizenDAO,
         title,
@@ -86,4 +94,68 @@ export async function createReport(body: any, citizen: string, photos: Express.M
         photo2,
         photo3
     );
+}
+
+export async function getReports(filters?: ReportFilters): Promise<Report[]> {
+    const reportDAOs = await repo.getReports(filters);
+    return reportDAOs.map(mapReportDAOToDTO);
+}
+
+export async function getMapReports(): Promise<Report[]> {
+    const reportDAOs = await repo.getMapReports();
+    return reportDAOs.map(mapReportDAOToDTO);
+}
+
+export async function getReportById(reportId: number): Promise<Report> {
+    const reportDAO = await repo.getReportById(reportId);
+    return mapReportDAOToDTO(reportDAO);
+}
+
+export async function updateReportAsMPRO(reportId: number,
+                                    updatedStatus: Status,
+                                    comment?: string,
+                                    updatedCategory?: OfficeCategory,
+                                ): Promise<Report> {
+    const updatedReportDAO = await repo.updateReportAsMPRO(reportId, updatedStatus, comment, updatedCategory);
+    return mapReportDAOToDTO(updatedReportDAO);
+}
+
+export async function updateReportAsTOSM(reportId: number,
+                                    updatedStatus: Status,
+                                    comment?: string,
+                                    staffUsername?: string
+                                ): Promise<Report> {
+    const updatedReportDAO = await repo.updateReportAsTOSM(reportId, updatedStatus, comment, staffUsername);
+    return mapReportDAOToDTO(updatedReportDAO);
+}
+
+export async function addMessageToReport(reportId: number, username: string, userType: 'CITIZEN' | 'STAFF', message: string): Promise<Report> {
+    const reportDAO = findOrThrowNotFound(
+        [await repo.getReportById(reportId)],
+        () => true,
+        `Report with id ${reportId} not found`
+    );
+
+    let assignedStaff: StaffDAO | undefined = undefined;
+    if (userType === 'STAFF') {
+        if(reportDAO.assignedStaff?.username !== username)
+            throw new BadRequestError(`Staff member ${username} is not assigned to report ${reportId}`);
+        assignedStaff = reportDAO.assignedStaff;
+    } else if (userType === 'CITIZEN' && reportDAO.citizen?.username !== username) {
+        throw new BadRequestError(`Citizen ${username} is not the owner of report ${reportId}`);
+    }
+
+    const updatedReportDAO = await repo.addMessageToReport(reportDAO, message, assignedStaff);
+
+    return mapReportDAOToDTO(updatedReportDAO);
+}
+
+export async function getAllMessages(reportId: number): Promise<Message[]> {
+    const reportDAO = findOrThrowNotFound(
+        [await repo.getReportById(reportId)],
+        () => true,
+        `Report with id ${reportId} not found`
+    );
+    const messages = await repo.getAllMessages(reportId);
+    return messages.map(mapMessageToDTO);
 }

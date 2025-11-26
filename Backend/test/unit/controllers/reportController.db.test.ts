@@ -51,7 +51,7 @@ beforeEach(async () => {
     await TestDataSource.getRepository(ReportDAO).clear();
 });
 
-describe("ReportController-like function tests", () => {
+describe("ReportController - createReport", () => {
     
     it("creates a report successfully", async () => {
         await citizenRepo.createCitizen(
@@ -124,7 +124,7 @@ describe("ReportController-like function tests", () => {
         ).rejects.toThrow("At least one photo is required");
     });
 
-    it("handles photo2 and photo3 correctly", async () => {
+    it("handles multiple photos correctly", async () => {
         await citizenRepo.createCitizen(
             fakeCitizen.email,
             fakeCitizen.username,

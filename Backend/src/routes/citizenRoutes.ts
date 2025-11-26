@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { CitizenToJSON } from "@models/dto/Citizen";
-import { getAllCitizens, getCitizenByEmail, getCitizenById, getCitizenByUsername } from "@controllers/citizenController";
+import { getAllCitizens, getCitizenByEmail, getCitizenById, getCitizenByUsername, updateCitizenProfile, uploadProfilePicture } from "@controllers/citizenController";
+import { isAuthenticated } from "@middlewares/authMiddleware";
 
 const router = Router();
 
@@ -54,6 +55,41 @@ router.get('/username/:username', async (req, res, next) => {
         }
         const citizen = await getCitizenByUsername(username);
         res.status(200).json(CitizenToJSON(citizen));
+    } catch (error) {
+        next(error);
+    }
+});
+
+// PATCH /citizens/:username - update citizen profile (authenticated citizens only, can only update own profile)
+router.patch('/:username', isAuthenticated(['CITIZEN']), uploadProfilePicture.single('profilePicture'), async (req, res, next) => {
+    try {
+        const username = req.params.username;
+        const authenticatedUser = req.user as any;
+
+        // Verify that the citizen can only update their own profile
+        if (authenticatedUser.username !== username) {
+            return res.status(403).json({ error: 'You can only update your own profile' });
+        }
+
+        // Extract update fields from request body
+        const { telegram_username, receive_emails } = req.body;
+        
+        // Handle profile picture from multer upload
+        const profilePictureFile = req.file as Express.Multer.File | undefined;
+        const profilePicture = profilePictureFile 
+            ? `/uploads/profiles/${profilePictureFile.filename}`
+            : undefined;
+
+        // Build updates object
+        const updates: any = {};
+        if (telegram_username !== undefined) updates.telegram_username = telegram_username;
+        if (receive_emails !== undefined) updates.receive_emails = receive_emails === 'true' || receive_emails === true;
+        if (profilePicture !== undefined) updates.profilePicture = profilePicture;
+
+        // Update citizen profile
+        const updatedCitizen = await updateCitizenProfile(username, updates);
+        
+        res.status(200).json(CitizenToJSON(updatedCitizen));
     } catch (error) {
         next(error);
     }

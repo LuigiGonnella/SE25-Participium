@@ -1,50 +1,138 @@
-import {useEffect, useState} from "react";
-import L, {LatLng, type LatLngExpression, type LeafletMouseEvent} from "leaflet";
+import {useCallback, useEffect, useRef, useState} from "react";
+import {GeoJSON, MapContainer, Marker, Polygon, Popup, TileLayer, useMap, useMapEvents} from "react-leaflet";
+import type {LatLng} from "leaflet";
+import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import {Button, Col, Row, Spinner} from "design-react-kit";
 import ReportForm from "./ReportForm.tsx";
-import {isCitizen, type User} from "../models/Models.ts";
+import {isCitizen, type Report, type User} from "../models/Models.ts";
+import ReportDetailsPanel from "./ReportDetailsPanel.tsx";
+import { useSearchParams } from "react-router";
+import API from "../API/API.mjs";
+import useSupercluster from "use-supercluster";
+
+let DefaultIcon = L.icon({
+    iconUrl: "/pin.png",
+    iconSize: [40, 40],
+    iconAnchor: [20, 40],
+    popupAnchor: [0, -30],
+});
+
+const SelectedIcon = L.icon({
+    iconUrl: "/marker.png",
+    iconSize: [50, 50],
+    iconAnchor: [25, 50],
+    popupAnchor: [0, -40],
+});
 
 interface MapProps {
     isLoggedIn: boolean;
     user?: User;
 }
 
+function pointInPolygon(point: L.Point, polygon: L.Point[]): boolean {
+    let inside = false;
+    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+        const xi = polygon[i].x, yi = polygon[i].y;
+        const xj = polygon[j].x, yj = polygon[j].y;
+
+        const intersect = ((yi > point.y) !== (yj > point.y))
+            && (point.x < (xj - xi) * (point.y - yi) / (yj - yi) + xi);
+        if (intersect) inside = !inside;
+    }
+    return inside;
+}
+
+async function getStreetName(selectedCoordinates: LatLng): Promise<string> {
+    if(!selectedCoordinates) return "";
+    // Reverse geocoding
+    try {
+        const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${selectedCoordinates.lat}&lon=${selectedCoordinates.lng}`;
+        const res = await fetch(url);
+        const data = await res.json();
+
+        return (data.address?.road + " " + (data.address?.house_number || "")) ||
+            data.address?.pedestrian ||
+            data.address?.footway ||
+            data.display_name ||
+            "Unnamed street";
+    } catch (error) {
+        console.error("Reverse geocoding failed:", error);
+    }
+    return "Unnamed street";
+}
+
+function MapClickHandler({ holes, setCoordinates, newReportMode, selectedReport}: {
+    holes: L.LatLngExpression[][],
+    setCoordinates: (latlng: LatLng | null) => void,
+    newReportMode: boolean,
+    selectedReport: Report | undefined
+}) {
+    useMapEvents({
+        click: async (e) => {
+            const {latlng} = e;
+
+            // Verifica se il punto è dentro Torino
+            for (const hole of holes) {
+                const reversed = hole.slice().reverse();
+                const poly = L.polygon(reversed);
+
+                const bounds = poly.getBounds();
+                if (bounds.contains(latlng)) {
+                    const point = L.point(latlng.lng, latlng.lat);
+                    const polyPoints = reversed.map(ll => {
+                        const latLng = Array.isArray(ll) ? L.latLng(ll[0], ll[1]) : ll;
+                        return L.point(latLng.lng, latLng.lat);
+                    });
+
+                    if (pointInPolygon(point, polyPoints)) {
+                        setCoordinates(latlng);
+                        return;
+                    }
+                }
+            }
+            setCoordinates(null);
+        }
+    });
+
+    const map = useMap();
+    useEffect(() => {
+        if (map) {
+            // Aggiunge un piccolo ritardo per assicurarsi che il layout sia aggiornato
+            setTimeout(() => {
+                map.invalidateSize();
+            }, 100);
+        }
+    }, [newReportMode, map, selectedReport]);
+
+    return null;
+}
+
 export default function TurinMaskedMap({isLoggedIn, user}: MapProps) {
+    const [searchParams, setSearchParams] = useSearchParams();
     const [isLoaded, setIsLoaded] = useState<boolean>(false);
     const [newReportMode, setNewReportMode] = useState<boolean>(false);
-    const [mapInstance, setMapInstance] = useState<L.Map | null>(null);
     const [selectedCoordinates, setSelectedCoordinates] = useState<LatLng | null>(null);
     const [streetName, setStreetName] = useState<string>("");
-
-    function pointInPolygon(point: L.Point, polygon: L.Point[]): boolean {
-        let inside = false;
-        for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-            const xi = polygon[i].x, yi = polygon[i].y;
-            const xj = polygon[j].x, yj = polygon[j].y;
-
-            const intersect = ((yi > point.y) !== (yj > point.y))
-                && (point.x < (xj - xi) * (point.y - yi) / (yj - yi) + xi);
-            if (intersect) inside = !inside;
-        }
-        return inside;
-    }
+    const [turinGeoJSON, setTurinGeoJSON] = useState<any>(null);
+    const [holes, setHoles] = useState<L.LatLngExpression[][]>([]);
+    const [selectedReport, setSelectedReport] = useState<Report>();
+    
+    const [reports, setReports] = useState<Report[]>([]);
 
     useEffect(() => {
-        const map = L.map("map", {
-            zoomControl: true,
-            minZoom: 11,
-            maxZoom: 18,
-        }).setView([45.0703, 7.6869], 12);
 
-        setMapInstance(map);
+        setStreetName("");
+        if (!selectedCoordinates) return;
+        getStreetName(selectedCoordinates).then((v) => {
+            setStreetName(v);
+            if(markerRef.current)
+                markerRef.current.openPopup()
+        }).catch(console.error);
 
-        // --- Base tiles ---
-        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-            attribution: "&copy; OpenStreetMap contributors",
-        }).addTo(map);
+    }, [selectedCoordinates]);
 
-        // --- Fetch Turin boundary from Nominatim ---
+    useEffect(() => {
         const nominatimUrl =
             "https://nominatim.openstreetmap.org/search.php?q=Turin%2C+Italy&polygon_geojson=1&format=jsonv2";
 
@@ -59,128 +147,54 @@ export default function TurinMaskedMap({isLoggedIn, user}: MapProps) {
                 if (!feature) throw new Error("No polygon found for Turin");
 
                 const gj = feature.geojson;
+                setTurinGeoJSON(gj);
 
-                // --- World rectangle for dark overlay ---
-                const world: LatLngExpression[] = [
-                    [90, -180],
-                    [90, 180],
-                    [-90, 180],
-                    [-90, -180],
-                ];
-
-                // --- Reverse the Turin polygon(s) to create holes ---
-                const holes: LatLngExpression[][] = [];
+                const newHoles: L.LatLngExpression[][] = [];
                 if (gj.type === "Polygon") {
                     const outer = gj.coordinates[0].map(
-                        ([lng, lat]: [number, number]) => [lat, lng] as LatLngExpression
+                        ([lng, lat]: [number, number]) => [lat, lng] as L.LatLngExpression
                     );
-                    holes.push(outer.slice().reverse());
+                    newHoles.push(outer.slice().reverse());
                 } else if (gj.type === "MultiPolygon") {
                     gj.coordinates.forEach((poly: [number, number][][]) => {
                         const outer = poly[0].map(
-                            ([lng, lat]: [number, number]) => [lat, lng] as LatLngExpression
+                            ([lng, lat]: [number, number]) => [lat, lng] as L.LatLngExpression
                         );
-                        holes.push(outer.slice().reverse());
+                        newHoles.push(outer.slice().reverse());
                     });
                 }
 
-                // --- Add dark overlay (everything except Turin) ---
-                L.polygon([world, ...holes], {
-                    stroke: false,
-                    fillColor: "#000",
-                    fillOpacity: 0.7,
-                    interactive: false,
-                }).addTo(map);
-
-                // --- Draw Turin border ---
-                const borderLayer = L.geoJSON(gj, {
-                    style: {color: "#2c7fb8", weight: 2, fillOpacity: 0},
-                }).addTo(map);
-
-                map.fitBounds(borderLayer.getBounds(), {padding: [20, 20]});
-
-                // --- Polygon for inside-Turin detection ---
-                //const turinArea = L.polygon(holes.map((h) => h.slice().reverse()));
-
-                // --- Keep track of the last marker ---
-                let currentMarker: L.Marker | null = null;
-
-                // --- Handle clicks ---
-                map.on("click", async (e: LeafletMouseEvent) => {
-                    const {latlng} = e;
-
-                    // Use ray-casting to check if the point is inside the polygon
-                    let inside = false;
-                    for (const hole of holes) {
-                        const reversed = hole.slice().reverse();
-                        const poly = L.polygon(reversed);
-
-                        const bounds = poly.getBounds();
-                        if (bounds.contains(latlng)) {
-                            const point = L.point(latlng.lng, latlng.lat);
-                            const polyPoints = reversed.map(ll => {
-                                const latLng = Array.isArray(ll) ? L.latLng(ll[0], ll[1]) : ll;
-                                return L.point(latLng.lng, latLng.lat);
-                            });
-
-                            if (pointInPolygon(point, polyPoints)) {
-                                inside = true;
-                                setSelectedCoordinates(latlng);
-                                break;
-                            }
-                        }
-                    }
-
-                    if (!inside) return;
-
-                    // --- Reverse-geocode to get street name ---
-                    try {
-                        const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latlng.lat}&lon=${latlng.lng}`;
-                        const res = await fetch(url);
-                        const data = await res.json();
-
-                        const street =
-                            (data.address?.road + " " + (data.address?.house_number || " ")) ||
-                            data.address?.pedestrian ||
-                            data.address?.footway ||
-                            data.display_name ||
-                            "Unnamed street";
-
-                        // Remove previous marker
-                        if (currentMarker) map.removeLayer(currentMarker);
-
-                        // Add new marker with street name
-                        currentMarker = L.marker(latlng)
-                            .addTo(map)
-                            .bindPopup(`<b>${street}</b>`)
-                            .openPopup();
-
-                        setStreetName(street);
-                    } catch (error) {
-                        console.error("Reverse geocoding failed:", error);
-                    }
-                });
+                setHoles(newHoles);
                 setIsLoaded(true);
             })
             .catch((err) => console.error("Failed to load Turin boundary:", err));
 
-        // --- Cleanup on unmount ---
-        return () => {
-            map.remove();
-        };
+        API.getMapReports().then(setReports).catch(console.error)
     }, []);
 
+    // Check for reportId in URL params and open the report details panel
     useEffect(() => {
-        if (mapInstance) {
-            setTimeout(() => {
-                mapInstance.invalidateSize();
-            }, 100);
+        const reportIdParam = searchParams.get('reportId');
+        if (reportIdParam && reports.length > 0) {
+            const reportId = parseInt(reportIdParam);
+            const report = reports.find(r => r.id === reportId);
+            if (report) {
+                setSelectedReport(report);
+                // Remove the reportId from URL
+                searchParams.delete('reportId');
+                setSearchParams(searchParams);
+            }
         }
-    }, [newReportMode, mapInstance]);
+    }, [searchParams, reports, setSearchParams]);
 
-    const changeMode = () => {
-        setNewReportMode((prev) => !prev);
-    }
+    const world: L.LatLngExpression[] = [
+        [90, -180],
+        [90, 180],
+        [-90, 180],
+        [-90, -180],
+    ];
+
+    const markerRef = useRef<L.Marker>(null);
 
     return (
         <Row className="d-flex flex-grow-1 position-relative vw-100 g-0">
@@ -192,16 +206,70 @@ export default function TurinMaskedMap({isLoggedIn, user}: MapProps) {
                         backgroundColor: 'rgba(255, 255, 255, 0.9)'
                     }}
                 >
-                    <Spinner active />
+                    <Spinner active/>
                 </div>
             )}
-            <Col className={"d-flex flex-column justify-content-end" + (newReportMode ? "col-12 col-lg-7" : "col-12")} style={{pointerEvents: isLoaded ? 'auto' : 'none'}}>
-                <div id="map" className="d-flex flex-grow-1"/>
+            <Col className={"d-flex flex-column justify-content-end" + (newReportMode || selectedReport ? " col-12 col-lg-7" : " col-12")}
+                 style={{pointerEvents: isLoaded ? 'auto' : 'none'}}>
+                <MapContainer
+                    center={[45.0703, 7.6869]}
+                    zoom={12}
+                    minZoom={12}
+                    maxZoom={18}
+                    zoomControl={true}
+                    style={{height: '100%', width: '100%'}}
+                >
+                    <TileLayer
+                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    />
+                    {reports.length > 0 && <ClusterMarkers reports={reports} selectedReport={selectedReport} setSelectedReport={ setSelectedReport } setNewReportMode={ setNewReportMode } />}
+
+                    {isLoaded && (
+                        <>
+                            {selectedCoordinates && (
+                                <Marker ref={markerRef} icon={DefaultIcon} position={selectedCoordinates}>
+                                    <Popup eventHandlers={{remove: () => setSelectedCoordinates(null)}}>
+                                        {streetName || "Loading..."}
+                                    </Popup>
+                                </Marker>
+                            )}
+                            <Polygon
+                                positions={[world, ...holes]}
+                                pathOptions={{
+                                    stroke: false,
+                                    fillColor: "#000",
+                                    fillOpacity: 0.7
+                                }}
+                                interactive={false}
+                            />
+
+                            {turinGeoJSON && (
+                                <GeoJSON
+                                    data={turinGeoJSON}
+                                    style={{
+                                        color: "#2c7fb8",
+                                        weight: 2,
+                                        fillOpacity: 0
+                                    }}
+                                />
+                            )}
+
+                            <MapClickHandler
+                                holes={holes}
+                                setCoordinates={setSelectedCoordinates}
+                                newReportMode={newReportMode}
+                                selectedReport={selectedReport}
+                            />
+                        </>
+                    )}
+                </MapContainer>
+
                 {!newReportMode && isLoggedIn && isCitizen(user) && selectedCoordinates && (
                     <Button
                         className="btn-primary rounded-5 position-absolute bottom-0 start-50 translate-middle-x mb-3"
                         style={{zIndex: 1000}}
-                        onClick={changeMode}
+                        onClick={() => { setNewReportMode(true); setSelectedReport(undefined); }}
                     >
                         <i className="bi bi-plus-lg">&nbsp;</i>
                         New Report
@@ -216,10 +284,141 @@ export default function TurinMaskedMap({isLoggedIn, user}: MapProps) {
                          right: 0,
                          backgroundColor: 'white'
                      }}>
-                    <ReportForm coordinates={selectedCoordinates} street={streetName} toggleReportView={changeMode}/>
+                    <ReportForm
+                        coordinates={selectedCoordinates}
+                        street={streetName}
+                        toggleReportView={() => setNewReportMode(false)}
+                    />
                 </Col>
             )}
+
+            {selectedReport && (
+                <Col className="col-12 col-lg-5 p-0 position-absolute position-lg-relative h-100"
+                     style={{
+                         zIndex: 1001,
+                         top: 0,
+                         right: 0,
+                         backgroundColor: 'white'
+                     }}>                
+                     <ReportDetailsPanel report={selectedReport} onClose={() => setSelectedReport(undefined)} />
+                </Col>
+            )}
+
         </Row>
     );
+}
 
+interface ClusterMarkersProps {
+    reports: Report[];
+    selectedReport?: Report;
+    setSelectedReport: (report: Report | undefined) => void;
+    setNewReportMode: (mode: boolean) => void;
+}
+
+function ClusterMarkers({reports, selectedReport, setSelectedReport, setNewReportMode}: ClusterMarkersProps) {
+
+    const [bounds, setBounds] = useState<[number, number, number, number] | undefined>(undefined);
+    const [zoom, setZoom] = useState<number>(12);
+    const map = useMap();
+
+    function updateMap() {
+        const b = map.getBounds();
+        setBounds([b.getSouthWest().lng, b.getSouthWest().lat, b.getNorthEast().lng, b.getNorthWest().lat]);
+        setZoom(map.getZoom());
+    }
+
+    const onMove = useCallback(() => {
+        updateMap();
+    }, [map]);
+
+    useEffect(() => {
+        updateMap();
+    }, [map]);
+
+    useEffect(() => {
+        map.on('moveend', onMove);
+        return () => {
+            map.off('moveend', onMove);
+        };
+    }, [map, onMove]);
+
+    const points = reports.map(r => ({
+        type: "Feature",
+        properties: { cluster: false, reportId: r.id, citizenUsername: r.citizenUsername, title: r.title, status: r.status },
+        geometry: {
+            type: "Point",
+            coordinates: [
+                r.coordinates[1],
+                r.coordinates[0]
+            ]
+        }
+    }));
+
+    const { clusters, supercluster } = useSupercluster({
+        points: points,
+        bounds: bounds,
+        zoom: zoom,
+        options: { radius: 200, maxZoom: 17 }
+    });
+
+    useEffect(() => {
+        if (selectedReport) {
+            const lat = selectedReport.coordinates[0];
+            const lng = selectedReport.coordinates[1];
+            map.setView([lat, lng], 18, { animate: true });
+        }
+    }, [selectedReport]);
+
+    return (<>
+        {clusters.map(cluster => {
+            const [longitude, latitude] = cluster.geometry.coordinates;
+            const {
+                cluster: isCluster,
+                point_count: pointCount
+            } = cluster.properties;
+
+            if (isCluster) {
+                return (
+                    <Marker
+                        key={`cluster-${cluster.id}`}
+                        position={[latitude, longitude]}
+                        icon={L.divIcon({
+                            html: `<div style="background-color: rgba(0, 123, 255, 0.8); border-radius: 50%; width: ${30 + (pointCount / points.length) * 40}px; height: ${30 + (pointCount / points.length) * 40}px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">${pointCount}</div>`,
+                            className: '',
+                            iconSize: L.point(30 + (pointCount / points.length) * 40, 30 + (pointCount / points.length) * 40)
+                        })}
+                        eventHandlers={{
+                            click: () => {
+                                const expansionZoom = Math.min(
+                                    supercluster.getClusterExpansionZoom(cluster.id),
+                                    18
+                                );
+                                map.setView([latitude, longitude], expansionZoom, {
+                                    animate: true
+                                });
+                            }
+                        }}
+                    />
+                );
+            }
+            return (
+                <Marker
+                    key={`report-${cluster.properties.reportId}`}
+                    position={[latitude, longitude]}
+                    icon={selectedReport && selectedReport.id === cluster.properties.reportId ? SelectedIcon : DefaultIcon}
+                    eventHandlers={{
+                        mouseover: (e) => { e.target.openPopup(); },
+                        mouseout: (e) => { e.target.closePopup(); },
+                        click: () => { setSelectedReport(reports.find(r => r.id === cluster.properties.reportId) || undefined); setNewReportMode(false); }
+                    }}
+                >
+                    <Popup closeButton={false} >
+                        <strong>Title:</strong> {cluster.properties.title}<br />
+                        <strong>Status:</strong> {cluster.properties.status}<br />
+                        <i>by {cluster.properties.citizenUsername}</i>
+                    </Popup>
+                </Marker>
+            );
+        })}
+    </>);
 }
