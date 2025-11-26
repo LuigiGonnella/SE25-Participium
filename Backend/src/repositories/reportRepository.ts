@@ -208,12 +208,16 @@ export class ReportRepository {
         if(updatedReport.status === Status.RESOLVED)
             throw new BadRequestError("Cannot update a resolved report.");
 
-        if(updatedReport.status === Status.SUSPENDED && updatedStatus !== Status.RESOLVED)
+        if(updatedReport.status === Status.SUSPENDED && updatedStatus === Status.RESOLVED)
             throw new BadRequestError("Cannot resolve a suspended report.");
 
         let assignedStaff: StaffDAO | undefined = undefined;
 
         if (staffUsername) {
+
+            if (updatedReport.assignedStaff && updatedReport.assignedStaff?.username !== staffUsername)
+                throw new BadRequestError(`Report is already assigned to staff '${updatedReport.assignedStaff.username}'`);
+
             const staff = await this.staffRepo.findOne({
                 where: { username: staffUsername },
                 relations: ['office']

@@ -29,6 +29,8 @@ export default function ReportListPage({ user }: ReportListProps) {
     const [error, setError] = useState<string>();
     const [assigningId, setAssigningId] = useState<number | null>(null);
 
+    const [assignedToMe, setAssignedToMe] = useState<boolean>(false);
+
     // FILTER STATE
     const [statusFilter, setStatusFilter] = useState("");
 
@@ -119,6 +121,10 @@ export default function ReportListPage({ user }: ReportListProps) {
                         </option>
                     ))}
                 </select>
+                <div className="d-flex align-items-center">
+                <label>Assigned to me</label>&nbsp;
+                <input type="checkbox" onChange={(v) => setAssignedToMe(v.target.checked)}/>
+                </div>
             </div>
 
             {/* LOADING */}
@@ -134,7 +140,7 @@ export default function ReportListPage({ user }: ReportListProps) {
             {/* REPORT LIST */}
             {!loading && reports.length > 0 && (
                 <div className="list-group">
-                    {reports.filter(r => getStatusOptions().map(s => s.label).includes(r.status)).map((r) => (
+                    {reports.filter(r => (!assignedToMe || r.assignedStaff===user.username) && getStatusOptions().map(s => s.label).includes(r.status)).map((r) => (
                         <div
                             key={r.id}
                             className="list-group-item p-3 d-flex justify-content-between align-items-center"
@@ -208,7 +214,7 @@ export default function ReportListPage({ user }: ReportListProps) {
                 </div>
             )}
 
-            {!loading && reports.length === 0 && (
+            {!loading && reports.filter(r => (!assignedToMe || r.assignedStaff===user.username) && getStatusOptions().map(s => s.label).includes(r.status)).length === 0 && (
                 <p className="text-muted">No reports found.</p>
             )}
         </div>

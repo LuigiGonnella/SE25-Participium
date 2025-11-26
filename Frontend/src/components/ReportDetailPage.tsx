@@ -1,8 +1,18 @@
 import {useEffect, useState} from "react";
 import {useParams} from "react-router";
 import API, {STATIC_URL} from "../API/API.mts";
-import {isMPRO, isTOSM, type Message, OfficeCategory, type Report, ReportStatus, type User} from "../models/Models.ts";
+import {
+    isMPRO,
+    isStaff,
+    isTOSM,
+    type Message,
+    OfficeCategory,
+    type Report,
+    ReportStatus,
+    type User
+} from "../models/Models.ts";
 import {Card, Carousel, CarouselSlide} from "design-react-kit";
+import {Alert, Button, Col, Form, Row} from "react-bootstrap";
 
 interface ReportDetailPageProps {
   user?: User;
@@ -30,6 +40,8 @@ export default function ReportDetailPage({ user }: ReportDetailPageProps) {
   const [messageError, setMessageError] = useState<string>("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [loadingMessages, setLoadingMessages] = useState(false);
+
+  const [statusUpdate, setStatusUpdate] = useState("");
 
   const categoryOptions = Object.entries(OfficeCategory) as [string, string][];
 
@@ -142,6 +154,28 @@ export default function ReportDetailPage({ user }: ReportDetailPageProps) {
     }
   };
 
+    const handleStatusUpdate = async () => {
+        setError("");
+        if (!statusUpdate || !report || !isStaff(user)) return;
+
+        try {
+            const data: any = { status: statusUpdate };
+            if (statusUpdate === "RESOLVED" && commentInput) {
+                data.comment = commentInput;
+            }
+
+            const updatedReport = await API.updateReport(report?.id, data, user.role);
+
+            setReport(updatedReport);
+
+            // Clear the status update and comment for this report
+            setStatusUpdate("");
+            setCommentInput("");
+        } catch (err: any) {
+            setError(err.details || "Failed to update report");
+        }
+    };
+
   if (loading) return <p className="p-5 text-center">Loading...</p>;
   if (error && !report) return <p className="p-5 text-danger text-center">{error}</p>;
   if (!report) return <p className="p-5 text-center">Report not found</p>;
@@ -151,7 +185,7 @@ return (
 
             <div className="row">
                 {/* LEFT COLUMN — REPORT DETAILS */}
-                <div className={isTOSM(user) || report.status === ReportStatus.PENDING ? "col-md-8" : "col-12"}>
+                <div className={(isTOSM(user) && report.assignedStaff === user.username) || report.status === ReportStatus.PENDING ? "col-md-8" : "col-12"}>
                     <div className="card shadow-sm h-100 d-flex flex-column">
                         <div className="card-header">
                             <h2>{report.title}</h2>
@@ -230,6 +264,51 @@ return (
                                         </CarouselSlide>
                                     ))}
                                 </Carousel>
+                            </div>
+                        </div>
+                        <div className="row px-4">
+                            {!loading && error && <Alert variant="danger">{error}</Alert>}
+                            <div className="ms-4 pt-3">
+                                <Row>
+                                    <Col md={6}>
+                                        <Form.Group>
+                                            <Form.Label><strong>Update Status</strong></Form.Label>
+                                            <Form.Select
+                                                value={statusUpdate}
+                                                onChange={(e) => setStatusUpdate(e.target.value)}
+                                            >
+                                                <option value="">Select new status...</option>
+                                                {Object.entries(ReportStatus).filter(s => s[1] !== report.status && ["IN_PROGRESS", "SUSPENDED", "RESOLVED"].includes(s[0])).map(([key, value]) => (
+                                                    <option value={key}>{value}</option>
+                                                ))}
+                                            </Form.Select>
+                                        </Form.Group>
+                                    </Col>
+                                    {statusUpdate === "RESOLVED" && (
+                                        <Col md={6}>
+                                            <Form.Group>
+                                                <Form.Label>Comment (Optional)</Form.Label>
+                                                <Form.Control
+                                                    type="text"
+                                                    value={commentInput}
+                                                    onChange={(e) => setCommentInput(e.target.value)}
+                                                    placeholder="Add a comment..."
+                                                />
+                                            </Form.Group>
+                                        </Col>
+                                    )}
+                                </Row>
+                                {statusUpdate && (
+                                    <Button
+                                        variant="primary"
+                                        size="sm"
+                                        className="mt-2"
+                                        onClick={() => handleStatusUpdate()}
+                                        disabled={saving}
+                                    >
+                                        {saving ? "Updating..." : "Update Status"}
+                                    </Button>
+                                )}
                             </div>
                         </div>
                     </div>

@@ -97,6 +97,8 @@ export default function ReportDetailsPanel({ report, onClose }: ReportDetailsPan
                             {report.status}
                         </span>
                     </p>
+                    {report.comment && (
+                    <p><strong>Staff Comment:</strong><br />{report.comment}</p>)}
                     <p><strong>Citizen: </strong>
                         {report.citizenUsername ? (
                         <>{report.citizenUsername}</>
