@@ -35,15 +35,16 @@ export default function ReportListPage({ user }: ReportListProps) {
     const getStatusOptions = () => {
         if (isTOSM(user)) {
             return [
+                { value: "ASSIGNED", label: ReportStatus.ASSIGNED },
                 { value: "IN_PROGRESS", label: ReportStatus.IN_PROGRESS },
                 { value: "SUSPENDED", label: ReportStatus.SUSPENDED },
                 { value: "RESOLVED", label: ReportStatus.RESOLVED },
             ];
         }
         return [
-            { value: ReportStatus.PENDING, label: "Pending" },
-            { value: ReportStatus.ASSIGNED, label: "Assigned" },
-            { value: ReportStatus.REJECTED, label: "Rejected" },
+            { value: "PENDING", label: ReportStatus.PENDING },
+            { value: "ASSIGNED", label: ReportStatus.ASSIGNED },
+            { value: "REJECTED", label: ReportStatus.REJECTED },
         ];
     };
 
@@ -133,7 +134,7 @@ export default function ReportListPage({ user }: ReportListProps) {
             {/* REPORT LIST */}
             {!loading && reports.length > 0 && (
                 <div className="list-group">
-                    {reports.map((r) => (
+                    {reports.filter(r => getStatusOptions().map(s => s.label).includes(r.status)).map((r) => (
                         <div
                             key={r.id}
                             className="list-group-item p-3 d-flex justify-content-between align-items-center"

@@ -151,7 +151,7 @@ return (
 
             <div className="row">
                 {/* LEFT COLUMN — REPORT DETAILS */}
-                <div className={report.status === ReportStatus.PENDING ? "col-md-8" : "col-12"}>
+                <div className={isTOSM(user) || report.status === ReportStatus.PENDING ? "col-md-8" : "col-12"}>
                     <div className="card shadow-sm h-100 d-flex flex-column">
                         <div className="card-header">
                             <h2>{report.title}</h2>
@@ -201,39 +201,39 @@ return (
                                 </p>
                             </div>
 
-                    <div className="col-md-6">
-                        <h5>Photos</h5>
-                        <Carousel type="landscape">
-                            {report.photos.map((photo, index) => (
-                                <CarouselSlide key={index}>
-                                    <Card className="pb-0" rounded shadow="sm">
-                                        <div
-                                            style={{
-                                                position: "relative",
-                                                width: "100%",
-                                                maxHeight: "400px",      // altezza massima del riquadro
-                                                overflow: "hidden",
-                                            }}
-                                        >
-                                            <img
-                                                src={`${STATIC_URL}${photo}`}
-                                                alt={`img_${index}`}
-                                                style={{
-                                                    width: "100%",          // piena larghezza
-                                                    height: "100%",
-                                                    objectFit: "contain",   // mostra tutta la foto (orizzontale/verticale)
-                                                    display: "block",
-                                                }}
-                                            />
-                                        </div>
-                                    </Card>
-                                </CarouselSlide>
-                            ))}
-                        </Carousel>
-                    </div>
-                </div>
+                            <div className="col-md-6">
+                                <h5>Photos</h5>
+                                <Carousel type="landscape">
+                                    {report.photos.map((photo, index) => (
+                                        <CarouselSlide key={index}>
+                                            <Card className="pb-0" rounded shadow="sm">
+                                                <div
+                                                    style={{
+                                                        position: "relative",
+                                                        width: "100%",
+                                                        maxHeight: "400px",      // altezza massima del riquadro
+                                                        overflow: "hidden",
+                                                    }}
+                                                >
+                                                    <img
+                                                        src={`${STATIC_URL}${photo}`}
+                                                        alt={`img_${index}`}
+                                                        style={{
+                                                            width: "100%",          // piena larghezza
+                                                            height: "100%",
+                                                            objectFit: "contain",   // mostra tutta la foto (orizzontale/verticale)
+                                                            display: "block",
+                                                        }}
+                                                    />
+                                                </div>
+                                            </Card>
+                                        </CarouselSlide>
+                                    ))}
+                                </Carousel>
+                            </div>
                         </div>
                     </div>
+                </div>
 
                 <div className="col-md-4">
                     {/* RIGHT COLUMN — MESSAGES CHAT (for TOSM) */}
