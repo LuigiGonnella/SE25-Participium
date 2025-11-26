@@ -138,7 +138,7 @@ export default function ReportListPage({ user }: ReportListProps) {
                             key={r.id}
                             className="list-group-item p-3 d-flex justify-content-between align-items-center"
                         >
-                            {(isMPRO(user) || isTOSM(user)) &&  <Link
+                            {isMPRO(user) &&  <Link
                                 to={`/reports/${r.id}`}
                                 className="flex-grow-1 text-decoration-none text-dark"
                             >
