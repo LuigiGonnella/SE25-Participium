@@ -11,6 +11,7 @@ import {useNavigate} from "react-router";
 import {isCitizen, isStaff, type Notification, StaffRole, type User} from "../models/Models.ts";
 import {useEffect, useRef, useState} from "react";
 import API, { STATIC_URL } from "../API/API.mjs";
+import {Container} from "react-bootstrap";
 
 interface NavComponentProps {
     loggedIn: boolean;
@@ -68,7 +69,7 @@ function NavComponent({loggedIn, user, handleLogout}: NavComponentProps) {
                                 <span className="fs-5 fw-bold">Participium</span>
                                 <Icon aria-hidden icon="it-expand" />
                             </a>
-                            <LinkList className="collapse" id="menu1a">
+                            <LinkList className="collapse me-0" id="menu1a">
                                 <LinkListItem inDropdown href="/" active={ window.location.pathname === '/' }>
                                     Homepage
                                 </LinkListItem>
@@ -88,11 +89,11 @@ function NavComponent({loggedIn, user, handleLogout}: NavComponentProps) {
                             </LinkList>
                         </nav>
                     </div>
-                    <HeaderRightZone className="pt-1">
+                    <HeaderRightZone className={loggedIn ? "pt-1" : ""}>
                         {loggedIn && user ? (
                             <>
-                                <div ref={notifRef} className="position-relative">
-                                    <i role="button" className="bi bi-bell-fill text-white position-relative pe-4 me-2" onClick={() => setIsNotifOpen(prevState => !prevState)}>
+                                <Container ref={notifRef} className="position-relative">
+                                    <i role="button" className="bi bi-bell-fill text-white position-relative pe-4" onClick={() => setIsNotifOpen(prevState => !prevState)}>
                                         {notifications.some(n => !n.isRead) &&
                                         <Badge color="danger" className="text-white fst-normal fw-medium position-absolute top-0 start-50 translate-middle rounded-pill">
                                             {notifications.filter(n => !n.isRead).length > 99 ? "99+" : notifications.filter(n => !n.isRead).length}
@@ -138,7 +139,7 @@ function NavComponent({loggedIn, user, handleLogout}: NavComponentProps) {
                                             ))}
                                         </div>
                                     )}
-                                </div>
+                                </Container>
                                 <div id="avatarRef" role="button" className="d-flex flex-row justify-content-center gap-2 me-3" onClick={() => navigate('/profile')}>
                                     <AvatarIcon size="sm">
                                         {isCitizen(user) && user.profilePicture ?
