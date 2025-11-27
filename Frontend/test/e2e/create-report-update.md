@@ -192,5 +192,5 @@ Result: PASS
 - **Backend URL:** http://localhost:8080/api/v1
 - **Frontend URL:** http://localhost:5173
 - **Database:** MySQL 8.0 (Docker container)
-- **Browser Tested:** Chrome/Firefox/Safari [specify version]
+- **Browser Tested:** Chrome/Firefox/Safari
 - **Screen Resolutions Tested:** 1920x1080, 1366x768, 375x667 (mobile)
