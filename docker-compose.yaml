@@ -26,7 +26,9 @@ services:
 
 # Backend service: Runs a Dockerfile located in the backend directory.
   backend:
-    image: vanni1888/participium-g15:backend
+    build:
+      context: ./Backend
+      dockerfile: Dockerfile
     container_name: backend-dev
     environment:
       DB_TYPE: mysql
@@ -45,7 +47,11 @@ services:
     command: sh -c "npm run start"
 
   frontend:
-    image: vanni1888/participium-g15:frontend
+    build:
+      context: ./Frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_BACKEND_URL: *backend_url
     container_name: frontend-dev
     environment:
       VITE_BACKEND_URL: *backend_url
