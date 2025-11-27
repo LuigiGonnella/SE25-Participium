@@ -22,7 +22,7 @@ sections:
 
 - Nr of hours planned vs. spent (as a team)
 
-        96 hours 22 minutes vs 92 hours 45 minutes
+        105 hours 15 minutes vs 92 hours 45 minutes
 
 **Remember**a story is done ONLY if it fits the Definition of Done:
  
@@ -59,16 +59,16 @@ sections:
 
 |            | Mean | StDev |
 | ---------- | :--: | :---: |
-| Estimation | **   |  **   |
-| Actual     | **   |  **   |
+| Estimation | 126  |  150  |
+| Actual     | 111  |  119  |
 
 - Total estimation error ratio: sum of total hours spent / sum of total hours effort - 1
 
-    $$\frac{\sum_i spent_{task_i}}{\sum_i estimation_{task_i}} - 1 = **\\% $$
+    $$\frac{\sum_i spent_{task_i}}{\sum_i estimation_{task_i}} - 1 = -12\\% $$
     
 - Absolute relative task estimation error: sum( abs( spent-task-i / estimation-task-i - 1))/n
 
-    $$\frac{1}{n}\sum_i^n \left| \frac{spent_{task_i}}{estimation_task_i}-1 \right| = **\\% $$
+    $$\frac{1}{n}\sum_i^n \left| \frac{spent_{task_i}}{estimation_task_i}-1 \right| = 21\\% $$
   
 ## QUALITY MEASURES 
 
@@ -186,16 +186,16 @@ Tests:       99 passed, 99 total
 
 - What did go wrong in the sprint?
 
-        The main issue was merging the branches on github and it created conflicts which caused delays. 
+        The main issue was merging the branches on github because it created many conflicts which caused delays. 
 
 - What caused your errors in estimation (if any)?
 
-        In story 6, we put tasks that could be split futher to better balance the load among members.
+        We divided story 6 in tasks that could be split further to better balance the load among members.
 
 - What lessons did you learn (both positive and negative) in this sprint?
 
         Positive: merging should be done in groups.
-        Negative: communication should be improved providing messages after pushing a commit.
+        Negative: communication should be improved futher, for example providing messages after pushing a commit or finishing a task.
 
 - Which improvement goals set in the previous retrospective were you able to achieve?
 
@@ -203,14 +203,15 @@ Tests:       99 passed, 99 total
   
 - Which ones you were not able to achieve? Why?
 
-        Communication: it improved but not enough
+        Communication: it is improved but not enough
 
 - Improvement goals for the next sprint and how to achieve them (technical tasks, team coordination, etc.)
 
-        Communication: further improve communication by informing other members about changes.
-        Synchronization: we should have better synchronization between branches.
+        Communication: further improve communication by informing other members about changes, expecially before starting or after finishing a task.
+        Synchronization: we should have better synchronization while we are implementing stories, expecially because we work on separate branches.
 
 
 - One thing you are proud of as a Team!!
 
-        We improved sprint planning. We were able to finish more stories than previous sprint.
+        We improved sprint planning.
+        We were able to finish more stories than the previous sprint.
