@@ -12,6 +12,7 @@ import { BadRequestError } from "@errors/BadRequestError";
 import { initializeTestDataSource, closeTestDataSource, TestDataSource } from "../../setup/test-datasource";
 import { NotificationRepository } from "@repositories/notificationRepository";
 import { NotificationDAO } from "@models/dao/notificationDAO";
+import { MessageDAO } from "@models/dao/messageDAO";
 
 let citizenRepo: CitizenRepository;
 let reportRepo: ReportRepository;
@@ -54,6 +55,7 @@ afterAll(async () => {
 
 beforeEach(async () => {
     await TestDataSource.getRepository(NotificationDAO).clear();
+    await TestDataSource.getRepository(MessageDAO).clear();
     await TestDataSource.getRepository(ReportDAO).clear();
     await TestDataSource.getRepository(StaffDAO).clear();
     await TestDataSource.getRepository(CitizenDAO).clear();
@@ -581,4 +583,89 @@ describe("ReportRepository - updateReportAsTOSM", () => {
         await expect(reportRepo.updateReportAsTOSM(report.id, Status.IN_PROGRESS, undefined, staff.username)).rejects.toThrow(BadRequestError);
     });
 
+});
+
+describe("ReportRepository - Messages", () => {
+    let citizen: CitizenDAO;
+    let staff: StaffDAO;
+    let report: ReportDAO;
+
+    beforeEach(async () => {
+        await officeRepo.createOffice(
+            fakeStaff.officeName,
+            "Office for testing",
+            OfficeCategory.RSTLO
+        );
+        citizen = await citizenRepo.createCitizen(
+            fakeCitizen.email,
+            fakeCitizen.username,
+            fakeCitizen.name,
+            fakeCitizen.surname,
+            fakeCitizen.password,
+            fakeCitizen.receive_emails,
+            fakeCitizen.profilePicture,
+            fakeCitizen.telegram_username
+        );
+        staff = await staffRepo.createStaff(
+            fakeStaff.username,
+            fakeStaff.name,
+            fakeStaff.surname,
+            fakeStaff.password,
+            fakeStaff.role,
+            fakeStaff.officeName
+        );
+        report = await reportRepo.create(
+            citizen,
+            "Message Test Report",
+            "A report for testing messages.",
+            OfficeCategory.RSTLO,
+            45, 7, false, "/photo.jpg"
+        );
+    });
+
+    describe("addMessageToReport", () => {
+        it("should add a message from a citizen (staff is undefined)", async () => {
+            const messageText = "This is a citizen's message.";
+            const updatedReport = await reportRepo.addMessageToReport(report, messageText, undefined);
+
+            expect(updatedReport.messages).toHaveLength(1);
+            expect(updatedReport.messages[0].message).toBe(messageText);
+            expect(updatedReport.messages[0].staff).toBeNull();
+        });
+
+        it("should add a message from staff and create a notification for the citizen", async () => {
+            const messageText = "This is a staff's reply.";
+            const updatedReport = await reportRepo.addMessageToReport(report, messageText, staff);
+
+            // Check if the message was added correctly
+            expect(updatedReport.messages).toHaveLength(1);
+            const savedMessage = updatedReport.messages[0];
+            expect(savedMessage.message).toBe(messageText);
+            expect(savedMessage.staff?.username).toBe(staff.username);
+
+            // Check if a notification was created for the citizen
+            const notifications = await notificationRepo.getNotificationsForCitizen(citizen.username);
+            expect(notifications).toHaveLength(1);
+            expect(notifications[0].title).toBe("New message on your report");
+            expect(notifications[0].message).toContain(report.title);
+        });
+    });
+
+    describe("getAllMessages", () => {
+        it("should return all messages for a report, ordered by timestamp ascending", async () => {
+            await reportRepo.addMessageToReport(report, "First message", undefined);
+            await reportRepo.addMessageToReport(report, "Second message", staff);
+
+            const messages = await reportRepo.getAllMessages(report.id);
+
+            expect(messages).toHaveLength(2);
+            expect(messages[1].message).toBe("Second message");
+            expect(messages[0].message).toBe("First message");
+        });
+
+        it("should return an empty array for a report with no messages", async () => {
+            const messages = await reportRepo.getAllMessages(report.id);
+            expect(messages).toEqual([]);
+        });
+    });
 });

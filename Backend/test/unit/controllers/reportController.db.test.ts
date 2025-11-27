@@ -1,4 +1,4 @@
-import { createReport, uploadReportPictures } from "@controllers/reportController";
+import { createReport, uploadReportPictures, addMessageToReport, getAllMessages } from "@controllers/reportController";
 import { CitizenRepository } from "@repositories/citizenRepository";
 import { ReportRepository } from "@repositories/reportRepository";
 import { CitizenDAO } from "@dao/citizenDAO";
@@ -7,10 +7,17 @@ import { initializeTestDataSource, closeTestDataSource, TestDataSource } from ".
 import { BadRequestError } from "@errors/BadRequestError";
 import { NotFoundError } from "@errors/NotFoundError";
 import fs from "fs";
-import path from "path";
+import { StaffDAO, StaffRole } from "@dao/staffDAO";
+import { MessageDAO } from "@dao/messageDAO";
+import { StaffRepository } from "@repositories/staffRepository";
+import { OfficeRepository } from "@repositories/officeRepository";
+import { OfficeDAO, OfficeCategory } from "@dao/officeDAO";
+import {NotificationDAO} from "@dao/notificationDAO";
 
 let citizenRepo: CitizenRepository;
 let reportRepo: ReportRepository;
+let staffRepo: StaffRepository;
+let officeRepo: OfficeRepository;
 
 const fakeCitizen = {
     email: "john@example.com",
@@ -21,6 +28,15 @@ const fakeCitizen = {
     receive_emails: true,
     profilePicture: "",
     telegram_username: ""
+};
+
+const fakeStaff = {
+    username: "staff1",
+    name: "Staff",
+    surname: "Member",
+    password: "staffpass",
+    role: StaffRole.TOSM,
+    officeName: "Roads and Urban Furnishings Office"
 };
 
 const fakeBody = {
@@ -40,6 +56,8 @@ beforeAll(async () => {
     await initializeTestDataSource();
     citizenRepo = new CitizenRepository();
     reportRepo = new ReportRepository();
+    staffRepo = new StaffRepository();
+    officeRepo = new OfficeRepository();
 });
 
 afterAll(async () => {
@@ -47,8 +65,13 @@ afterAll(async () => {
 });
 
 beforeEach(async () => {
-    await TestDataSource.getRepository(CitizenDAO).clear();
+    // Clear tables in the correct order to respect foreign key constraints
+    await TestDataSource.getRepository(NotificationDAO).clear();
+    await TestDataSource.getRepository(MessageDAO).clear();
     await TestDataSource.getRepository(ReportDAO).clear();
+    await TestDataSource.getRepository(StaffDAO).clear();
+    await TestDataSource.getRepository(CitizenDAO).clear();
+    await TestDataSource.getRepository(OfficeDAO).clear();
 });
 
 describe("ReportController - createReport", () => {
@@ -280,6 +303,104 @@ describe("ReportController - createReport", () => {
                 expect(err.message).toContain("Only JPEG, JPG, and PNG images are allowed");
                 done();
             });
+        });
+    });
+});
+
+describe("ReportController - Messages", () => {
+
+    describe("addMessageToReport", () => {
+        it("allows a citizen to add a message to their own report", async () => {
+            await officeRepo.createOffice(fakeStaff.officeName, "Desc", OfficeCategory.RUFO);
+            const citizen = await citizenRepo.createCitizen(fakeCitizen.email, fakeCitizen.username, fakeCitizen.name, fakeCitizen.surname, fakeCitizen.password, fakeCitizen.receive_emails, fakeCitizen.profilePicture, fakeCitizen.telegram_username);
+            const report = await createReport(fakeBody, citizen.username, fakeFiles);
+
+            const message = "This is a test message from the citizen.";
+            await addMessageToReport(report.id, citizen.username, "CITIZEN", message);
+
+            const messages = await reportRepo.getAllMessages(report.id);
+            expect(messages).toHaveLength(1);
+            expect(messages[0].message).toBe(message);
+            expect(messages[0].staff).toBeNull();
+        });
+
+        it("allows assigned staff to add a message", async () => {
+            await officeRepo.createOffice(fakeStaff.officeName, "Desc", OfficeCategory.RUFO);
+            const citizen = await citizenRepo.createCitizen(fakeCitizen.email, fakeCitizen.username, fakeCitizen.name, fakeCitizen.surname, fakeCitizen.password, fakeCitizen.receive_emails, fakeCitizen.profilePicture, fakeCitizen.telegram_username);
+            const staff = await staffRepo.createStaff(fakeStaff.username, fakeStaff.name, fakeStaff.surname, fakeStaff.password, fakeStaff.role, fakeStaff.officeName);
+            const report = await createReport(fakeBody, citizen.username, fakeFiles);
+
+            report.assignedStaff = staff;
+            await TestDataSource.getRepository(ReportDAO).save(report);
+
+            const message = "This is a reply from the assigned staff.";
+            await addMessageToReport(report.id, staff.username, "STAFF", message);
+
+            const messages = await reportRepo.getAllMessages(report.id);
+            expect(messages).toHaveLength(1);
+            expect(messages[0].message).toBe(message);
+            expect(messages[0].staff?.username).toBe(staff.username);
+        });
+
+        it("throws BadRequestError if a citizen tries to comment on another's report", async () => {
+            const citizen = await citizenRepo.createCitizen(fakeCitizen.email, fakeCitizen.username, fakeCitizen.name, fakeCitizen.surname, fakeCitizen.password, fakeCitizen.receive_emails, fakeCitizen.profilePicture, fakeCitizen.telegram_username);
+            const report = await createReport(fakeBody, citizen.username, fakeFiles);
+
+            await expect(
+                addMessageToReport(report.id, "another_citizen", "CITIZEN", "Trying to comment")
+            ).rejects.toThrow(BadRequestError);
+        });
+
+        it("throws BadRequestError if unassigned staff tries to comment", async () => {
+            await officeRepo.createOffice(fakeStaff.officeName, "Desc", OfficeCategory.RUFO);
+            const citizen = await citizenRepo.createCitizen(fakeCitizen.email, fakeCitizen.username, fakeCitizen.name, fakeCitizen.surname, fakeCitizen.password, fakeCitizen.receive_emails, fakeCitizen.profilePicture, fakeCitizen.telegram_username);
+            await staffRepo.createStaff(fakeStaff.username, fakeStaff.name, fakeStaff.surname, fakeStaff.password, fakeStaff.role, fakeStaff.officeName);
+            const report = await createReport(fakeBody, citizen.username, fakeFiles);
+
+            await expect(
+                addMessageToReport(report.id, fakeStaff.username, "STAFF", "I am not assigned")
+            ).rejects.toThrow(BadRequestError);
+        });
+
+        it("throws NotFoundError for a non-existent report", async () => {
+            const citizen = await citizenRepo.createCitizen(fakeCitizen.email, fakeCitizen.username, fakeCitizen.name, fakeCitizen.surname, fakeCitizen.password, fakeCitizen.receive_emails, fakeCitizen.profilePicture, fakeCitizen.telegram_username);
+
+            await expect(
+                addMessageToReport(999, citizen.username, "CITIZEN", "Will fail")
+            ).rejects.toThrow(NotFoundError);
+        });
+    });
+
+    describe("getAllMessages", () => {
+        it("returns all messages for a given report", async () => {
+            await officeRepo.createOffice(fakeStaff.officeName, "Desc", OfficeCategory.RUFO);
+            const citizen = await citizenRepo.createCitizen(fakeCitizen.email, fakeCitizen.username, fakeCitizen.name, fakeCitizen.surname, fakeCitizen.password, fakeCitizen.receive_emails, fakeCitizen.profilePicture, fakeCitizen.telegram_username);
+            const staff = await staffRepo.createStaff(fakeStaff.username, fakeStaff.name, fakeStaff.surname, fakeStaff.password, fakeStaff.role, fakeStaff.officeName);
+            const report = await createReport(fakeBody, citizen.username, fakeFiles);
+
+            await addMessageToReport(report.id, citizen.username, "CITIZEN", "First message");
+
+            report.assignedStaff = staff;
+            await TestDataSource.getRepository(ReportDAO).save(report);
+            await addMessageToReport(report.id, staff.username, "STAFF", "Staff reply");
+
+            const messages = await getAllMessages(report.id);
+
+            expect(messages).toHaveLength(2);
+            expect(messages[0].message).toBe("First message");
+            expect(messages[1].message).toBe("Staff reply");
+        });
+
+        it("returns an empty array for a report with no messages", async () => {
+            const citizen = await citizenRepo.createCitizen(fakeCitizen.email, fakeCitizen.username, fakeCitizen.name, fakeCitizen.surname, fakeCitizen.password, fakeCitizen.receive_emails, fakeCitizen.profilePicture, fakeCitizen.telegram_username);
+            const report = await createReport(fakeBody, citizen.username, fakeFiles);
+
+            const messages = await getAllMessages(report.id);
+            expect(messages).toEqual([]);
+        });
+
+        it("throws NotFoundError when fetching messages for a non-existent report", async () => {
+            await expect(getAllMessages(999)).rejects.toThrow(NotFoundError);
         });
     });
 });

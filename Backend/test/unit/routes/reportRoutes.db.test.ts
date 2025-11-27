@@ -1,7 +1,14 @@
 jest.mock("@middlewares/authMiddleware", () => ({
     isAuthenticated: jest.fn((roles?: string[]) => {
         return (req: any, res: any, next: any) => {
-            req.user = { username: "johnny", role: roles?.[0] || "CITIZEN" };
+            // Simula un utente autenticato con ruolo e type coerenti con i controller
+            const primaryRole = roles && roles.length > 0 ? roles[0] : "CITIZEN";
+            const isStaff = primaryRole !== "CITIZEN";
+            req.user = {
+                username: "johnny",
+                role: primaryRole,
+                type: isStaff ? "STAFF" : "CITIZEN",
+            };
             next();
         };
     }),
@@ -21,6 +28,8 @@ jest.mock("@controllers/reportController", () => ({
     getReportById: jest.fn(),
     updateReportAsMPRO: jest.fn(),
     updateReportAsTOSM: jest.fn(),
+    addMessageToReport: jest.fn(),
+    getAllMessages: jest.fn(),
 }));
 
 jest.mock("@services/mapperService", () => ({
@@ -28,10 +37,18 @@ jest.mock("@services/mapperService", () => ({
 }));
 
 import request from "supertest";
-import express, { Request, Response, NextFunction } from "express";
+import express from "express";
 
 import router from "@routes/reportRoutes";
-import { createReport, getReports, getReportById, updateReportAsMPRO, updateReportAsTOSM } from "@controllers/reportController";
+import {
+    createReport,
+    getReports,
+    getReportById,
+    updateReportAsMPRO,
+    updateReportAsTOSM,
+    addMessageToReport,
+    getAllMessages,
+} from "@controllers/reportController";
 import { mapReportDAOToDTO } from "@services/mapperService";
 
 describe("Report Routes", () => {
@@ -336,6 +353,98 @@ describe("Report Routes", () => {
                 .send({ status: "ASSIGNED" });
 
             expect(res.status).toBe(400);
+        });
+    });
+
+    describe("POST /reports/:reportId/messages", () => {
+        it("creates a message successfully when body is valid", async () => {
+            (addMessageToReport as jest.Mock).mockResolvedValue({ id: 1, message: "Hello" });
+
+            const res = await request(app)
+                .post("/reports/1/messages")
+                .send({ message: "Hello" });
+
+            expect(res.status).toBe(201);
+            expect(addMessageToReport).toHaveBeenCalledWith(1, "johnny", expect.any(String), "Hello");
+        });
+
+        it("rejects invalid reportId", async () => {
+            const res = await request(app)
+                .post("/reports/abc/messages")
+                .send({ message: "Hello" });
+
+            expect(res.status).toBe(400);
+        });
+
+        it("rejects empty message", async () => {
+            const res = await request(app)
+                .post("/reports/1/messages")
+                .send({ message: "   " });
+
+            expect(res.status).toBe(400);
+        });
+
+        it("propagates errors from addMessageToReport via next(err)", async () => {
+            const err = new Error("Failed to add message");
+            (addMessageToReport as jest.Mock).mockRejectedValue(err);
+
+            const appWithError = express();
+            appWithError.use(express.json());
+            appWithError.use("/reports", router);
+
+            const nextMock = jest.fn();
+            appWithError.use((e: any, req: any, res: any, next: any) => {
+                nextMock(e);
+                res.status(500).json({ error: e.message });
+            });
+
+            const res = await request(appWithError)
+                .post("/reports/1/messages")
+                .send({ message: "Hello" });
+
+            expect(nextMock).toHaveBeenCalledWith(err);
+            expect(res.status).toBe(500);
+        });
+    });
+
+    describe("GET /reports/:reportId/messages", () => {
+        it("returns messages for a valid reportId", async () => {
+            const fakeMessages = [
+                { id: 1, message: "First" },
+                { id: 2, message: "Second" },
+            ];
+            (getAllMessages as jest.Mock).mockResolvedValue(fakeMessages);
+
+            const res = await request(app).get("/reports/1/messages");
+
+            expect(res.status).toBe(200);
+            expect(getAllMessages).toHaveBeenCalledWith(1);
+            expect(res.body).toEqual(fakeMessages);
+        });
+
+        it("rejects invalid reportId", async () => {
+            const res = await request(app).get("/reports/not-a-number/messages");
+            expect(res.status).toBe(400);
+        });
+
+        it("propagates errors from getAllMessages via next(err)", async () => {
+            const err = new Error("Failed to get messages");
+            (getAllMessages as jest.Mock).mockRejectedValue(err);
+
+            const appWithError = express();
+            appWithError.use(express.json());
+            appWithError.use("/reports", router);
+
+            const nextMock = jest.fn();
+            appWithError.use((e: any, req: any, res: any, next: any) => {
+                nextMock(e);
+                res.status(500).json({ error: e.message });
+            });
+
+            const res = await request(appWithError).get("/reports/1/messages");
+
+            expect(nextMock).toHaveBeenCalledWith(err);
+            expect(res.status).toBe(500);
         });
     });
 });
