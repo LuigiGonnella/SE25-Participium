@@ -99,7 +99,7 @@ function App() {
                         <Navigate replace to="/"/>
                 }/>
                 <Route path="/map" element={
-                    loggedIn && isCitizen(user) ?
+                    loggedIn  ?
                     <TurinMaskedMap isLoggedIn={loggedIn} user={user}/> :
                     <Navigate replace to="/"/>
                 }/>

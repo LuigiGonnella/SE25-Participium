@@ -1,5 +1,5 @@
 import {useEffect, useState} from "react";
-import {useParams} from "react-router";
+import {useParams, useNavigate} from "react-router";
 import API, {STATIC_URL} from "../API/API.mts";
 import {
     isMPRO,
@@ -20,6 +20,7 @@ interface ReportDetailPageProps {
 
 export default function ReportDetailPage({ user }: ReportDetailPageProps) {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [report, setReport] = useState<Report | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -243,6 +244,19 @@ return (
                                         <i>Unknown</i>
                                     )}
                                 </p>
+
+                                {/* See in Map Button for TOSM */}
+                                {user && isTOSM(user) && report.assignedStaff === user.username && (
+                                    <div className="mt-3">
+                                        <Button
+                                            variant="primary"
+                                            onClick={() => navigate(`/map?reportId=${report.id}`)}
+                                        >
+                                            <i className="bi bi-geo-alt-fill me-2"></i>
+                                            See in the map
+                                        </Button>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="col-md-6">
@@ -290,7 +304,7 @@ return (
                                             >
                                                 <option value="">Select new status...</option>
                                                 {Object.entries(ReportStatus).filter(s => s[1] !== report.status && ["IN_PROGRESS", "SUSPENDED", "RESOLVED"].includes(s[0])).map(([key, value]) => (
-                                                    <option value={key}>{value}</option>
+                                                    <option key={key} value={key}>{value}</option>
                                                 ))}
                                             </Form.Select>
                                         </Form.Group>

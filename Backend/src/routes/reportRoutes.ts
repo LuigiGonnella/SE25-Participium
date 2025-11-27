@@ -101,7 +101,7 @@ router.get('/', isAuthenticated(['STAFF']), async (req, res, next) => {
     }
 });
 
-router.get('/public', isAuthenticated(['CITIZEN']), async (req, res, next) => {
+router.get('/public', isAuthenticated(['CITIZEN', 'STAFF']), async (req, res, next) => {
     try{
         const reports = await getMapReports();
         res.status(200).json(reports);

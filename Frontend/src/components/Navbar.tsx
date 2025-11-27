@@ -80,7 +80,7 @@ function NavComponent({loggedIn, user, handleLogout}: NavComponentProps) {
                                         Homepage
                                     </LinkListItem>
                                 )}
-                                {(loggedIn && isCitizen(user)) && (
+                                {loggedIn  && (
                                     <LinkListItem inDropdown href="/map" active={ window.location.pathname === '/map' }>
                                         Map
                                     </LinkListItem>
