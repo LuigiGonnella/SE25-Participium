@@ -1,0 +1,450 @@
+jest.mock("@middlewares/authMiddleware", () => ({
+    isAuthenticated: jest.fn((roles?: string[]) => {
+        return (req: any, res: any, next: any) => {
+            // Simula un utente autenticato con ruolo e type coerenti con i controller
+            const primaryRole = roles && roles.length > 0 ? roles[0] : "CITIZEN";
+            const isStaff = primaryRole !== "CITIZEN";
+            req.user = {
+                username: "johnny",
+                role: primaryRole,
+                type: isStaff ? "STAFF" : "CITIZEN",
+            };
+            next();
+        };
+    }),
+}));
+
+jest.mock("@controllers/reportController", () => ({
+    uploadReportPictures: {
+        array: jest.fn(() => {
+            return (req: any, res: any, next: any) => {
+                req.files = [{ filename: "photo.jpg" }];
+                next();
+            };
+        }),
+    },
+    createReport: jest.fn(),
+    getReports: jest.fn(),
+    getReportById: jest.fn(),
+    updateReportAsMPRO: jest.fn(),
+    updateReportAsTOSM: jest.fn(),
+    addMessageToReport: jest.fn(),
+    getAllMessages: jest.fn(),
+}));
+
+jest.mock("@services/mapperService", () => ({
+    mapReportDAOToDTO: jest.fn(),
+}));
+
+import request from "supertest";
+import express from "express";
+
+import router from "@routes/reportRoutes";
+import {
+    createReport,
+    getReports,
+    getReportById,
+    updateReportAsMPRO,
+    updateReportAsTOSM,
+    addMessageToReport,
+    getAllMessages,
+} from "@controllers/reportController";
+import { mapReportDAOToDTO } from "@services/mapperService";
+
+describe("Report Routes", () => {
+    let app: express.Express;
+
+    beforeEach(() => {
+        jest.clearAllMocks();
+
+        app = express();
+        app.use(express.json());
+        app.use("/reports", router);
+    });
+  
+    describe("POST /reports", () => {
+        it("creates a report successfully", async () => {
+            const fakeDAO = {
+                id: 1,
+                title: "Broken Light",
+                photo1: "/uploads/reports/photo.jpg",
+            };
+
+            (createReport as jest.Mock).mockResolvedValue(fakeDAO);
+            (mapReportDAOToDTO as jest.Mock).mockReturnValue({
+                id: 1,
+                title: "Broken Light",
+            });
+
+            const res = await request(app)
+                .post("/reports")
+                .send({
+                    title: "Broken Light",
+                    description: "desc",
+                    category: "Road Signs and Traffic Lights",
+                    latitude: "45",
+                    longitude: "7",
+                    anonymous: false,
+                });
+
+            expect(res.status).toBe(201);
+            expect(createReport).toHaveBeenCalled();
+            expect(mapReportDAOToDTO).toHaveBeenCalledWith(fakeDAO);
+        });
+  
+      it("calls next(err) when createReport fails", async () => {
+            const err = new Error("fail");
+            (createReport as jest.Mock).mockRejectedValue(err);
+
+            const nextMock = jest.fn();
+
+            const appWithNext = express();
+            appWithNext.use(express.json());
+            appWithNext.use("/reports", router);
+
+            appWithNext.use((e: any, req: any, res: any, next: any) => {
+                nextMock(e);
+                res.status(500).json({ error: e.message });
+            });
+
+            await request(appWithNext)
+                .post("/reports")
+                .send({
+                    title: "x",
+                    description: "x",
+                    category: "Road Signs and Traffic Lights",
+                    latitude: "45",
+                    longitude: "7",
+                });
+
+            expect(nextMock).toHaveBeenCalledWith(err);
+        }); 
+
+        it("handles errors from createReport", async () => {
+            (createReport as jest.Mock).mockRejectedValue(new Error("Creation failed"));
+
+            const res = await request(app)
+                .post("/reports")
+                .send({
+                    title: "Test",
+                    description: "Test description",
+                    category: "Road Signs and Traffic Lights",
+                    latitude: "45",
+                    longitude: "7",
+                });
+
+            expect(res.status).toBe(500);
+        });
+    });
+
+    describe("GET /reports", () => {
+        it("returns all reports without filters", async () => {
+            const mockReports = [
+                { id: 1, title: "Report 1" },
+                { id: 2, title: "Report 2" },
+            ];
+
+            (getReports as jest.Mock).mockResolvedValue(mockReports);
+
+            const res = await request(app).get("/reports");
+
+            expect(res.status).toBe(200);
+            expect(res.body).toEqual(mockReports);
+            expect(getReports).toHaveBeenCalledWith({});
+        });
+
+        it("filters reports by citizen_username", async () => {
+            (getReports as jest.Mock).mockResolvedValue([{ id: 1 }]);
+
+            const res = await request(app).get("/reports?citizen_username=testuser");
+
+            expect(res.status).toBe(200);
+            expect(getReports).toHaveBeenCalledWith({ citizen_username: "testuser" });
+        });
+
+        it("filters reports by status", async () => {
+            (getReports as jest.Mock).mockResolvedValue([{ id: 1 }]);
+
+            const res = await request(app).get("/reports?status=PENDING");
+
+            expect(res.status).toBe(200);
+            expect(getReports).toHaveBeenCalled();
+        });
+
+        it("filters reports by category", async () => {
+            (getReports as jest.Mock).mockResolvedValue([{ id: 1 }]);
+
+            const res = await request(app).get("/reports?category=WSO");
+
+            expect(res.status).toBe(200);
+            expect(getReports).toHaveBeenCalled();
+        });
+
+        it("rejects invalid status", async () => {
+            const res = await request(app).get("/reports?status=INVALID_STATUS");
+
+            expect(res.status).toBe(400);
+        });
+
+        it("rejects invalid category", async () => {
+            const res = await request(app).get("/reports?category=INVALID_CATEGORY");
+
+            expect(res.status).toBe(400);
+        });
+
+        it("rejects when only fromDate is provided", async () => {
+            const res = await request(app).get("/reports?fromDate=2024-01-01");
+
+            expect(res.status).toBe(400);
+        });
+
+        it("rejects when fromDate is after toDate", async () => {
+            const res = await request(app).get("/reports?fromDate=2024-12-01&toDate=2024-01-01");
+
+            expect(res.status).toBe(400);
+        });
+    });
+
+    describe("GET /reports/:reportId", () => {
+        it("returns a report by id", async () => {
+            const mockReport = { id: 1, title: "Report" };
+            (getReportById as jest.Mock).mockResolvedValue(mockReport);
+
+            const res = await request(app).get("/reports/1");
+
+            expect(res.status).toBe(200);
+            expect(res.body).toEqual(mockReport);
+            expect(getReportById).toHaveBeenCalledWith(1);
+        });
+
+        it("rejects invalid reportId", async () => {
+            const res = await request(app).get("/reports/invalid");
+
+            expect(res.status).toBe(400);
+        });
+
+        it("handles NotFoundError", async () => {
+            (getReportById as jest.Mock).mockRejectedValue(new Error("Not found"));
+
+            const res = await request(app).get("/reports/9999");
+
+            expect(res.status).toBe(500);
+        });
+    });
+
+    describe("PATCH /reports/:reportId/manage (MPRO)", () => {
+        it("updates report status to ASSIGNED", async () => {
+            const mockReport = { id: 1, status: "ASSIGNED" };
+            (updateReportAsMPRO as jest.Mock).mockResolvedValue(mockReport);
+
+            const res = await request(app)
+                .patch("/reports/1/manage")
+                .send({ status: "ASSIGNED" });
+
+            expect(res.status).toBe(200);
+            expect(updateReportAsMPRO).toHaveBeenCalled();
+        });
+
+        it("updates report status to REJECTED with comment", async () => {
+            const mockReport = { id: 1, status: "REJECTED", comment: "Reason" };
+            (updateReportAsMPRO as jest.Mock).mockResolvedValue(mockReport);
+
+            const res = await request(app)
+                .patch("/reports/1/manage")
+                .send({ status: "REJECTED", comment: "Reason" });
+
+            expect(res.status).toBe(200);
+            expect(updateReportAsMPRO).toHaveBeenCalled();
+        });
+
+        it("rejects invalid reportId", async () => {
+            const res = await request(app)
+                .patch("/reports/NaN/manage")
+                .send({ status: "ASSIGNED" });
+
+            expect(res.status).toBe(400);
+        });
+
+        it("rejects missing status", async () => {
+            const res = await request(app)
+                .patch("/reports/1/manage")
+                .send({});
+
+            expect(res.status).toBe(400);
+        });
+
+        it("rejects REJECTED without comment", async () => {
+            const res = await request(app)
+                .patch("/reports/1/manage")
+                .send({ status: "REJECTED" });
+
+            expect(res.status).toBe(400);
+        });
+
+        it("rejects invalid status for MPRO", async () => {
+            const res = await request(app)
+                .patch("/reports/1/manage")
+                .send({ status: "IN_PROGRESS" });
+
+            expect(res.status).toBe(400);
+        });
+    });
+
+    describe("PATCH /reports/:reportId/work (TOSM)", () => {
+        it("updates report status to IN_PROGRESS", async () => {
+            const mockReport = { id: 1, status: "IN_PROGRESS" };
+            (updateReportAsTOSM as jest.Mock).mockResolvedValue(mockReport);
+
+            const res = await request(app)
+                .patch("/reports/1/work")
+                .send({ status: "IN_PROGRESS" });
+
+            expect(res.status).toBe(200);
+            expect(updateReportAsTOSM).toHaveBeenCalled();
+        });
+
+        it("updates report status to RESOLVED with comment", async () => {
+            const mockReport = { id: 1, status: "RESOLVED", comment: "Fixed" };
+            (updateReportAsTOSM as jest.Mock).mockResolvedValue(mockReport);
+
+            const res = await request(app)
+                .patch("/reports/1/work")
+                .send({ status: "RESOLVED", comment: "Fixed" });
+
+            expect(res.status).toBe(200);
+            expect(updateReportAsTOSM).toHaveBeenCalled();
+        });
+
+        it("rejects invalid reportId", async () => {
+            const res = await request(app)
+                .patch("/reports/abc/work")
+                .send({ status: "IN_PROGRESS" });
+
+            expect(res.status).toBe(400);
+        });
+
+        it("rejects missing status", async () => {
+            const res = await request(app)
+                .patch("/reports/1/work")
+                .send({});
+
+            expect(res.status).toBe(400);
+        });
+
+        it("rejects staff parameter", async () => {
+            const res = await request(app)
+                .patch("/reports/1/work")
+                .send({ status: "IN_PROGRESS", staff: "otheruser" });
+
+            expect(res.status).toBe(400);
+        });
+
+        it("rejects comment for non-RESOLVED status", async () => {
+            const res = await request(app)
+                .patch("/reports/1/work")
+                .send({ status: "IN_PROGRESS", comment: "Comment" });
+
+            expect(res.status).toBe(400);
+        });
+
+        it("rejects invalid status for TOSM", async () => {
+            const res = await request(app)
+                .patch("/reports/1/work")
+                .send({ status: "ASSIGNED" });
+
+            expect(res.status).toBe(400);
+        });
+    });
+
+    describe("POST /reports/:reportId/messages", () => {
+        it("creates a message successfully when body is valid", async () => {
+            (addMessageToReport as jest.Mock).mockResolvedValue({ id: 1, message: "Hello" });
+
+            const res = await request(app)
+                .post("/reports/1/messages")
+                .send({ message: "Hello" });
+
+            expect(res.status).toBe(201);
+            expect(addMessageToReport).toHaveBeenCalledWith(1, "johnny", expect.any(String), "Hello");
+        });
+
+        it("rejects invalid reportId", async () => {
+            const res = await request(app)
+                .post("/reports/abc/messages")
+                .send({ message: "Hello" });
+
+            expect(res.status).toBe(400);
+        });
+
+        it("rejects empty message", async () => {
+            const res = await request(app)
+                .post("/reports/1/messages")
+                .send({ message: "   " });
+
+            expect(res.status).toBe(400);
+        });
+
+        it("propagates errors from addMessageToReport via next(err)", async () => {
+            const err = new Error("Failed to add message");
+            (addMessageToReport as jest.Mock).mockRejectedValue(err);
+
+            const appWithError = express();
+            appWithError.use(express.json());
+            appWithError.use("/reports", router);
+
+            const nextMock = jest.fn();
+            appWithError.use((e: any, req: any, res: any, next: any) => {
+                nextMock(e);
+                res.status(500).json({ error: e.message });
+            });
+
+            const res = await request(appWithError)
+                .post("/reports/1/messages")
+                .send({ message: "Hello" });
+
+            expect(nextMock).toHaveBeenCalledWith(err);
+            expect(res.status).toBe(500);
+        });
+    });
+
+    describe("GET /reports/:reportId/messages", () => {
+        it("returns messages for a valid reportId", async () => {
+            const fakeMessages = [
+                { id: 1, message: "First" },
+                { id: 2, message: "Second" },
+            ];
+            (getAllMessages as jest.Mock).mockResolvedValue(fakeMessages);
+
+            const res = await request(app).get("/reports/1/messages");
+
+            expect(res.status).toBe(200);
+            expect(getAllMessages).toHaveBeenCalledWith(1);
+            expect(res.body).toEqual(fakeMessages);
+        });
+
+        it("rejects invalid reportId", async () => {
+            const res = await request(app).get("/reports/not-a-number/messages");
+            expect(res.status).toBe(400);
+        });
+
+        it("propagates errors from getAllMessages via next(err)", async () => {
+            const err = new Error("Failed to get messages");
+            (getAllMessages as jest.Mock).mockRejectedValue(err);
+
+            const appWithError = express();
+            appWithError.use(express.json());
+            appWithError.use("/reports", router);
+
+            const nextMock = jest.fn();
+            appWithError.use((e: any, req: any, res: any, next: any) => {
+                nextMock(e);
+                res.status(500).json({ error: e.message });
+            });
+
+            const res = await request(appWithError).get("/reports/1/messages");
+
+            expect(nextMock).toHaveBeenCalledWith(err);
+            expect(res.status).toBe(500);
+        });
+    });
+});

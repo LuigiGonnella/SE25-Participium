@@ -1,7 +1,7 @@
 import { CitizenDAO } from "@dao/citizenDAO";
 import { CitizenRepository } from "@repositories/citizenRepository";
 import { initializeTestDataSource, closeTestDataSource, TestDataSource } from "../../setup/test-datasource";
-import { getAllCitizens, getCitizenByEmail, getCitizenById, getCitizenByUsername } from "@controllers/citizenController";
+import { getAllCitizens, getCitizenByEmail, getCitizenById, getCitizenByUsername, updateCitizenProfile } from "@controllers/citizenController";
 
 let citizenRepo: CitizenRepository;
 
@@ -102,5 +102,23 @@ describe("CitizenController - test suite", () => {
         const citizen = await getCitizenById(savedInDB!.id);
         expect(citizen).toEqual(expectedDTO);
     });
-
+    it("tests updateCitizenProfile", async () => {
+        await citizenRepo.createCitizen(
+            fakeDAO.email,
+            fakeDAO.username,
+            fakeDAO.name,
+            fakeDAO.surname,
+            fakeDAO.password,
+            fakeDAO.receive_emails,
+            fakeDAO.profilePicture,
+            fakeDAO.telegram_username,
+        );
+        await updateCitizenProfile(fakeDAO.username, { telegram_username: "new_telegram", receive_emails: true  });
+        const updatedCitizen = await getCitizenByUsername(fakeDAO.username);
+        expect(updatedCitizen).toEqual({
+            ...expectedDTO,
+            telegram_username: "new_telegram",
+            receive_emails: true,
+        });
+    });
 });

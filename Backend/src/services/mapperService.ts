@@ -2,9 +2,16 @@ import { ErrorDTO } from "@models/dto/ErrorDTO";
 import type { Citizen as CitizenDTO } from "@models/dto/Citizen";
 import type { Staff as StaffDTO } from "@models/dto/Staff";
 import type { Office as OfficeDTO } from "@models/dto/Office";
+import type { Report as ReportDTO } from "@models/dto/Report";
+import type { Message as MessageDTO } from "@models/dto/Message";
 import { CitizenDAO } from "@models/dao/citizenDAO";
 import {StaffDAO} from "@dao/staffDAO";
 import {OfficeDAO} from "@dao/officeDAO";
+import { ReportDAO } from "@models/dao/reportDAO";
+import { NotificationDAO } from "@dao/notificationDAO";
+import { Notification } from "@models/dto/Notification";
+import {MessageDAO} from "@dao/messageDAO";
+
 
 export function createErrorDTO(
   code: number,
@@ -60,4 +67,46 @@ export function mapOfficeDAOToDTO(officeDAO: OfficeDAO): OfficeDTO {
     category: officeDAO.category,
     members: officeDAO.members?.map(member => mapStaffDAOToDTO(member))
   }) as OfficeDTO;
+}
+
+//REPORT DTO
+
+export function mapReportDAOToDTO(reportDAO: ReportDAO): ReportDTO {
+  return removeNullAttributes({
+        id: reportDAO.id,
+        citizenUsername: reportDAO.anonymous ? undefined : reportDAO.citizen?.username,
+        timestamp: reportDAO.timestamp,
+        status: reportDAO.status,
+        title: reportDAO.title,
+        description: reportDAO.description,
+        category: reportDAO.category,
+        coordinates: [reportDAO.latitude, reportDAO.longitude],
+        photos: [reportDAO.photo1, reportDAO.photo2, reportDAO.photo3].filter(Boolean) as string[],
+        comment: reportDAO.comment,
+        assignedStaff: reportDAO.assignedStaff?.username,
+        messages: reportDAO.messages?.map(mapMessageToDTO)
+    }) as ReportDTO;
+}
+
+//NOTIFICATION DTO
+
+export function mapNotificationDAOToDTO(dao: NotificationDAO): Notification {
+    return {
+        id: dao.id,
+        timestamp: dao.timestamp.toISOString(),
+        title: dao.title,
+        message: dao.message,
+        isRead: dao.isRead,
+        reportId: dao.report.id,
+        citizenUsername: dao.citizen?.username,
+        staffUsername: dao.staff?.username
+    };
+}
+
+export function mapMessageToDTO(messageDAO: MessageDAO): MessageDTO {
+    return removeNullAttributes({
+        timestamp: messageDAO.timestamp.toISOString(),
+        message: messageDAO.message,
+        staffUsername: messageDAO.staff?.username
+    }) as MessageDTO;
 }

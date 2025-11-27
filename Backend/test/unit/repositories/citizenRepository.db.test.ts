@@ -135,5 +135,31 @@ describe("CitizenRepository - test suite", () => {
         const citizen = await citizenRepo.getCitizenById(savedInDB!.id);
         expect(citizen).toEqual(expect.objectContaining(citizen1));
     });
+    it("should update citizen's profile", async () => {
+        await citizenRepo.createCitizen(
+            citizen2.email,
+            citizen2.username,
+            citizen2.name,
+            citizen2.surname,
+            citizen2.password,
+            citizen2.receive_emails,
+            citizen2.profilePicture,
+            citizen2.telegram_username,
+        );
+        const savedInDB = await TestDataSource
+                    .getRepository(CitizenDAO)
+                    .findOneBy({ email: citizen2.email });
+        const updatedData = {
+           receive_emails: false,
+           profilePicture: "newProfilePic.png",
+           telegram_username: "newTelegramUser",
+        };
+        await citizenRepo.updateCitizen(
+            savedInDB!!.username,
+            updatedData,
+        );
+        const updatedCitizen = await citizenRepo.getCitizenById(savedInDB!.id);
+        expect(updatedCitizen).toEqual(expect.objectContaining(updatedData));
+    });
 
 });

@@ -224,6 +224,25 @@ describe('Citizen Routes Tests', () => {
         });
     });
 
+    describe('PATCH /citizens/:username', () => {
+        it('should update citizen profile', async () => {
+            const mockUpdatedCitizen = {
+                telegram_username: 'newtelegram',
+                receive_emails: true
+            };
+            mockRequest.params = { username: 'testuser' };
+            mockRequest.body = {
+                telegram_username: 'newtelegram',
+                receive_emails: 'true'
+            };
+            mockRequest.user = { username: 'testuser' };
+            (getCitizenByUsername as jest.Mock).mockResolvedValueOnce(mockUpdatedCitizen);
+
+            await getCitizenByUsername('testuser');
+            expect(getCitizenByUsername).toHaveBeenCalledWith('testuser');
+        });
+    });
+
     describe('Route error handling', () => {
         it('should call next with error when controller throws', async () => {
             const error = new NotFoundError('Citizen not found');

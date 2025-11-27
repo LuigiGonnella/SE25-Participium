@@ -4,6 +4,8 @@ import { StaffDAO } from "@dao/staffDAO";
 import { CitizenRepository } from "@repositories/citizenRepository";
 import { AppDataSource } from "@database";
 import bcrypt from "bcrypt";
+import { StaffRepository } from "@repositories/staffRepository";
+import { OfficeRepository } from "@repositories/officeRepository";
 
 export const TEST_CITIZENS = {
     citizen1: {
@@ -48,6 +50,9 @@ export async function beforeAllE2e(): Promise<void> {
         // Make AppDataSource point to TestDataSource for the tests
         Object.assign(AppDataSource, TestDataSource);
     }
+
+    await (new OfficeRepository()).createDefaultOfficesIfNotExist();
+    await (new StaffRepository()).createDefaultAdminIfNotExists();
 
     // Clear existing data
     await TestDataSource.getRepository(CitizenDAO).clear();

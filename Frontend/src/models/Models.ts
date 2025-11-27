@@ -27,6 +27,14 @@ export function isStaff(user: User | undefined): user is Staff {
     return user !== undefined && 'type' in user && user.type === 'STAFF';
 }
 
+export function isMPRO(user: User | undefined): user is Staff {
+    return isStaff(user) && user.role ===  'Municipal Public Relations Officer';
+}
+
+export function isTOSM(user: User | undefined): user is Staff {
+    return isStaff(user) && user.role === 'Technical Office Staff Member';
+}
+
 export function isCitizen(user: User | undefined): user is Citizen {
     return user !== undefined && 'type' in user && user.type === 'CITIZEN';
 }
@@ -81,3 +89,69 @@ export const ROLE_OFFICE_MAP = {
     "Public Green Areas and Playgrounds Office"
   ]
 };
+
+// @ts-ignore
+export enum OfficeCategory {
+    MOO = "Municipal Organization",
+    WSO = "Water Supply",
+    ABO = "Architectural Barriers",
+    SSO = "Sewer System",
+    PLO = "Public Lighting",
+    WO = "Waste",
+    RSTLO = "Road Signs and Traffic Lights",
+    RUFO = "Roads and Urban Furnishings",
+    PGAPO = "Public Green Areas and Playgrounds",
+}
+
+// @ts-ignore
+export enum ReportStatus {
+    PENDING = "Pending",
+    ASSIGNED = "Assigned",
+    IN_PROGRESS = "In Progress",
+    SUSPENDED = "Suspended",
+    REJECTED = "Rejected",
+    RESOLVED = "Resolved",
+}
+
+export interface Report {
+    id: number;
+    citizenUsername?: string;
+    timestamp: string;
+    status: ReportStatus;
+    title: string;
+    description: string;
+    category: OfficeCategory;
+    coordinates: number[];
+    photos: string[];
+    comment?: string;
+    assignedStaff?: string;
+    messages?: Message[];
+}
+
+export interface NewReport {
+    title: string;
+    description: string;
+    category: OfficeCategory;
+    latitude: number;
+    longitude: number;
+    anonymous: boolean;
+    photos: File[];
+}
+
+export interface Notification {
+    id: number;
+    timestamp: string;
+    reportId: number;
+    title: string;
+    message: string;
+    isRead: boolean;
+    citizenUsername?: string;
+    staffUsername?: string;
+}
+
+export interface Message {
+    timestamp: string,
+    reportId: number,
+    message: string,
+    staffUsername: string
+}

@@ -7,7 +7,12 @@ import {LoginForm} from './components/LoginPage';
 import DefaultLayout from './components/DefaultLayout';
 import TurinMaskedMap from './components/Map';
 import { RegistrationForm, MunicipalityRegistrationForm } from './components/RegistrationPage';
+import ReportListPage from "./components/ReportListPage";
+import ReportDetailPage from "./components/ReportDetailPage";
+import StaffProfile from "./components/StaffProfile";
+import CitizenProfile from "./components/CitizenProfile";
 import 'bootstrap-italia/dist/css/bootstrap-italia.min.css';
+import 'bootstrap-icons/font/bootstrap-icons.min.css';
 import 'typeface-titillium-web/index.css';
 import 'typeface-roboto-mono/index.css';
 import 'typeface-lora/index.css';
@@ -16,7 +21,8 @@ import {
     type NewStaff,
     type Credentials,
     type User,
-    isStaff, StaffRole
+    isStaff, StaffRole,
+    isMPRO, isTOSM, isCitizen
 } from "./models/Models.ts";
 
 
@@ -76,23 +82,43 @@ function App() {
     return (
         <Routes>
             <Route element={<DefaultLayout loggedIn={loggedIn} user={user} handleLogout={handleLogout} loading={!authChecked}/>}>
-                <Route path="" element={<HomePage/>}/>
+                <Route path="" element={!loggedIn || isCitizen(user) ? <HomePage/> : <Navigate replace to="/reports"/>}/>
                 <Route path="login" element={
                     loggedIn ?
-                        <Navigate replace to="/"/> :
+                        <Navigate replace to={isCitizen(user) ? "/map" : "/reports"}/> :
                         <LoginForm handleLogin={handleLogin}/>
                 }/>
-
                 <Route path="registration" element={
                     loggedIn ?
                         <Navigate replace to="/"/> :
-                        <RegistrationForm handleRegistration={handleRegistration}
-                        />}/>
-                <Route path="municipality-registration"
-                       element={(loggedIn && isStaff(user) && user.role === StaffRole.ADMIN) ?
-                           <MunicipalityRegistrationForm handleStaffRegistration={handleMunicipalityRegistration}/>
-                           : <Navigate replace to="/"/>}/>
-                <Route path="/map" element={<TurinMaskedMap />} />
+                        <RegistrationForm handleRegistration={handleRegistration}/>
+                }/>
+                <Route path="municipality-registration" element={
+                    (loggedIn && isStaff(user) && user.role === StaffRole.ADMIN) ?
+                        <MunicipalityRegistrationForm handleStaffRegistration={handleMunicipalityRegistration}/> :
+                        <Navigate replace to="/"/>
+                }/>
+                <Route path="/map" element={
+                    loggedIn && isCitizen(user) ?
+                    <TurinMaskedMap isLoggedIn={loggedIn} user={user}/> :
+                    <Navigate replace to="/"/>
+                }/>
+                <Route path="/reports" element={
+                    loggedIn && (isMPRO(user) || isTOSM(user)) ?
+                        <ReportListPage user={user}/> :
+                        <Navigate replace to={(isStaff(user) && user.role === StaffRole.ADMIN) ? "/municipality-registration" : "/login"}/>
+                }/>
+                <Route path="/reports/:id" element={
+                    loggedIn && (isMPRO(user) || isTOSM(user)) ?
+                        <ReportDetailPage user={user} /> :
+                        <Navigate replace to="/login"/>
+                }/>
+                <Route path="/profile" element={
+                    loggedIn && user ? (
+                        isStaff(user) ? <StaffProfile user={user} /> : <CitizenProfile user={user} />
+                    ) : <Navigate replace to="/login"/>
+                }/>
+                <Route path="*" element={<Navigate replace to="/"/>}/>
             </Route>
         </Routes>
     )

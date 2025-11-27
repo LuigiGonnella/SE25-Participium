@@ -1,9 +1,9 @@
 import {useActionState, useState} from 'react';
 import {Link} from 'react-router';
 import {Alert, Button, Form} from 'react-bootstrap';
-import {Col, Container, Icon, Row} from "design-react-kit";
-import type {Credentials} from "../models/Models.ts";
-import type {APIError} from "../services/ErrorHandler.ts";
+import {Col, Container, Icon, Row} from 'design-react-kit';
+import type {Credentials} from '../models/Models.ts';
+import type {APIError} from '../services/ErrorHandler.ts';
 
 interface LoginFormProps {
     handleLogin: (credentials: Credentials, type: 'CITIZEN' | 'STAFF') => Promise<void>;
@@ -20,7 +20,6 @@ interface LogoutButtonProps {
 }
 
 function LoginForm({handleLogin}: LoginFormProps) {
-
     const [type, setType] = useState<'CITIZEN' | 'STAFF'>('CITIZEN');
     const [error, setError] = useState<string>();
     const [, formAction, isPending] = useActionState<LoginState, FormData>(
@@ -37,7 +36,7 @@ function LoginForm({handleLogin}: LoginFormProps) {
                     success: true
                 };
             } catch (err) {
-                setError((err as APIError).details)
+                setError((err as APIError).details);
                 return {
                     ...state,
                     success: false
@@ -52,49 +51,100 @@ function LoginForm({handleLogin}: LoginFormProps) {
 
     const changeType = () => {
         setType(type === 'CITIZEN' ? 'STAFF' : 'CITIZEN');
-    }
+    };
 
     return (
         <>
-            {isPending && <Alert variant="warning">Wait...</Alert>}
-            <div className="d-flex flex-column justify-content-center align-items-center flex-grow-1">
-                <div style={{width: '30%'}}>
-                    <Container className="text-center mb-5">
-                        <h2>{type === 'CITIZEN' ? 'Citizen' : 'Staff'} Login</h2>
-                        {type === 'CITIZEN' &&
-                            <p className="text-muted">Don't have an account? <Link to="/registration">Register
-                                now</Link>
-                            </p>}
-                    </Container>
-                    <Form action={formAction} id="login-form">
-                        <Form.Group className="mb-3" controlId='username'>
-                            <Form.Label>Username</Form.Label>
-                            <Form.Control type="text" name="username" placeholder="Enter username" required/>
-                        </Form.Group>
-                        <Form.Group className="mb-3" controlId='password'>
-                            <Form.Label>Password</Form.Label>
-                            <Form.Control type="password" name="password" placeholder="Enter password" required/>
-                        </Form.Group>
-                    </Form>
-                    {(!isPending && error &&
-                        <Alert variant="danger">{error}</Alert>)}
-                    <Row>
-                        <Col className="col-3">
-                            <Button variant="primary" type="submit" form="login-form" disabled={isPending}>
-                                Login
-                            </Button>
-                        </Col>
-                        <Col className="col-9 d-flex flex-column justify-content-center">
-                            <p className="text-end text-muted m-0">Are you
-                                a {type === 'CITIZEN' ? 'Staff Member' : 'Citizen'}?<span> <a role='button' onClick={changeType}
-                                                                                              className='text-primary'>Login here</a></span>
-                            </p>
-                        </Col>
-                    </Row>
-                </div>
-            </div>
+            {isPending && <Alert variant="warning">Please wait...</Alert>}
+            <Container
+                fluid
+                className="d-flex flex-column justify-content-center align-items-center flex-grow-1 py-4"
+            >
+                <Row className="w-100 justify-content-center">
+                    <Col
+                        xs={12}
+                        sm={10}
+                        md={8}
+                        lg={4}
+                        className="d-flex flex-column"
+                        style={{maxWidth: '420px'}}
+                    >
+                        <Container className="text-center mb-4">
+                            <h2 className="mb-2">
+                                {type === 'CITIZEN' ? 'Citizen' : 'Staff'} login
+                            </h2>
+                            {type === 'CITIZEN' && (
+                                <p className="text-muted mb-0">
+                                    Don't have an account?&nbsp;
+                                    <Link to="/registration">Register now</Link>
+                                </p>
+                            )}
+                        </Container>
+
+                        <Form action={formAction} id="login-form">
+                            <Form.Group className="mb-3" controlId="username">
+                                <Form.Label>Username</Form.Label>
+                                <Form.Control
+                                    type="text"
+                                    name="username"
+                                    placeholder="Enter username"
+                                    required
+                                />
+                            </Form.Group>
+                            <Form.Group className="mb-3" controlId="password">
+                                <Form.Label>Password</Form.Label>
+                                <Form.Control
+                                    type="password"
+                                    name="password"
+                                    placeholder="Enter password"
+                                    required
+                                />
+                            </Form.Group>
+                        </Form>
+
+                        {!isPending && error && (
+                            <Alert variant="danger" className="mt-2">
+                                {error}
+                            </Alert>
+                        )}
+
+                        <Row className="mt-3 align-items-center">
+                            <Col xs={12} sm={4} className="mb-2 mb-sm-0">
+                                <Button
+                                    variant="primary"
+                                    type="submit"
+                                    form="login-form"
+                                    disabled={isPending}
+                                    className="w-100"
+                                >
+                                    Login
+                                </Button>
+                            </Col>
+                            <Col
+                                xs={12}
+                                sm={8}
+                                className="d-flex flex-column justify-content-center"
+                            >
+                                <p className="text-sm-end text-center text-muted m-0">
+                                    Are you a&nbsp;
+                                    {type === 'CITIZEN' ? 'staff member' : 'citizen'}?&nbsp;
+                                    <span>
+                                        <a
+                                            role="button"
+                                            onClick={changeType}
+                                            className="text-primary"
+                                        >
+                                            Login&nbsp;here
+                                        </a>
+                                    </span>
+                                </p>
+                            </Col>
+                        </Row>
+                    </Col>
+                </Row>
+            </Container>
         </>
-    )
+    );
 }
 
 function LogoutButton({logout}: LogoutButtonProps) {
@@ -106,7 +156,7 @@ function LogoutButton({logout}: LogoutButtonProps) {
                 icon="it-logout"
             />
         </span>
-    )
+    );
 }
 
 export {LoginForm, LogoutButton};

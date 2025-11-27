@@ -2,15 +2,15 @@ import {Column, Entity, OneToMany, PrimaryGeneratedColumn} from "typeorm";
 import {StaffDAO} from "./staffDAO";
 
 export enum OfficeCategory {
-    MOO = "Municipal Organization Office",
-    WSO = "Water Supply Office",
-    ABO = "Architectural Barriers Office",
-    SSO = "Sewer System Office",
-    PLO = "Public Lighting Office",
-    WO = "Waste Office",
-    RSTLO = "Road Signs and Traffic Lights Office",
-    RUFO = "Roads and Urban Furnishings Office",
-    PGAPO = "Public Green Areas and Playgrounds Office",
+    MOO = "Municipal Organization",
+    WSO = "Water Supply",
+    ABO = "Architectural Barriers",
+    SSO = "Sewer System",
+    PLO = "Public Lighting",
+    WO = "Waste",
+    RSTLO = "Road Signs and Traffic Lights",
+    RUFO = "Roads and Urban Furnishings",
+    PGAPO = "Public Green Areas and Playgrounds",
 }
 // "Other" report category must be assigned to the right office based on the type of issue reported.
 

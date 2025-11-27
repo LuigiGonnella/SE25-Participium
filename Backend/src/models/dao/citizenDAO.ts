@@ -1,4 +1,5 @@
-import {Column, Entity, PrimaryGeneratedColumn} from "typeorm";
+import { Column, Entity, PrimaryGeneratedColumn, OneToMany } from "typeorm";
+import { ReportDAO } from "./reportDAO";
 
 @Entity("citizen")
 export class CitizenDAO {
@@ -29,5 +30,8 @@ export class CitizenDAO {
 
     @Column({ nullable: false })
     receive_emails: boolean;
+
+    @OneToMany(() => ReportDAO, (report) => report.citizen)
+    reports: ReportDAO[];
 
 }
