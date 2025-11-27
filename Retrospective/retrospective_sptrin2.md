@@ -14,15 +14,15 @@ sections:
 
 - Number of stories committed vs. done 
 
-      4 committed vs 4 done
+      6 committed vs 6 done
 
 - Total points committed vs. done 
 
-      16 committed points vs 16 point done
+      36 committed points vs 36 point done
 
 - Nr of hours planned vs. spent (as a team)
 
-        96 hours 22 minutes vs 75 hours 56 minutes
+        96 hours 22 minutes vs 92 hours 45 minutes
 
 **Remember**a story is done ONLY if it fits the Definition of Done:
  
@@ -44,11 +44,14 @@ sections:
 
 |      Story      | # Tasks | Points | Hours est. | Hours actual |
 | :-------------: | :-----: | :----: | :--------: | :----------: |
-| _Uncategorized_ |    8    |   -    | 37 h 22 m  |  30 h 27 m   |
-| _PT01_          |    7    |   3    | 24 h       |  23 h        |
-| _PT02_          |    5    |   3    | 14 h       |  7 h 6m      |
-| _PT03_          |    5    |   2    | 9 h        |  9 h 28 m    |
-| _PT04_          |    3    |   8    | 12 h       |  5 h 55 m    |
+| _Uncategorized_ |    7    |   -    | 31 h 15 m  |  22 h 35 m   |
+| _PT05_          |    8    |   3    | 13 h       |  13 h 30 m   |
+| _PT06_          |    7    |   2    | 14 h 30 m  |  15 h 05 m   |
+| _PT07_          |    4    |   13   | 9 h  30 m  |  10 h 35 m   |
+| _PT08_          |    4    |   2    | 9 h        |  7 h 20 m    |
+| _PT09_          |    6    |   3    | 11 h 30 m  |  11 h 00 m   |
+| _PT011_         |    14   |   13   | 16 h 30 m  |  12 h 40 m   |
+
 
 > story `Uncategorized` is for technical tasks, leave out story points (not applicable in this case)
 
@@ -56,108 +59,126 @@ sections:
 
 |            | Mean | StDev |
 | ---------- | :--: | :---: |
-| Estimation | 207  |  141  |
-| Actual     | 163  |  169  |
+| Estimation | **   |  **   |
+| Actual     | **   |  **   |
 
 - Total estimation error ratio: sum of total hours spent / sum of total hours effort - 1
 
-    $$\frac{\sum_i spent_{task_i}}{\sum_i estimation_{task_i}} - 1 = -21\\% $$
+    $$\frac{\sum_i spent_{task_i}}{\sum_i estimation_{task_i}} - 1 = **\\% $$
     
 - Absolute relative task estimation error: sum( abs( spent-task-i / estimation-task-i - 1))/n
 
-    $$\frac{1}{n}\sum_i^n \left| \frac{spent_{task_i}}{estimation_task_i}-1 \right| = 41\\% $$
+    $$\frac{1}{n}\sum_i^n \left| \frac{spent_{task_i}}{estimation_task_i}-1 \right| = **\\% $$
   
 ## QUALITY MEASURES 
 
 - Unit Testing:
   - Total hours estimated
 
-      10 h
+      3 h 40 m
 
   - Total hours spent
 
-      6 h 46 m
+      3 h 20 m
+
   - Nr of automated unit test 
   cases
 
-      86 tests 
+      189 tests 
+
   - Coverage
 
-      84.72%
+      86.32%
 
 ```
------------------------|---------|----------|---------|---------|--------------------
-File                   | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s  
------------------------|---------|----------|---------|---------|--------------------
-All files              |   84.72 |    74.72 |   81.13 |   84.72 |                    
- src                   |     100 |      100 |     100 |     100 |                    
-  utils.ts             |     100 |      100 |     100 |     100 |                    
- src/controllers       |    73.4 |    61.53 |   71.42 |    73.4 |                    
-  authController.ts    |   64.15 |       60 |      50 |   64.15 | 17-25,34-40,86-104 
-  citizenController.ts |   85.71 |       50 |     100 |   85.71 | 16,24,32           
-  officeController.ts  |      85 |       75 |     100 |      85 | 28,40-41           
- src/repositories      |   96.03 |    84.09 |   93.33 |   96.03 |                    
-  citizenRepository.ts |   95.23 |     87.5 |    87.5 |   95.23 | 57                 
-  officeRepository.ts  |   95.83 |    80.76 |    92.3 |   95.83 | 102,114            
-  staffRepository.ts   |   96.87 |       90 |     100 |   96.87 | 78                 
- src/services          |   63.63 |       75 |   42.85 |   63.63 |                    
-  mapperService.ts     |   63.63 |       75 |   42.85 |   63.63 | 14,47,57-61        
------------------------|---------|----------|---------|---------|--------------------
+----------------------------|---------|----------|---------|---------|-----------------------------------------------                                                                                      
+File                        | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s                                                                                                                   
+----------------------------|---------|----------|---------|---------|-----------------------------------------------
+All files                   |   86.32 |    81.07 |    78.5 |    86.3 |                                              
+ src                        |     100 |      100 |     100 |     100 |                                              
+  utils.ts                  |     100 |      100 |     100 |     100 |                                              
+ src/controllers            |      74 |    73.75 |   57.57 |   73.86 |                                              
+  authController.ts         |   64.15 |       60 |      50 |   64.15 | 17-25,34-40,86-104                           
+  citizenController.ts      |   65.85 |       30 |    62.5 |   65.85 | 20,28,36,43-51,61-66                         
+  notificationController.ts |     100 |      100 |     100 |     100 |                                              
+  officeController.ts       |   85.71 |       75 |     100 |   85.71 | 29,41-42                                     
+  reportController.ts       |   78.08 |    93.93 |   46.15 |   78.08 | 21-29,100-101,105-106,110-111,119-120,128-129
+ src/repositories           |   94.28 |    81.42 |   93.47 |   94.28 |                                              
+  citizenRepository.ts      |   93.54 |       75 |   88.88 |   93.54 | 57,90                                        
+  notificationRepository.ts |     100 |      100 |     100 |     100 |                                              
+  officeRepository.ts       |   95.83 |    80.76 |    92.3 |   95.83 | 102,114                                      
+  reportRepository.ts       |   91.96 |    80.95 |   88.88 |   91.96 | 80,84-86,102-108,141,209,216                 
+  staffRepository.ts        |   96.87 |       90 |     100 |   96.87 | 78                                           
+ src/routes                 |   90.44 |     86.2 |   93.75 |   90.44 |                                              
+  notificationRoutes.ts     |     100 |      100 |     100 |     100 |                                              
+  reportRoutes.ts           |   89.36 |     86.2 |   92.85 |   89.36 | 42,46,56,64,105-110,149,162,168-173,211      
+ src/services               |   70.58 |    83.33 |      50 |   70.58 |                                              
+  mapperService.ts          |   70.58 |    83.33 |      50 |   70.58 | 21,54,64-68,94                               
+----------------------------|---------|----------|---------|---------|-----------------------------------------------
 ```
 
-Test Suites: 8 passed, 8 total
-Tests:       86 passed, 86 total
+Test Suites: 14 passed, 14 total
+Tests:       189 passed, 189 total
 
-- E2E testing: 
+- E2E testing (considering both frontend and backend): 
   - Total hours estimated
 
-      10h
+      13 h 30 m
+
   - Total hours spent
 
-      3h 30m
+      12 h 50m
+
   - Nr of test cases
 
-      47
+      99
 
 ```
------------------------|---------|----------|---------|---------|----------------------------
-File                   | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s          
------------------------|---------|----------|---------|---------|----------------------------
-All files              |   71.82 |    56.79 |   65.67 |   71.74 |                            
- src                   |   97.05 |    83.33 |     100 |   97.05 |                            
-  app.ts               |     100 |      100 |     100 |     100 |                            
-  utils.ts             |      90 |       75 |     100 |      90 | 11                         
- src/controllers       |   63.82 |    48.71 |   64.28 |   63.82 |                            
-  authController.ts    |   60.37 |       52 |      50 |   60.37 | 17-25,34-40,86-104,118,130 
-  citizenController.ts |     100 |      100 |     100 |     100 |                            
-  officeController.ts  |      35 |        0 |      50 |      35 | 7-28,40-41                 
- src/middlewares       |   80.76 |    72.22 |     100 |      80 |                            
-  authMiddleware.ts    |   76.19 |    72.22 |     100 |      75 | 13,23,28,36-39             
-  errorMiddleware.ts   |     100 |      100 |     100 |     100 |                            
- src/repositories      |   50.49 |    18.18 |      50 |   50.49 |                            
-  citizenRepository.ts |   95.23 |       75 |     100 |   95.23 | 46                         
-  officeRepository.ts  |   29.16 |     3.84 |   23.07 |   29.16 | 82-190                     
-  staffRepository.ts   |   53.12 |       10 |   44.44 |   53.12 | 41-46,63-97                
- src/routes            |   88.37 |    95.23 |      90 |   88.37 |                            
-  authRoutes.ts        |   88.88 |    96.77 |   83.33 |   88.88 | 47-58,83                   
-  citizenRoutes.ts     |   85.29 |     90.9 |     100 |   85.29 | 13,28,43,53,58             
-  officeRoutes.ts      |     100 |      100 |     100 |     100 |                            
- src/services          |   90.47 |    53.84 |      75 |   90.47 |                            
-  errorService.ts      |     100 |    44.44 |     100 |     100 | 9-19                       
-  mapperService.ts     |   81.81 |       75 |   71.42 |   81.81 | 57-61                      
------------------------|---------|----------|---------|---------|----------------------------
+----------------------------|---------|----------|---------|---------|--------------------------------------------------------
+File                        | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s
+----------------------------|---------|----------|---------|---------|--------------------------------------------------------
+All files                   |   72.15 |       65 |   60.97 |   72.48 |                                                       
+ src                        |      95 |    83.33 |   66.66 |      95 |                                                       
+  app.ts                    |   96.66 |      100 |       0 |   96.66 | 72                                                    
+  utils.ts                  |      90 |       75 |     100 |      90 | 11                                                    
+ src/controllers            |    63.5 |       50 |   51.51 |   63.81 |                                                       
+  authController.ts         |   60.37 |       52 |      50 |   60.37 | 17-25,34-40,86-104,118,130                            
+  citizenController.ts      |   68.29 |       60 |      50 |   68.29 | 43-51,61-66,78-79                                     
+  notificationController.ts |   41.66 |        0 |       0 |   45.45 | 7-16,20                                               
+  officeController.ts       |   38.09 |        0 |      50 |   38.09 | 8-29,41-42                                            
+  reportController.ts       |   73.97 |    63.63 |   61.53 |   73.97 | 47,65,105-106,133-150,154-160                         
+ src/middlewares            |   88.46 |    83.33 |     100 |      88 |                                                       
+  authMiddleware.ts         |   85.71 |    83.33 |     100 |      85 | 13,23,39                                              
+  errorMiddleware.ts        |     100 |      100 |     100 |     100 |                                                       
+ src/repositories           |   66.53 |    53.57 |   56.52 |   66.53 |                                                       
+  citizenRepository.ts      |   64.51 |     37.5 |   88.88 |   64.51 | 46,88-105                                             
+  notificationRepository.ts |   59.09 |       25 |   33.33 |   59.09 | 23,42-76                                              
+  officeRepository.ts       |   31.25 |     7.69 |   30.76 |   31.25 | 82-87,101-190                                         
+  reportRepository.ts       |   78.57 |    70.23 |   66.66 |   78.57 | 80,102-108,138,141,200,203,206,209,216,224,229,283-317
+  staffRepository.ts        |   84.37 |       70 |   66.66 |   84.37 | 41-46,64,73,78                                        
+ src/routes                 |   77.56 |    81.56 |   74.07 |   78.46 |                                                       
+  authRoutes.ts             |   88.88 |    96.77 |   83.33 |   88.88 | 47-58,83                                              
+  citizenRoutes.ts          |    57.4 |    43.47 |      80 |   60.78 | 14,29,44,54,59,65-94                                  
+  notificationRoutes.ts     |      50 |      100 |       0 |      50 | 9-13,18-22                                            
+  officeRoutes.ts           |     100 |      100 |     100 |     100 |                                                       
+  reportRoutes.ts           |   83.68 |     86.2 |   78.57 |   83.68 | 46,56,64,105-110,244-259,264-271                      
+ src/services               |   85.18 |    66.66 |   63.63 |   85.18 |                                                       
+  errorService.ts           |     100 |    44.44 |     100 |     100 | 9-19                                                  
+  mapperService.ts          |   76.47 |      100 |      60 |   76.47 | 64-68,94,107                                          
+----------------------------|---------|----------|---------|---------|--------------------------------------------------------
 
-Test Suites: 3 passed, 3 total
-Tests:       47 passed, 47 total
+Test Suites: 5 passed, 5 total
+Tests:       99 passed, 99 total
 
 ```
 - Code review 
   - Total hours estimated 
 
-      11h
+      12h
+
   - Total hours spent
 
-      6h 18m
+      9h 30 m
   
 
 
