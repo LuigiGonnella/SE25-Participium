@@ -224,12 +224,20 @@ export class ReportRepository {
                 throw new NotFoundError(`Staff with username '${staffUsername}' not found`);
             }
 
+            if (staff.role !== StaffRole.TOSM && staff.role !== StaffRole.EM) {
+                throw new BadRequestError(`Staff '${staffUsername}' with role '${staff.role}' cannot be assigned to reports.`);
+            }
+
             //check if staff's office category matches report category
             if(staff.office.category !== updatedReport.category)
                     throw new BadRequestError(
                         `Staff '${staffUsername}' works in office with category '${staff.office.category}' ` +
                         `but report category is '${updatedReport.category}'`
                 );
+
+            if (staff.role === StaffRole.EM && !updatedReport.assignedStaff ){
+                throw new BadRequestError(`Report must be assigned to a TOSM before assigning to an EM.`);
+            }
 
             assignedStaff = staff;
         }
@@ -239,11 +247,11 @@ export class ReportRepository {
             {
                 status: updatedStatus,
                 ...(comment !== undefined && { comment }),
-                ...(assignedStaff && { assignedStaff })
+                ...(assignedStaff !== undefined &&  assignedStaff.role === StaffRole.TOSM ? { assignedStaff } : { assignedEM: assignedStaff })
             }
         );
 
-        const result = await this.repo.findOneOrFail({ 
+        const result = await this.repo.findOneOrFail({  
             where: { id: reportId },
             relations: ['citizen', 'assignedStaff']
         });

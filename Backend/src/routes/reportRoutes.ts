@@ -9,6 +9,7 @@ import { Status } from "@models/dao/reportDAO";
 import { OfficeCategory } from "@models/dao/officeDAO";
 import { StaffRole } from "@models/dao/staffDAO";
 import {Staff} from "@dto/Staff";
+import { validateStatusReport } from "@services/mapperService";
 
 const router = Router();
 
@@ -193,37 +194,40 @@ router.patch(
 
       const { status, comment, staff } = req.body;
 
-      let updatedStatus: Status;
-
-      if (staff) {
-        throw new BadRequestError(
-          "Technical Office Staff Members cannot assign the report to another staff member."
-        );
-      }
-
-      if (status) {
-        const statusValue = String(status);
-        const validStatus = Object.keys(Status)
-          .filter((key) => isNaN(Number(key)))
-          .find((key) => key.toUpperCase() === statusValue.toUpperCase());
-
-        if (!validStatus) {
-          throw new BadRequestError("Invalid status.");
-        }
-
-        updatedStatus = Status[validStatus as keyof typeof Status];
-        
-      } else {
-        throw new BadRequestError("Status is required.");
-      }
-
-      if(updatedStatus !== Status.IN_PROGRESS && updatedStatus !== Status.SUSPENDED && updatedStatus !== Status.RESOLVED)
-        throw new BadRequestError(`Invalid status for ${StaffRole.TOSM}.`);
-
-      if((updatedStatus !== Status.RESOLVED) && comment)
-            throw new BadRequestError("Comments can only be added when report is resolved.");
+      const updatedStatus = validateStatusReport(status, comment);
 
       const staffUsername = String((req.user as Staff).username).trim();
+
+      const report = await updateReportAsTOSM(
+        reportId,
+        updatedStatus,
+        comment,
+        staffUsername
+      );
+
+      res.status(200).json(report);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// PATCH TOSM: assignment reports to external maintainer
+router.patch(
+  "/:reportId/external",
+  isAuthenticated([StaffRole.TOSM]),
+  async (req, res, next) => {
+    try {
+      const reportId = parseInt(req.params.reportId);
+      if (isNaN(reportId)) {
+        throw new BadRequestError("Invalid reportId.");
+      }
+
+      const { status, comment, staff } = req.body;
+
+      const updatedStatus = validateStatusReport(status, comment);
+
+      const staffUsername = staff.username.trim();
 
       const report = await updateReportAsTOSM(
         reportId,

@@ -58,17 +58,66 @@ export class OfficeRepository {
                 name: "Public Green Areas and Playgrounds Office",
                 description: "Technical office responsible for maintenance of public green areas and playgrounds",
                 category: OfficeCategory.PGAPO
-            }
+            },
+
+            /*EXTERNAL COMPANY*/ 
+
+            {
+                name: "External Company - Water Supply",
+                description: "External company responsible for water supply and management",
+                category: OfficeCategory.WSO,
+                isExternal: true
+            },
+            {
+                name: "External Company - Architectural Barriers",
+                description: "External company responsible for removing architectural barriers in public spaces",
+                category: OfficeCategory.ABO,
+                isExternal: true
+            },
+            {
+                name: "External Company - Sewer System",
+                description: "External company responsible for sewer system maintenance and management",
+                category: OfficeCategory.SSO,
+                isExternal: true
+            },
+            {
+                name: "External Company - Public Lighting",
+                description: "External company responsible for public lighting systems",
+                category: OfficeCategory.PLO,
+                isExternal: true
+            },
+            {
+                name: "External Company - Waste",
+                description: "External company responsible for waste management and disposal",
+                category: OfficeCategory.WO,
+                isExternal: true
+            },
+            {
+                name: "External Company - Road Signs and Traffic Lights",
+                description: "External company responsible for road signs and traffic lights maintenance",
+                category: OfficeCategory.RSTLO,
+                isExternal: true
+            },
+            {
+                name: "External Company - Roads and Urban Furnishings",
+                description: "External company responsible for road maintenance and urban furnishings",
+                category: OfficeCategory.RUFO,
+                isExternal: true
+            },
+            {
+                name: "External Company - Public Green Areas and Playgrounds",
+                description: "External company responsible for maintenance of public green areas and playgrounds",
+                category: OfficeCategory.PGAPO,
+                isExternal: true
+            },
         ];
 
         for (const officeData of defaultOffices) {
-            const officeExists = await this.repo.exists({ where: { category: officeData.category } });
+            /* const officeExists = await this.repo.exists({ where: { category: officeData.category } }); */
             
-            if (!officeExists) {
-                const office = this.repo.create(officeData);
-                await this.repo.save(office);
-                console.log(`Default office created: ${officeData.name} (${officeData.category})`);
-            }
+            const office = this.repo.create(officeData);
+            await this.repo.save(office);
+            console.log(`Default office created: ${officeData.name} (${officeData.category})`);
         }
     }
 
@@ -92,8 +141,10 @@ export class OfficeRepository {
         return await this.repo.findOne({ where: { category }, relations: ["members"] });
     }
 
+    /* TODO: check if this function down are correct */
+
     // create new office
-    async createOffice(
+    /* async createOffice(
         name: string,
         description: string,
         category: OfficeCategory
@@ -127,10 +178,10 @@ export class OfficeRepository {
             description,
             category
         });
-    }
+    } */
 
     // update office
-    async updateOffice(
+    /* async updateOffice(
         id: number,
         name?: string,
         description?: string,
@@ -169,10 +220,10 @@ export class OfficeRepository {
         }
 
         return await this.repo.save(office);
-    }
+    } */
 
     // delete office
-    async deleteOffice(id: number): Promise<void> {
+    /* async deleteOffice(id: number): Promise<void> {
         const office = await this.getOfficeById(id);
         
         if (!office) {
@@ -188,5 +239,5 @@ export class OfficeRepository {
         }
 
         await this.repo.remove(office);
-    }
+    } */
 }
