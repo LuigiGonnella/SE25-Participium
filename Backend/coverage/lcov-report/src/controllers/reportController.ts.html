@@ -3,7 +3,7 @@
 <html lang="en">
 
 <head>
-    <title>Code coverage report for src/controllers/authController.ts</title>
+    <title>Code coverage report for src/controllers/reportController.ts</title>
     <meta charset="utf-8" />
     <link rel="stylesheet" href="../../prettify.css" />
     <link rel="stylesheet" href="../../base.css" />
@@ -19,34 +19,34 @@
 <body>
 <div class='wrapper'>
     <div class='pad1'>
-        <h1><a href="../../index.html">All files</a> / <a href="index.html">src/controllers</a> authController.ts</h1>
+        <h1><a href="../../index.html">All files</a> / <a href="index.html">src/controllers</a> reportController.ts</h1>
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">64.15% </span>
+                <span class="strong">97.26% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>34/53</span>
+                <span class='fraction'>71/73</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">68% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>17/25</span>
+                <span class='fraction'>33/33</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">50% </span>
+                <span class="strong">92.3% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>4/8</span>
+                <span class='fraction'>12/13</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">64.15% </span>
+                <span class="strong">97.26% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>34/53</span>
+                <span class='fraction'>71/73</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line medium'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -198,276 +198,351 @@
 <a name='L133'></a><a href='#L133'>133</a>
 <a name='L134'></a><a href='#L134'>134</a>
 <a name='L135'></a><a href='#L135'>135</a>
-<a name='L136'></a><a href='#L136'>136</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">7x</span>
-<span class="cline-any cline-yes">7x</span>
-<span class="cline-any cline-yes">7x</span>
-<span class="cline-any cline-yes">7x</span>
-<span class="cline-any cline-yes">7x</span>
-<span class="cline-any cline-yes">7x</span>
-<span class="cline-any cline-yes">7x</span>
-<span class="cline-any cline-yes">7x</span>
-<span class="cline-any cline-yes">7x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">7x</span>
-<span class="cline-any cline-yes">7x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">7x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">7x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">7x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">21x</span>
-<span class="cline-any cline-yes">21x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">21x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">21x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">17x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">7x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">7x</span>
-<span class="cline-any cline-yes">30x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">30x</span>
+<a name='L136'></a><a href='#L136'>136</a>
+<a name='L137'></a><a href='#L137'>137</a>
+<a name='L138'></a><a href='#L138'>138</a>
+<a name='L139'></a><a href='#L139'>139</a>
+<a name='L140'></a><a href='#L140'>140</a>
+<a name='L141'></a><a href='#L141'>141</a>
+<a name='L142'></a><a href='#L142'>142</a>
+<a name='L143'></a><a href='#L143'>143</a>
+<a name='L144'></a><a href='#L144'>144</a>
+<a name='L145'></a><a href='#L145'>145</a>
+<a name='L146'></a><a href='#L146'>146</a>
+<a name='L147'></a><a href='#L147'>147</a>
+<a name='L148'></a><a href='#L148'>148</a>
+<a name='L149'></a><a href='#L149'>149</a>
+<a name='L150'></a><a href='#L150'>150</a>
+<a name='L151'></a><a href='#L151'>151</a>
+<a name='L152'></a><a href='#L152'>152</a>
+<a name='L153'></a><a href='#L153'>153</a>
+<a name='L154'></a><a href='#L154'>154</a>
+<a name='L155'></a><a href='#L155'>155</a>
+<a name='L156'></a><a href='#L156'>156</a>
+<a name='L157'></a><a href='#L157'>157</a>
+<a name='L158'></a><a href='#L158'>158</a>
+<a name='L159'></a><a href='#L159'>159</a>
+<a name='L160'></a><a href='#L160'>160</a>
+<a name='L161'></a><a href='#L161'>161</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-yes">6x</span>
 <span class="cline-any cline-yes">6x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">24x</span>
+<span class="cline-any cline-yes">6x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">24x</span>
-<span class="cline-any cline-yes">24x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">22x</span>
-<span class="cline-any cline-yes">9x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">13x</span>
-<span class="cline-any cline-yes">13x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">12x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { CitizenRepository } from "@repositories/citizenRepository";
-import bcrypt from 'bcrypt';
-import multer from 'multer';
-import path from 'path';
-import fs from 'fs';
-import {mapCitizenDAOToDTO, mapStaffDAOToDTO} from "@services/mapperService";
-import { StaffRole } from '@models/dao/staffDAO';
-import { StaffRepository } from "@repositories/staffRepository";
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">19x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">19x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">19x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">18x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">16x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">14x</span>
+<span class="cline-any cline-yes">14x</span>
+<span class="cline-any cline-yes">14x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">14x</span>
+<span class="cline-any cline-yes">14x</span>
+<span class="cline-any cline-yes">14x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">14x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import {ReportFilters, ReportRepository} from "@repositories/reportRepository";
+import {CitizenRepository} from "@repositories/citizenRepository";
 import {NotFoundError} from "@errors/NotFoundError";
-import { Request, Response, NextFunction } from 'express';
-import passport from 'passport';
 import {BadRequestError} from "@errors/BadRequestError";
+import {ReportDAO, Status} from "@dao/reportDAO";
+import multer from "multer";
+import fs from "fs";
+import path from "path";
+import { mapMessageToDTO, mapReportDAOToDTO } from "@services/mapperService";
+import { Report } from "@models/dto/Report";
+import { OfficeCategory } from "@models/dao/officeDAO";
+import {findOrThrowNotFound} from "@utils";
+import {StaffDAO} from "@dao/staffDAO";
+import { Message } from "@models/dto/Message";
 &nbsp;
-// storage configuration
-const storage = multer.diskStorage({
-    destination: <span class="fstat-no" title="function not covered" >(r</span>eq, file, cb) =&gt; {
-        const uploadDir = <span class="cstat-no" title="statement not covered" >'./uploads/profiles';</span>
-<span class="cstat-no" title="statement not covered" >        if (!fs.existsSync(uploadDir)) {</span>
-<span class="cstat-no" title="statement not covered" >            fs.mkdirSync(uploadDir, { recursive: true });</span>
+const repo = new ReportRepository();
+const citizenRepo = new CitizenRepository();
+&nbsp;
+const reportStorage = multer.diskStorage({
+    destination: (req, file, cb) =&gt; {
+        const uploadDir = './uploads/reports';
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
         }
-<span class="cstat-no" title="statement not covered" >        cb(null, uploadDir);</span>
+        cb(null, uploadDir);
     },
-    filename: <span class="fstat-no" title="function not covered" >(r</span>eq, file, cb) =&gt; {
-        const uniqueName = <span class="cstat-no" title="statement not covered" >`${Date.now()}-${Math.random().toString(36).substring(7)}${path.extname(file.originalname)}`;</span>
-<span class="cstat-no" title="statement not covered" >        cb(null, uniqueName);</span>
+    filename: (req, file, cb) =&gt; {
+        const uniqueName = `${Date.now()}-${Math.random().toString(36).substring(7)}${path.extname(file.originalname)}`;
+        cb(null, uniqueName);
     }
 });
 &nbsp;
-// middleware to use in authRoutes
-export const uploadProfilePicture = multer({
-    storage,
-    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB max
-    fileFilter: <span class="fstat-no" title="function not covered" >(r</span>eq, file, cb) =&gt; {
-        const allowedTypes = <span class="cstat-no" title="statement not covered" >/jpeg|jpg|png/;</span>
-        const extname = <span class="cstat-no" title="statement not covered" >allowedTypes.test(path.extname(file.originalname).toLowerCase());</span>
-        const mimetype = <span class="cstat-no" title="statement not covered" >allowedTypes.test(file.mimetype);</span>
-<span class="cstat-no" title="statement not covered" >        if (extname &amp;&amp; mimetype) {</span>
-<span class="cstat-no" title="statement not covered" >            cb(null, true);</span>
+export const uploadReportPictures = multer({
+    storage: reportStorage,
+    limits: {
+        fileSize: 5 * 1024 * 1024, // 5MB per file
+        fieldSize: 25 * 1024 * 1024, // 25MB per field
+        files: 3 // max 3 files
+    },
+    fileFilter: (req, file, cb) =&gt; {
+        const allowedTypes = /jpeg|jpg|png/;
+        const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+        const mimetype = allowedTypes.test(file.mimetype);
+        if (extname &amp;&amp; mimetype) {
+            cb(null, true);
         } else {
-<span class="cstat-no" title="statement not covered" >            cb(new Error('Only images are allowed'));</span>
+            cb(new BadRequestError('Only JPEG, JPG, and PNG images are allowed'));
         }
     }
 });
 &nbsp;
-export async function register(
-    email: string,
-    username: string,
-    name: string,
-    surname: string,
-    password: string,
-    receive_emails: boolean = false,
-    profilePictureFile?: Express.Multer.File, // uploaded file
-    telegram_username?: string
-) {
-    const citizenRepo = new CitizenRepository();
-    const hashedPassword = await bcrypt.hash(password, 10);
-    
-    // image path
-    const profilePicture = profilePictureFile 
-        ? `/uploads/profiles/${profilePictureFile.filename}`
-        : undefined;
+export async function createReport(body: any, citizen: string, photos: Express.Multer.File[]): Promise&lt;ReportDAO&gt; {
+    const {
+        title,
+        description,
+        category,
+        latitude,
+        longitude,
+        anonymous
+    } = body;
 &nbsp;
-    const citizenDAO = await citizenRepo.createCitizen(
-        email,
-        username,
-        name,
-        surname,
-        hashedPassword,
-        receive_emails,
-        profilePicture,
-        telegram_username
-    );
+    const citizenDAO = await citizenRepo.getCitizenByUsername(citizen);
 &nbsp;
-    return mapCitizenDAOToDTO(citizenDAO);
-&nbsp;
-}
-&nbsp;
-export async function <span class="fstat-no" title="function not covered" >registerMunicipalityUser(</span>
-    username: string,
-    name: string,
-    surname: string,
-    password: string,
-    role: string,
-    officeName: string
-) {
-    const staffRepo = <span class="cstat-no" title="statement not covered" >new StaffRepository();</span>
-    const hashedPassword = <span class="cstat-no" title="statement not covered" >await bcrypt.hash(password, 10);</span>
-&nbsp;
-<span class="cstat-no" title="statement not covered" >    if (!(role in StaffRole)) {</span>
-<span class="cstat-no" title="statement not covered" >        throw new NotFoundError(`Invalid staff role: ${role}`);</span>
+    if (!citizenDAO) {
+        throw new NotFoundError(`Current session's citizen with username: ${citizen} not found`);
     }
 &nbsp;
-    const validRole = <span class="cstat-no" title="statement not covered" >StaffRole[role as keyof typeof StaffRole];</span>
-&nbsp;
-    const staffDAO = <span class="cstat-no" title="statement not covered" >await staffRepo.createStaff(</span>
-        username,
-        name,
-        surname,
-        hashedPassword,
-        validRole,
-        officeName,
-    );
-&nbsp;
-<span class="cstat-no" title="statement not covered" >    return mapStaffDAOToDTO(staffDAO);</span>
-}
-&nbsp;
-export async function login(req: Request, res: Response, next: NextFunction) {
-    const rawType = req.query.type;
-&nbsp;
-    if (rawType !== 'CITIZEN' &amp;&amp; rawType !== 'STAFF') {
-        throw new BadRequestError('Invalid or missing query parameter');
+    if (!title || !description || !category || latitude === undefined || longitude === undefined) {
+        throw new BadRequestError("Missing required fields");
     }
 &nbsp;
-    const strategy = rawType === 'CITIZEN' ? 'citizen-local' : 'staff-local';
+    if (!photos || photos.length &lt;= 0) {
+        throw new BadRequestError("At least one photo is required");
+    }
+    const photo1 = `/uploads/reports/${photos[0].filename}`;
+    const photo2 = photos[1] ? `/uploads/reports/${photos[1].filename}` : undefined;
+    const photo3 = photos[2] ? `/uploads/reports/${photos[2].filename}` : undefined;
 &nbsp;
-    passport.authenticate(strategy, (err: any, user: any, info: any) =&gt; {
-        if (err) {
-            return next(err);
-        }
+    const isAnonymous = anonymous === 'true' || anonymous === true;
+    const lat = parseFloat(latitude);
+    const lon = parseFloat(longitude);
 &nbsp;
-        if (!user) {
-            return res.status(401).json({
-                message: info?.message || 'Authentication failed',
-                error: 'Invalid credentials'
-            });
-        }
+    //TODO: must be inside Turin perimeter
 &nbsp;
-        req.login(user, (err) =&gt; {
-            if (err) {
-                return next(err);
-            }
+    return await repo.create(
+        citizenDAO,
+        title,
+        description,
+        category,
+        lat,
+        lon,
+        isAnonymous,
+        photo1,
+        photo2,
+        photo3
+    );
+}
 &nbsp;
-            return res.status(200).json(user);
-        });
-    })(req, res, next);
+export async function getReports(filters?: ReportFilters): Promise&lt;Report[]&gt; {
+    const reportDAOs = await repo.getReports(filters);
+    return reportDAOs.map(mapReportDAOToDTO);
+}
+&nbsp;
+export async function <span class="fstat-no" title="function not covered" >getMapReports(</span>): Promise&lt;Report[]&gt; {
+    const reportDAOs = <span class="cstat-no" title="statement not covered" >await repo.getMapReports();</span>
+<span class="cstat-no" title="statement not covered" >    return reportDAOs.map(mapReportDAOToDTO);</span>
+}
+&nbsp;
+export async function getReportById(reportId: number): Promise&lt;Report&gt; {
+    const reportDAO = await repo.getReportById(reportId);
+    return mapReportDAOToDTO(reportDAO);
+}
+&nbsp;
+export async function updateReportAsMPRO(reportId: number,
+                                    updatedStatus: Status,
+                                    comment?: string,
+                                    updatedCategory?: OfficeCategory,
+                                ): Promise&lt;Report&gt; {
+    const updatedReportDAO = await repo.updateReportAsMPRO(reportId, updatedStatus, comment, updatedCategory);
+    return mapReportDAOToDTO(updatedReportDAO);
+}
+&nbsp;
+export async function updateReportAsTOSM(reportId: number,
+                                    updatedStatus: Status,
+                                    comment?: string,
+                                    staffUsername?: string
+                                ): Promise&lt;Report&gt; {
+    const updatedReportDAO = await repo.updateReportAsTOSM(reportId, updatedStatus, comment, staffUsername);
+    return mapReportDAOToDTO(updatedReportDAO);
+}
+&nbsp;
+export async function addMessageToReport(reportId: number, username: string, userType: 'CITIZEN' | 'STAFF', message: string): Promise&lt;Report&gt; {
+    const reportDAO = findOrThrowNotFound(
+        [await repo.getReportById(reportId)],
+        () =&gt; true,
+        `Report with id ${reportId} not found`
+    );
+&nbsp;
+    let assignedStaff: StaffDAO | undefined = undefined;
+    if (userType === 'STAFF') {
+        if(reportDAO.assignedStaff?.username !== username)
+            throw new BadRequestError(`Staff member ${username} is not assigned to report ${reportId}`);
+        assignedStaff = reportDAO.assignedStaff;
+    } else if (userType === 'CITIZEN' &amp;&amp; reportDAO.citizen?.username !== username) {
+        throw new BadRequestError(`Citizen ${username} is not the owner of report ${reportId}`);
+    }
+&nbsp;
+    const updatedReportDAO = await repo.addMessageToReport(reportDAO, message, assignedStaff);
+&nbsp;
+    return mapReportDAOToDTO(updatedReportDAO);
+}
+&nbsp;
+export async function getAllMessages(reportId: number): Promise&lt;Message[]&gt; {
+    const reportDAO = findOrThrowNotFound(
+        [await repo.getReportById(reportId)],
+        () =&gt; true,
+        `Report with id ${reportId} not found`
+    );
+    const messages = await repo.getAllMessages(reportId);
+    return messages.map(mapMessageToDTO);
 }</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
