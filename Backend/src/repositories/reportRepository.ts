@@ -190,7 +190,7 @@ export class ReportRepository {
 
         const updatedReport = await this.repo.findOne({ 
             where: { id: reportId },
-            relations: ['citizen', 'assignedStaff']
+            relations: ['citizen', 'assignedStaff', 'assignedEM']
         });
 
         if(!updatedReport)
@@ -212,9 +212,6 @@ export class ReportRepository {
 
         if (staffUsername) {
 
-            if (updatedReport.assignedStaff && updatedReport.assignedStaff?.username !== staffUsername)
-                throw new BadRequestError(`Report is already assigned to staff '${updatedReport.assignedStaff.username}'`);
-
             const staff = await this.staffRepo.findOne({
                 where: { username: staffUsername },
                 relations: ['office']
@@ -235,25 +232,45 @@ export class ReportRepository {
                         `but report category is '${updatedReport.category}'`
                 );
 
-            if (staff.role === StaffRole.EM && !updatedReport.assignedStaff ){
-                throw new BadRequestError(`Report must be assigned to a TOSM before assigning to an EM.`);
+            if (staff.role === StaffRole.EM) {
+                if (!updatedReport.assignedStaff) {
+                    throw new BadRequestError(`Report must be assigned to a TOSM before assigning to an EM.`);
+                }
+                if (updatedReport.assignedEM) {
+                    throw new BadRequestError(`Report is already assigned to EM '${updatedReport.assignedEM.username}'`);
+                }
+            }
+
+            if (staff.role === StaffRole.TOSM) {
+                if (updatedReport.assignedStaff && updatedReport.assignedStaff.username !== staffUsername) {
+                    throw new BadRequestError(`Report is already assigned to TOSM '${updatedReport.assignedStaff.username}'`);
+                }
             }
 
             assignedStaff = staff;
         }
+
+        const updateData: any = {
+            status: updatedStatus
+        };
+
+        if (comment !== undefined) {
+            updateData.comment = comment;
+        }
         
-        await this.repo.update(
-            {id: reportId},
-            {
-                status: updatedStatus,
-                ...(comment !== undefined && { comment }),
-                ...(assignedStaff !== undefined &&  assignedStaff.role === StaffRole.TOSM ? { assignedStaff } : { assignedEM: assignedStaff })
+        if (assignedStaff) {
+            if (assignedStaff.role === StaffRole.TOSM) {
+                updateData.assignedStaff = assignedStaff;
+            } else if (assignedStaff.role === StaffRole.EM) {
+                updateData.assignedEM = assignedStaff;
             }
-        );
+        }
+
+        await this.repo.update({ id: reportId }, updateData);
 
         const result = await this.repo.findOneOrFail({  
             where: { id: reportId },
-            relations: ['citizen', 'assignedStaff']
+            relations: ['citizen', 'assignedStaff', 'assignedEM']
         });
 
         // Create notification for citizen if report status changed

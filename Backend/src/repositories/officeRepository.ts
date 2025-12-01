@@ -113,11 +113,13 @@ export class OfficeRepository {
         ];
 
         for (const officeData of defaultOffices) {
-            /* const officeExists = await this.repo.exists({ where: { category: officeData.category } }); */
+            const officeExists = await this.repo.exists({ where: { category: officeData.category } });
             
-            const office = this.repo.create(officeData);
-            await this.repo.save(office);
-            console.log(`Default office created: ${officeData.name} (${officeData.category})`);
+            if (!officeExists) {
+                const office = this.repo.create(officeData);
+                await this.repo.save(office);
+                console.log(`Default office created: ${officeData.name} (${officeData.category})`);
+            }
         }
     }
 
