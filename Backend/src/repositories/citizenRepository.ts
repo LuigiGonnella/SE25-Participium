@@ -104,4 +104,8 @@ export class CitizenRepository {
 
         return await this.repo.save(citizen);
     }
+
+    async getCitizenByTelegramUsername(telegram_username: string): Promise<CitizenDAO | null> {
+        return await this.repo.findOne({ where: { telegram_username } });
+    }
 }

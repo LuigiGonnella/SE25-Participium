@@ -1,5 +1,5 @@
 import {Router} from "express";
-import {isAuthenticated} from "@middlewares/authMiddleware";
+import {isAuthenticated, telegramBotAuth} from "@middlewares/authMiddleware";
 import {mapReportDAOToDTO} from "@services/mapperService";
 import {createReport, uploadReportPictures, getReports, getReportById, updateReportAsTOSM, updateReportAsMPRO, getMapReports, addMessageToReport, getAllMessages} from "@controllers/reportController";
 import {Citizen} from "@dto/Citizen";
@@ -9,6 +9,7 @@ import { Status } from "@models/dao/reportDAO";
 import { OfficeCategory } from "@models/dao/officeDAO";
 import { StaffRole } from "@models/dao/staffDAO";
 import {Staff} from "@dto/Staff";
+import {getCitizenByTelegramUsername} from "@controllers/citizenController";
 
 const router = Router();
 
@@ -271,5 +272,15 @@ router.get('/:reportId/messages', isAuthenticated(['CITIZEN', 'STAFF']), async (
         next(err);
     }
 });
+
+router.post('/telegram', telegramBotAuth, uploadReportPictures.array("photos", 3), async (req, res, next) => {
+    try {
+        const photos = req.files as Express.Multer.File[];
+        const citizen = (await getCitizenByTelegramUsername(req.body.telegram_username)).username;
+        res.status(201).json(mapReportDAOToDTO(await createReport(req.body, citizen, photos)));
+    } catch (err) {
+        next(err);
+    }
+})
 
 export default router;

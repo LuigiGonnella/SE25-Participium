@@ -1,7 +1,13 @@
-import {register, uploadProfilePicture, registerMunicipalityUser, login} from '@controllers/authController';
-import {CitizenToJSON} from '@models/dto/Citizen';
+import {
+    register,
+    uploadProfilePicture,
+    registerMunicipalityUser,
+    login,
+    verifyTelegramUser, createTelegramVerification
+} from '@controllers/authController';
+import {Citizen, CitizenToJSON} from '@models/dto/Citizen';
 import {Router} from "express";
-import {isAuthenticated} from '@middlewares/authMiddleware';
+import {isAuthenticated, telegramBotAuth} from '@middlewares/authMiddleware';
 import { StaffToJSON } from '@models/dto/Staff';
 import { StaffRole } from '@models/dao/staffDAO';
 
@@ -89,5 +95,24 @@ router.delete('/logout', (req, res) => {
 router.get('/me', isAuthenticated(['CITIZEN', 'STAFF']), (req, res) => {
     res.status(200).json(req.user);
 });
+
+router.post('/createTelegramVerification', isAuthenticated(['CITIZEN']), async (req, res, next) => {
+    try {
+        const user = req.user as Citizen;
+        res.status(201).json({ code: await createTelegramVerification(user, req.body.username) });
+    } catch (error) {
+        next(error);
+    }
+});
+
+router.post('/verifyTelegramUser', telegramBotAuth, async (req, res, next) => {
+    try {
+        const { username, code } = req.body;
+        await verifyTelegramUser(username, code);
+        res.status(201).send();
+    } catch (error) {
+        next(error);
+    }
+})
 
 export default router;

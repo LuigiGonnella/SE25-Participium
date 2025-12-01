@@ -1,5 +1,6 @@
 import { Column, Entity, PrimaryGeneratedColumn, OneToMany } from "typeorm";
 import { ReportDAO } from "./reportDAO";
+import {PendingVerificationDAO} from "@dao/pendingVerificationDAO";
 
 @Entity("citizen")
 export class CitizenDAO {
@@ -34,4 +35,6 @@ export class CitizenDAO {
     @OneToMany(() => ReportDAO, (report) => report.citizen)
     reports: ReportDAO[];
 
+    @OneToMany(() => PendingVerificationDAO, (pendingVerification) => pendingVerification.citizen)
+    pending_verifications: PendingVerificationDAO[];
 }

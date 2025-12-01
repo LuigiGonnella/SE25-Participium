@@ -5,6 +5,7 @@ import multer from "multer";
 import fs from "fs";
 import path from "path";
 import { BadRequestError } from "@errors/BadRequestError";
+import {NotFoundError} from "@errors/NotFoundError";
 
 
 export const citizenRepository = new CitizenRepository();
@@ -77,4 +78,12 @@ export async function updateCitizenProfile(
 ) {
     const updatedDAO = await citizenRepository.updateCitizen(username, updates);
     return mapCitizenDAOToDTO(updatedDAO);
+}
+
+export async function getCitizenByTelegramUsername(telegram_username: string): Promise<CitizenDTO> {
+    const citizenDAO =  await citizenRepository.getCitizenByTelegramUsername(telegram_username);
+    if (!citizenDAO) {
+        throw new NotFoundError("Citizen not found with the provided telegram username: " + telegram_username);
+    }
+    return mapCitizenDAOToDTO(citizenDAO);
 }

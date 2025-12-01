@@ -10,6 +10,8 @@ import {NotFoundError} from "@errors/NotFoundError";
 import { Request, Response, NextFunction } from 'express';
 import passport from 'passport';
 import {BadRequestError} from "@errors/BadRequestError";
+import {PendingVerificationRepository} from "@repositories/pendingVerificationRepository";
+import {Citizen} from "@dto/Citizen";
 
 // storage configuration
 const storage = multer.diskStorage({
@@ -133,4 +135,20 @@ export async function login(req: Request, res: Response, next: NextFunction) {
             return res.status(200).json(user);
         });
     })(req, res, next);
+}
+
+export async function createTelegramVerification(user: Citizen, username: string): Promise<string> {
+    const citizen = await new CitizenRepository().getCitizenByUsername(user.username);
+    if(!citizen)
+        throw new NotFoundError(`Citizen with username ${user.username} not found`);
+    const pvRepo = new PendingVerificationRepository();
+    return (await pvRepo.createPendingVerification(citizen, username, "telegram")).verificationCode;
+}
+
+export async function verifyTelegramUser(username: string, code: string): Promise<void> {
+    if (!username || !username.trim()) {
+        throw new BadRequestError('Invalid or missing telegram username');
+    }
+    const pvRepo = new PendingVerificationRepository();
+    await pvRepo.verifyPendingVerification(username, code, "telegram");
 }

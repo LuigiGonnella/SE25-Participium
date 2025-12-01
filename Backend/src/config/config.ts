@@ -39,4 +39,6 @@ export const CONFIG = {
 	LOG_PATH: process.env.LOG_PATH || "logs",
 	ERROR_LOG_FILE: process.env.ERROR_LOG_FILE || "error.log",
 	COMBINED_LOG_FILE: process.env.COMBINED_LOG_FILE || "combined.log",
+
+	TELEGRAM_BOT_BEARER: process.env.TELEGRAM_BOT_BEARER || 'O[A|dV(vPl#pl*W|y4\\0oa=)E!YL+tX==\\.@PkGXTvd#fT[AkV=t4zK}![|Oe!@m'
 };
