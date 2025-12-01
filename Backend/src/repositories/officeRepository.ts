@@ -113,7 +113,8 @@ export class OfficeRepository {
         ];
 
         for (const officeData of defaultOffices) {
-            const officeExists = await this.repo.exists({ where: { name: officeData.name } });
+            const isNewExternal = officeData.isExternal;
+            const officeExists = await this.repo.exists({ where: { category: officeData.category, isExternal: isNewExternal } });
             
             if (!officeExists) {
                 const office = this.repo.create(officeData);
