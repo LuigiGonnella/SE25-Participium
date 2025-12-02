@@ -39,13 +39,10 @@ export function validateStatusByRole(
     status: string | undefined,
     role: StaffRole,
     comment?: string,
-    requireStatus: boolean = true
-): Status | undefined {
+): Status {
 
   if(!status) {
-    if(requireStatus)
       throw new BadRequestError("Status is required.");
-    return undefined;
   }
 
   const updatedStatus = validateStatus(status);

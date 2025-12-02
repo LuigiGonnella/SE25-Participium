@@ -8,6 +8,7 @@ import {NotFoundError} from "@models/errors/NotFoundError";
 import {BadRequestError} from "@models/errors/BadRequestError";
 import {NotificationRepository} from "./notificationRepository";
 import {MessageDAO} from "@dao/messageDAO";
+import {findOrThrowNotFound} from "@utils";
 
 export interface ReportFilters {
     citizen_username?: string;
@@ -178,75 +179,61 @@ export class ReportRepository {
         return result;
     }
 
-    async updateReportAsTOSM(reportId: number,
-                        updatedStatus?: Status,
-                        comment?: string,
-                        staffUsername?: string): Promise<ReportDAO> {
-        
+    async selfAssignReport(reportId: number, staffUsername: string): Promise<ReportDAO> {
+        const staff = findOrThrowNotFound(
+            await this.staffRepo.find({where: {username: staffUsername}}),
+            () => true,
+            `Staff with username '${staffUsername}' not found`
+        );
 
-        const updatedReport = await this.repo.findOne({ 
+        const reportToAssign = findOrThrowNotFound(
+            await this.repo.find({where: {id: reportId}, relations: ['citizen', 'assignedStaff', 'assignedEM']}),
+            () => true,
+            `Report with id '${reportId}' not found`
+        );
+
+        if (reportToAssign.status !== Status.ASSIGNED)
+            throw new BadRequestError("Only reports with ASSIGNED status can be self-assigned.");
+
+        if (reportToAssign.assignedStaff)
+            throw new BadRequestError(`Report is already assigned to staff '${reportToAssign.assignedStaff.username}'`);
+
+        await this.repo.update(
+            {id: reportId},
+            { assignedStaff: staff }
+        );
+
+        return findOrThrowNotFound(
+            await this.repo.find({where: {id: reportId}, relations: ['citizen', 'assignedStaff', 'assignedEM']}),
+            () => true,
+            `Report with id '${reportId}' not found after assignment`
+        );
+    }
+
+    async updateReportAsTOSM(reportId: number, updatedStatus: Status, staffUsername: string, comment?: string,): Promise<ReportDAO> {
+
+        const reportToUpdate = await this.repo.findOne({
             where: { id: reportId },
             relations: ['citizen', 'assignedStaff', 'assignedEM']
         });
 
-        if(!updatedReport)
+        if(!reportToUpdate)
             throw new NotFoundError(`Report with id '${reportId}' not found`);
 
-        if([Status.PENDING, Status.REJECTED, Status.RESOLVED].includes(updatedReport.status))
-            throw new BadRequestError(`Cannot update a ${updatedReport.status} report.`);
+        if (reportToUpdate.assignedEM !== undefined)
+            throw new BadRequestError(`Report is assigned to EM '${reportToUpdate.assignedEM.username}'`);
+        else if(reportToUpdate.assignedStaff?.username !== staffUsername && staffUsername !== undefined)
+            throw new BadRequestError(`Report is assigned to TOSM '${reportToUpdate.assignedStaff?.username}'`);
 
-        if(updatedReport.status === Status.SUSPENDED && updatedStatus === Status.RESOLVED)
+        if([Status.PENDING, Status.REJECTED, Status.RESOLVED].includes(reportToUpdate.status))
+            throw new BadRequestError(`Cannot update a ${reportToUpdate.status} report.`);
+
+        if(reportToUpdate.status === Status.SUSPENDED && updatedStatus === Status.RESOLVED)
             throw new BadRequestError("Cannot resolve a suspended report.");
-
-        if(!updatedStatus)
-            updatedStatus = updatedReport.status;
 
         const updateData: any = {
             status: updatedStatus
         };
-
-        if (staffUsername) {
-
-            const staff = await this.staffRepo.findOne({
-                where: { username: staffUsername },
-                relations: ['office']
-            });
-
-            if (!staff) {
-                throw new NotFoundError(`Staff with username '${staffUsername}' not found`);
-            }
-
-            if (![StaffRole.TOSM, StaffRole.EM].includes(staff.role)) {
-                throw new BadRequestError(`Staff '${staffUsername}' with role '${staff.role}' cannot be assigned to reports.`);
-            }
-
-            //check if staff's office category matches report category
-            if(staff.office.category !== updatedReport.category)
-                    throw new BadRequestError(
-                        `Staff '${staffUsername}' works in office with category '${staff.office.category}' ` +
-                        `but report category is '${updatedReport.category}'`
-                );
-
-            if (staff.role === StaffRole.EM) {
-                if (!updatedReport.assignedStaff) {
-                    throw new BadRequestError(`Report must be assigned to a TOSM before assigning to an EM.`);
-                }
-                if (updatedReport.assignedEM) {
-                                        throw new BadRequestError(`Report is already assigned to EM '${updatedReport.assignedEM.username}'`);
-                }
-                if ([updatedReport.status, updateData.status].some(s => s !== Status.ASSIGNED))
-                    throw new BadRequestError(`Report must be and remain in ASSIGNED status to be assigned to an EM.`);
-
-                updateData.assignedEM = staff
-            }
-
-            if (staff.role === StaffRole.TOSM) {
-                if (updatedReport.assignedStaff && updatedReport.assignedStaff.username !== staffUsername) {
-                    throw new BadRequestError(`Report is already assigned to TOSM '${updatedReport.assignedStaff.username}'`);
-                }
-                updateData.assignedStaff = staff;
-            }
-        }
 
         if (comment !== undefined) {
             updateData.comment = comment;
@@ -254,13 +241,14 @@ export class ReportRepository {
 
         await this.repo.update({ id: reportId }, updateData);
 
-        const result = await this.repo.findOneOrFail({  
-            where: { id: reportId },
-            relations: ['citizen', 'assignedStaff', 'assignedEM']
-        });
+        const result = findOrThrowNotFound(
+            await this.repo.find({where: { id: reportId }, relations: ['citizen', 'assignedStaff', 'assignedEM']}),
+            () => true,
+            `Report with id '${reportId}' not found after status update`
+        );
 
         // Create notification for citizen if report status changed
-        if (result.citizen && updatedStatus !== updatedReport.status) {
+        if (result.citizen && updatedStatus !== reportToUpdate.status) {
             let notificationTitle = "";
             let notificationMessage = "";
 
@@ -288,6 +276,40 @@ export class ReportRepository {
         }
 
         return result;
+    }
+
+    async assignEMToReport(reportId: number, emStaffUsername: string, staffUsername: string,): Promise<ReportDAO> {
+        const emStaff = findOrThrowNotFound(
+            await this.staffRepo.find({where: {username: emStaffUsername, role: StaffRole.EM}}),
+            () => true,
+            `External maintainer with username '${emStaffUsername}' not found`
+        );
+
+        const reportToUpdate = findOrThrowNotFound(
+            await this.repo.find({where: {id: reportId}, relations: ['citizen', 'assignedStaff', 'assignedEM']}),
+            () => true,
+            `Report with id '${reportId}' not found`
+        );
+
+        if(reportToUpdate.assignedStaff?.username !== staffUsername)
+            throw new BadRequestError(`Report is assigned to TOSM '${reportToUpdate.assignedStaff?.username}'`);
+
+        if(reportToUpdate.status !== Status.ASSIGNED)
+            throw new BadRequestError("Only reports with ASSIGNED status can be assigned to an EM.");
+
+        if(reportToUpdate.assignedEM)
+            throw new BadRequestError(`Report is already assigned to EM '${reportToUpdate.assignedEM.username}'`);
+
+        await this.repo.update(
+            {id: reportId},
+            { assignedEM: emStaff }
+        );
+
+        return findOrThrowNotFound(
+            await this.repo.find({where: {id: reportId}, relations: ['citizen', 'assignedStaff', 'assignedEM']}),
+            () => true,
+            `Report with id '${reportId}' not found after assignment`
+        );
     }
 
     async addMessageToReport(report: ReportDAO, message: string, assignedStaff: StaffDAO | undefined): Promise<ReportDAO> {
