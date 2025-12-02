@@ -65,7 +65,8 @@ export const StaffRole = {
     ADMIN: "Admin",
     MPRO: "Municipal Public Relations Officer",
     MA: "Municipal Administrator",
-    TOSM: "Technical Office Staff Member"
+    TOSM: "Technical Office Staff Member",
+    EM: "External Maintainer"
 }
 
 export interface Office {
@@ -87,6 +88,16 @@ export const ROLE_OFFICE_MAP = {
     "Road Signs and Traffic Lights Office",
     "Roads and Urban Furnishings Office",
     "Public Green Areas and Playgrounds Office"
+  ],
+  EM: [
+    "External Company - Water Supply",
+    "External Company - Architectural Barriers",
+    "External Company - Sewer System",
+    "External Company - Public Lighting",
+    "External Company - Waste",
+    "External Company - Road Signs and Traffic Lights",
+    "External Company - Roads and Urban Furnishings",
+    "External Company - Public Green Areas and Playgrounds",
   ]
 };
 
