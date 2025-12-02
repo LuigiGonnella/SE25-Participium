@@ -1,8 +1,6 @@
 import { AppDataSource } from "@database";
 import { OfficeCategory, OfficeDAO } from "@models/dao/officeDAO";
-import { throwConflictIfFound } from "@utils";
 import { Repository } from "typeorm";
-import AppError from "@models/errors/AppError";
 
 export class OfficeRepository {
     private repo: Repository<OfficeDAO>;
@@ -125,7 +123,10 @@ export class OfficeRepository {
     }
 
     // get all offices
-    async getAllOffices(): Promise<OfficeDAO[]> {
+    async getAllOffices(isExternal?: boolean): Promise<OfficeDAO[]> {
+        if (isExternal !== undefined) {
+            return await this.repo.find({ where: { isExternal }, relations: ["members"] });
+        }
         return await this.repo.find({ relations: ["members"] });
     }
 

@@ -121,7 +121,7 @@ export async function updateReportAsMPRO(reportId: number,
 }
 
 export async function updateReportAsTOSM(reportId: number,
-                                    updatedStatus: Status,
+                                    updatedStatus?: Status,
                                     comment?: string,
                                     staffUsername?: string
                                 ): Promise<Report> {
@@ -156,6 +156,6 @@ export async function getAllMessages(reportId: number): Promise<Message[]> {
         () => true,
         `Report with id ${reportId} not found`
     );
-    const messages = await repo.getAllMessages(reportId);
+    const messages = await repo.getAllMessages(reportDAO.id);
     return messages.map(mapMessageToDTO);
 }

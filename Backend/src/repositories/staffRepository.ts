@@ -37,7 +37,18 @@ export class StaffRepository {
     }
 
     // get all staffs
-    async getAllStaffs(): Promise<StaffDAO[]> {
+    async getAllStaffs(isExternal?: boolean, category?: OfficeCategory): Promise<StaffDAO[]> {
+        if (isExternal !== undefined || category !== undefined) {
+            return await this.repo.find(
+                {
+                    where: {
+                        ...(isExternal !== undefined ? { role: StaffRole.EM } : {}),
+                        ...(category !== undefined ? { office: { category } } : {})
+                    },
+                    relations: ["office"]
+                }
+            )
+        }
         return await this.repo.find({ relations: ["office"] });
     }
 
