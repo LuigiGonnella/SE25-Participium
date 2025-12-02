@@ -5,14 +5,12 @@ import type { Office as OfficeDTO } from "@models/dto/Office";
 import type { Report as ReportDTO } from "@models/dto/Report";
 import type { Message as MessageDTO } from "@models/dto/Message";
 import { CitizenDAO } from "@models/dao/citizenDAO";
-import {StaffDAO, StaffRole} from "@dao/staffDAO";
+import {StaffDAO} from "@dao/staffDAO";
 import {OfficeDAO} from "@dao/officeDAO";
 import { ReportDAO } from "@models/dao/reportDAO";
 import { NotificationDAO } from "@dao/notificationDAO";
 import { Notification } from "@models/dto/Notification";
 import {MessageDAO} from "@dao/messageDAO";
-import { Status } from "@models/dao/reportDAO";
-import { BadRequestError } from "@errors/BadRequestError";
 
 
 export function createErrorDTO(
@@ -36,32 +34,6 @@ function removeNullAttributes<T extends object>(dto: T): Partial<T> {
         (!Array.isArray(value) || value.length > 0)
     )
   ) as Partial<T>;
-}
-
-export function validateStatusReport(status: string, comment?: string): Status {
-  if(!status) {
-    throw new BadRequestError("Status is required.");
-  }
-  
-  let updatedStatus: Status;
-  const statusValue = String(status);
-  const validStatus = Object.keys(Status)
-    .filter((key) => isNaN(Number(key)))
-    .find((key) => key.toUpperCase() === statusValue.toUpperCase());
-
-  if (!validStatus) {
-    throw new BadRequestError("Invalid status.");
-  }
-
-  updatedStatus = Status[validStatus as keyof typeof Status];
-
-  if(updatedStatus !== Status.IN_PROGRESS && updatedStatus !== Status.SUSPENDED && updatedStatus !== Status.RESOLVED)
-    throw new BadRequestError(`Invalid status for ${StaffRole.TOSM}.`);
-
-  if((updatedStatus !== Status.RESOLVED) && comment)
-    throw new BadRequestError("Comments can only be added when report is resolved.");
-
-  return updatedStatus;
 }
 
 //CITIZEN DTO

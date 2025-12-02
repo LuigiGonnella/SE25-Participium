@@ -3,11 +3,10 @@ import {AppDataSource} from "@database";
 import {ReportDAO, Status} from "@dao/reportDAO";
 import {CitizenDAO} from "@dao/citizenDAO";
 import {OfficeCategory} from "@dao/officeDAO";
-import { findOrThrowNotFound } from "@utils";
-import { StaffDAO, StaffRole } from "@dao/staffDAO";
-import { NotFoundError } from "@models/errors/NotFoundError";
-import { BadRequestError } from "@models/errors/BadRequestError";
-import { NotificationRepository } from "./notificationRepository";
+import {StaffDAO, StaffRole} from "@dao/staffDAO";
+import {NotFoundError} from "@models/errors/NotFoundError";
+import {BadRequestError} from "@models/errors/BadRequestError";
+import {NotificationRepository} from "./notificationRepository";
 import {MessageDAO} from "@dao/messageDAO";
 
 export interface ReportFilters {
@@ -81,19 +80,16 @@ export class ReportRepository {
         }
 
         if (filters?.fromDate && filters?.toDate) {
-            const endDate = new Date(filters.toDate);
+            const endDate = filters.toDate;
             endDate.setDate(endDate.getDate() + 1);
             where.timestamp = Between(filters.fromDate, endDate);
         }
 
-        const reports = await this.repo.find({
+        return await this.repo.find({
             where,
-            relations: ['citizen', 'assignedStaff'],
-            order: { timestamp: 'ASC' },
+            relations: ['citizen', 'assignedStaff', 'assignedEM'],
+            order: {timestamp: 'ASC'},
         });
-
-
-        return reports;
     }
 
     // Get approved reports for map view
@@ -183,7 +179,7 @@ export class ReportRepository {
     }
 
     async updateReportAsTOSM(reportId: number,
-                        updatedStatus: Status,
+                        updatedStatus?: Status,
                         comment?: string,
                         staffUsername?: string): Promise<ReportDAO> {
         
@@ -196,19 +192,18 @@ export class ReportRepository {
         if(!updatedReport)
             throw new NotFoundError(`Report with id '${reportId}' not found`);
 
-        if(updatedReport.status === Status.PENDING)
-            throw new BadRequestError("Cannot update a report that is not assigned.");
-
-        if(updatedReport.status === Status.REJECTED)
-            throw new BadRequestError("Cannot update a rejected report.");
-
-        if(updatedReport.status === Status.RESOLVED)
-            throw new BadRequestError("Cannot update a resolved report.");
+        if([Status.PENDING, Status.REJECTED, Status.RESOLVED].includes(updatedReport.status))
+            throw new BadRequestError(`Cannot update a ${updatedReport.status} report.`);
 
         if(updatedReport.status === Status.SUSPENDED && updatedStatus === Status.RESOLVED)
             throw new BadRequestError("Cannot resolve a suspended report.");
 
-        let assignedStaff: StaffDAO | undefined = undefined;
+        if(!updatedStatus)
+            updatedStatus = updatedReport.status;
+
+        const updateData: any = {
+            status: updatedStatus
+        };
 
         if (staffUsername) {
 
@@ -221,7 +216,7 @@ export class ReportRepository {
                 throw new NotFoundError(`Staff with username '${staffUsername}' not found`);
             }
 
-            if (staff.role !== StaffRole.TOSM && staff.role !== StaffRole.EM) {
+            if (![StaffRole.TOSM, StaffRole.EM].includes(staff.role)) {
                 throw new BadRequestError(`Staff '${staffUsername}' with role '${staff.role}' cannot be assigned to reports.`);
             }
 
@@ -239,31 +234,22 @@ export class ReportRepository {
                 if (updatedReport.assignedEM) {
                     throw new BadRequestError(`Report is already assigned to EM '${updatedReport.assignedEM.username}'`);
                 }
+                if ([updatedReport.status, updateData.status].some(s => s !== Status.ASSIGNED))
+                    throw new BadRequestError(`Report must be and remain in ASSIGNED status to be assigned to an EM.`);
+
+                updateData.assignedEM = staff
             }
 
             if (staff.role === StaffRole.TOSM) {
                 if (updatedReport.assignedStaff && updatedReport.assignedStaff.username !== staffUsername) {
                     throw new BadRequestError(`Report is already assigned to TOSM '${updatedReport.assignedStaff.username}'`);
                 }
+                updateData.assignedStaff = staff;
             }
-
-            assignedStaff = staff;
         }
-
-        const updateData: any = {
-            status: updatedStatus
-        };
 
         if (comment !== undefined) {
             updateData.comment = comment;
-        }
-        
-        if (assignedStaff) {
-            if (assignedStaff.role === StaffRole.TOSM) {
-                updateData.assignedStaff = assignedStaff;
-            } else if (assignedStaff.role === StaffRole.EM) {
-                updateData.assignedEM = assignedStaff;
-            }
         }
 
         await this.repo.update({ id: reportId }, updateData);
