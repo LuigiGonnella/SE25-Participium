@@ -7,4 +7,6 @@ const router = Router();
 
 router.get('/', isAuthenticated([StaffRole.ADMIN]), getAllStaff)
 
-router.get('/', isAuthenticated([StaffRole.TOSM]), getAllEMStaff)
+router.get('/external', isAuthenticated([StaffRole.TOSM]), getAllEMStaff)
+
+export default router;

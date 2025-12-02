@@ -5,9 +5,10 @@ import { errorHandler } from "@middlewares/errorMiddleware";
 import cors from "cors";
 import path from 'path';
 import authenticationRouter from '@routes/authRoutes'
+import staffRouter from '@routes/staffRoutes';
 import citizenRouter from '@routes/citizenRoutes';
-import officeRoutes from "@routes/officeRoutes";
-import reportRoutes from "@routes/reportRoutes";
+import officeRouter from "@routes/officeRoutes";
+import reportRouter from "@routes/reportRoutes";
 import notificationRoutes from "@routes/notificationRoutes";
 import "reflect-metadata";
 import session from 'express-session';
@@ -63,9 +64,10 @@ configurePassport();
 
 // Add routes here
 app.use(CONFIG.ROUTES.V1_AUTH, authenticationRouter);
+app.use(CONFIG.ROUTES.V1_STAFFS, staffRouter);
 app.use(CONFIG.ROUTES.V1_CITIZENS, citizenRouter);
-app.use(CONFIG.ROUTES.V1_OFFICES, officeRoutes);
-app.use(CONFIG.ROUTES.V1_REPORTS, reportRoutes);
+app.use(CONFIG.ROUTES.V1_OFFICES, officeRouter);
+app.use(CONFIG.ROUTES.V1_REPORTS, reportRouter);
 app.use(CONFIG.ROUTES.V1_NOTIFICATIONS, notificationRoutes);
 
 app.get("/test-route", (req, res) => {
