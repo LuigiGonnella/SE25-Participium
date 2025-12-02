@@ -210,11 +210,61 @@ const assignReportToSelf = async (reportId: number): Promise<Report> => {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ status: "IN_PROGRESS" }),
+        body: JSON.stringify({}), // Just assign, don't change status
     });
 
     if (response.ok) return await response.json();
     return handleAPIError(response, "Assign Report");
+};
+
+const getEMStaffByCategory = async (category: string): Promise<Staff[]> => {
+    // Convert category name to category code
+    const categoryCodeMap: Record<string, string> = {
+        "Municipal Organization": "MOO",
+        "Water Supply": "WSO",
+        "Architectural Barriers": "ABO",
+        "Sewer System": "SSO",
+        "Public Lighting": "PLO",
+        "Waste": "WO",
+        "Road Signs and Traffic Lights": "RSTLO",
+        "Roads and Urban Furnishings": "RUFO",
+        "Public Green Areas and Playgrounds": "PGAPO",
+    };
+    
+    const categoryCode = categoryCodeMap[category] || category;
+    
+    const response = await fetch(`${BACKEND_URL}/staffs/external?category=${encodeURIComponent(categoryCode)}`, {
+        credentials: "include",
+    });
+
+    if (response.ok) return await response.json();
+    return handleAPIError(response, "Get EM Staff");
+};
+
+const assignReportToMaintainer = async (reportId: number): Promise<Report> => {
+    // First, get the report to know its category
+    const report = await getReportById(reportId);
+    
+    // Get EM staff for this category
+    const emStaff = await getEMStaffByCategory(report.category);
+    
+    if (!emStaff || emStaff.length === 0) {
+        throw new APIError("No External Maintainer found for this category", 404);
+    }
+    
+    // Use the first available EM
+    const response = await fetch(`${BACKEND_URL}/reports/${reportId}/external`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ 
+            staffEM: emStaff[0].username
+            // No status change - keeps report in ASSIGNED status
+        }),
+    });
+
+    if (response.ok) return await response.json();
+    return handleAPIError(response, "Assign Report to Maintainer");
 };
 
 const getNotifications = async (): Promise<Notification[]> => {
@@ -285,5 +335,5 @@ const updateCitizenProfile = async (
     return handleAPIError(response, 'Update Citizen Profile');
 };
 
-const API = { login, register, getUserInfo, logout, municipalityRegister, getOffices, createReport, getReports, getMapReports, getReportById, updateReport, assignReportToSelf, getNotifications, markNotificationAsRead, createMessage, getAllMessages, updateCitizenProfile };
+const API = { login, register, getUserInfo, logout, municipalityRegister, getOffices, createReport, getReports, getMapReports, getReportById, updateReport, assignReportToSelf, assignReportToMaintainer, getNotifications, markNotificationAsRead, createMessage, getAllMessages, updateCitizenProfile };
 export default API;

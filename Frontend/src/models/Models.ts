@@ -35,6 +35,10 @@ export function isTOSM(user: User | undefined): user is Staff {
     return isStaff(user) && user.role === 'Technical Office Staff Member';
 }
 
+export function isEM(user: User | undefined): user is Staff {
+    return isStaff(user) && user.role === 'External Maintainer';
+}
+
 export function isCitizen(user: User | undefined): user is Citizen {
     return user !== undefined && 'type' in user && user.type === 'CITIZEN';
 }
@@ -136,6 +140,7 @@ export interface Report {
     photos: string[];
     comment?: string;
     assignedStaff?: string;
+    assignedEM?: string;
     messages?: Message[];
 }
 

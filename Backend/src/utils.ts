@@ -38,11 +38,15 @@ export function validateStatus(status: string): Status {
 export function validateStatusByRole(
     status: string | undefined,
     role: StaffRole,
-    comment?: string
-): Status {
+    comment?: string,
+    requireStatus: boolean = true
+): Status | undefined {
 
-  if(!status)
-    throw new BadRequestError("Status is required.");
+  if(!status) {
+    if(requireStatus)
+      throw new BadRequestError("Status is required.");
+    return undefined;
+  }
 
   const updatedStatus = validateStatus(status);
 
@@ -51,7 +55,7 @@ export function validateStatusByRole(
     [StaffRole.TOSM]: [Status.IN_PROGRESS, Status.SUSPENDED, Status.RESOLVED],
     [StaffRole.ADMIN]: [],
     [StaffRole.MA]: [],
-    [StaffRole.EM]: [],
+    [StaffRole.EM]: [Status.IN_PROGRESS, Status.SUSPENDED, Status.RESOLVED],
   };
 
   if (!validStatusForRole[role].includes(updatedStatus)) {

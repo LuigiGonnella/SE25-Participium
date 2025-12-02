@@ -85,6 +85,7 @@ export function mapReportDAOToDTO(reportDAO: ReportDAO): ReportDTO {
         photos: [reportDAO.photo1, reportDAO.photo2, reportDAO.photo3].filter(Boolean) as string[],
         comment: reportDAO.comment,
         assignedStaff: reportDAO.assignedStaff?.username,
+        assignedEM: reportDAO.assignedEM?.username,
         messages: reportDAO.messages?.map(mapMessageToDTO)
     }) as ReportDTO;
 }

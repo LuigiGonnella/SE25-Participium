@@ -117,7 +117,7 @@ router.patch('/:reportId/manage', isAuthenticated([StaffRole.MPRO]), async (req,
 
         const { status, comment, category } = req.body;
 
-        const updatedStatus = validateStatusByRole(status, StaffRole.MPRO, comment);
+        const updatedStatus = validateStatusByRole(status, StaffRole.MPRO, comment, true)!; // MPRO always requires status
 
 
         let updatedCategory: OfficeCategory | undefined;
@@ -142,7 +142,8 @@ router.patch(
 
       const { status, comment } = req.body;
 
-      const updatedStatus = validateStatusByRole(status, StaffRole.TOSM, comment);
+      // Allow undefined status for self-assignment without status change
+      const updatedStatus = validateStatusByRole(status, StaffRole.TOSM, comment, false);
 
       const staffUsername = String((req.user as Staff).username).trim();
 
@@ -168,13 +169,15 @@ router.patch(
     try {
       const reportId = validateReportId(req.params.reportId);
 
-      const { staffEM } = req.body;
+      const { staffEM, status } = req.body;
 
       const staffUsername = (staffEM as string).trim();
+    
+      const updatedStatus = validateStatusByRole(status, StaffRole.EM, undefined, false);
 
       const report = await updateReportAsTOSM(
         reportId,
-        undefined,
+        updatedStatus,
         undefined,
         staffUsername
       );

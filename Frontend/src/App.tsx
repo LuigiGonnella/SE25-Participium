@@ -22,7 +22,7 @@ import {
     type Credentials,
     type User,
     isStaff, StaffRole,
-    isMPRO, isTOSM, isCitizen
+    isMPRO, isTOSM, isCitizen, isEM
 } from "./models/Models.ts";
 
 
@@ -104,12 +104,12 @@ function App() {
                     <Navigate replace to="/"/>
                 }/>
                 <Route path="/reports" element={
-                    loggedIn && (isMPRO(user) || isTOSM(user)) ?
+                    loggedIn && (isMPRO(user) || isTOSM(user) || isEM(user)) ?
                         <ReportListPage user={user}/> :
                         <Navigate replace to={(isStaff(user) && user.role === StaffRole.ADMIN) ? "/municipality-registration" : "/login"}/>
                 }/>
                 <Route path="/reports/:id" element={
-                    loggedIn && (isMPRO(user) || isTOSM(user)) ?
+                    loggedIn && (isMPRO(user) || isTOSM(user) || isEM(user)) ?
                         <ReportDetailPage user={user} /> :
                         <Navigate replace to="/login"/>
                 }/>

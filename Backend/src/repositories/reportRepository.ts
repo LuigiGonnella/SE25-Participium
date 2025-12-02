@@ -97,7 +97,7 @@ export class ReportRepository {
 
         const reports = await this.repo.find({
             where: { status: And(Not(Status.PENDING), Not(Status.REJECTED)) },
-            relations: ['citizen', 'assignedStaff'],
+            relations: ['citizen', 'assignedStaff', 'assignedEM'],
             order: { timestamp: 'ASC' },
         });
 
@@ -107,7 +107,7 @@ export class ReportRepository {
     async getReportById(reportId: number): Promise<ReportDAO> {
         const report = await this.repo.findOne({
             where: { id: reportId },
-            relations: ['citizen', 'assignedStaff', 'messages', 'messages.staff']
+            relations: ['citizen', 'assignedStaff', 'assignedEM', 'messages', 'messages.staff']
         });
 
         if (!report) {
@@ -232,7 +232,7 @@ export class ReportRepository {
                     throw new BadRequestError(`Report must be assigned to a TOSM before assigning to an EM.`);
                 }
                 if (updatedReport.assignedEM) {
-                    throw new BadRequestError(`Report is already assigned to EM '${updatedReport.assignedEM.username}'`);
+                                        throw new BadRequestError(`Report is already assigned to EM '${updatedReport.assignedEM.username}'`);
                 }
                 if ([updatedReport.status, updateData.status].some(s => s !== Status.ASSIGNED))
                     throw new BadRequestError(`Report must be and remain in ASSIGNED status to be assigned to an EM.`);
