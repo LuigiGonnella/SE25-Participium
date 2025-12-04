@@ -152,29 +152,8 @@ export class ReportRepository {
         });
 
         // Create notification for citizen if report status changed
-        if (result.citizen && updatedStatus !== updatedReport.status) {
-            let notificationTitle = "";
-            let notificationMessage = "";
-
-            if (updatedStatus === Status.ASSIGNED) {
-                notificationTitle = "Report Assigned";
-                notificationMessage = `Your report "${result.title}" has been assigned to the appropriate office.`;
-            } else if (updatedStatus === Status.REJECTED) {
-                notificationTitle = "Report Rejected";
-                notificationMessage = `Your report "${result.title}" has been rejected.`;
-                if (comment) {
-                    notificationMessage += ` Reason: ${comment}`;
-                }
-            }
-
-            if (notificationTitle) {
-                await this.notificationRepo.createNotificationForCitizen(
-                    result,
-                    notificationTitle,
-                    notificationMessage
-                );
-            }
-        }
+        if (result.citizen && updatedStatus !== result.status)
+            await this.notifyCitizen(result, updatedStatus, undefined, comment);
 
         return result;
     }
@@ -223,14 +202,14 @@ export class ReportRepository {
             `Report with id '${reportId}' not found`
         );
 
-        if(reportToUpdate.assignedStaff?.username !== staffUsername)
-            throw new BadRequestError(`Report is assigned to TOSM '${reportToUpdate.assignedStaff?.username}'`);
+        if(!reportToUpdate.assignedStaff || reportToUpdate.assignedStaff.username !== staffUsername)
+            throw new BadRequestError(`This report is not assigned to you.`);
 
         if(reportToUpdate.status !== Status.ASSIGNED)
             throw new BadRequestError("Only reports with ASSIGNED status can be assigned to an EM.");
 
         if(reportToUpdate.assignedEM)
-            throw new BadRequestError(`Report is already assigned to EM '${reportToUpdate.assignedEM?.username}'`);
+            throw new BadRequestError(`Report is already assigned to EM '${reportToUpdate.assignedEM.username}'`);
 
         await this.repo.update(
             {id: reportId},
@@ -248,11 +227,10 @@ export class ReportRepository {
 
         const reportToUpdate = await this.validateReport(reportId, updatedStatus);
 
-        if (reportToUpdate.assignedEM?.username !== undefined)
-            throw new BadRequestError(`Report is assigned to EM '${reportToUpdate.assignedEM?.username}'`);
-        
-        if(reportToUpdate.assignedStaff && reportToUpdate.assignedStaff?.username !== staffUsername)
-            throw new BadRequestError(`Report is assigned to TOSM '${reportToUpdate.assignedStaff?.username}'`);
+        if (reportToUpdate.assignedEM)
+            throw new BadRequestError(`Report is assigned to EM '${reportToUpdate.assignedEM.username}'`);
+        if(!reportToUpdate.assignedStaff || reportToUpdate.assignedStaff.username !== staffUsername)
+            throw new BadRequestError(`This report is not assigned to you.`);
 
         const updateData: any = {
             status: updatedStatus
@@ -281,11 +259,10 @@ export class ReportRepository {
 
         const reportToUpdate = await this.validateReport(reportId, updatedStatus);
 
-        if(reportToUpdate.assignedStaff?.username === undefined)
+        if(!reportToUpdate.assignedStaff)
             throw new BadRequestError(`Report is not assigned to a TOSM yet.`);
-        
-        if(reportToUpdate.assignedEM && reportToUpdate.assignedEM?.username !== staffUsername)
-            throw new BadRequestError(`Report is assigned to EM '${reportToUpdate.assignedEM?.username}'`);
+        if(!reportToUpdate.assignedEM || reportToUpdate.assignedEM.username !== staffUsername)
+            throw new BadRequestError(`This report is not assigned to you.`);
 
         const updateData: any = {
             status: updatedStatus
@@ -327,10 +304,20 @@ export class ReportRepository {
         return report;
     }
 
-    private async notifyCitizen(report: ReportDAO, updatedStatus: Status, staffUsername: string, comment?: string){
+    private async notifyCitizen(report: ReportDAO, updatedStatus: Status, staffUsername?: string, comment?: string){
         let notificationTitle = "";
         let notificationMessage = "";
-        if (updatedStatus === Status.IN_PROGRESS) {
+
+        if (updatedStatus === Status.ASSIGNED) {
+            notificationTitle = "Report Assigned";
+            notificationMessage = `Your report "${report.title}" has been assigned to the appropriate office.`;
+        } else if (updatedStatus === Status.REJECTED) {
+            notificationTitle = "Report Rejected";
+            notificationMessage = `Your report "${report.title}" has been rejected.`;
+            if (comment) {
+                notificationMessage += ` Reason: ${comment}`;
+            }
+        } else if (updatedStatus === Status.IN_PROGRESS) {
             notificationTitle = "Report In Progress";
             notificationMessage = `Your report "${report.title}" has been assigned to ${staffUsername} and is now in progress.`;
         } else if (updatedStatus === Status.SUSPENDED) {

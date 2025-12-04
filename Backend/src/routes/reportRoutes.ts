@@ -181,13 +181,15 @@ router.patch("/:reportId/updateStatus", isAuthenticated([StaffRole.TOSM, StaffRo
 
       const updatedStatus = validateStatusByRole(status, StaffRole.TOSM, comment);
 
-      const staffUsername = (req.user as Staff).username;
+      const staffUser = req.user as Staff
+
+      const staffUsername = staffUser.username;
 
       let report;
 
-      if ((req.user as Staff).role === StaffRole.TOSM) {
+      if (staffUser.role === StaffRole.TOSM) {
         report = await updateReportAsTOSM(reportId, updatedStatus, staffUsername, comment);
-      } else if ((req.user as Staff).role === StaffRole.EM) {
+      } else if (staffUser.role === StaffRole.EM) {
         report = await updateReportAsEM(reportId, updatedStatus, staffUsername, comment);
       }
 
