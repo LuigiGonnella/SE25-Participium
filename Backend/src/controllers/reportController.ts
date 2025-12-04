@@ -131,6 +131,11 @@ export async function assignReportToEM(reportId: number, emUsername: string, sta
     return mapReportDAOToDTO(updatedReportDAO);
 }
 
+export async function updateReportAsEM(reportId: number, updatedStatus: Status, staffUsername: string, comment?: string): Promise<Report> {
+    const updatedReportDAO = await repo.updateReportAsEM(reportId, updatedStatus, staffUsername, comment);
+    return mapReportDAOToDTO(updatedReportDAO);
+}
+
 export async function addMessageToReport(reportId: number, username: string, userType: 'CITIZEN' | 'STAFF', message: string): Promise<Report> {
     const reportDAO = findOrThrowNotFound(
         [await repo.getReportById(reportId)],

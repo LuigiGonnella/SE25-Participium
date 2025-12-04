@@ -210,74 +210,6 @@ export class ReportRepository {
         );
     }
 
-    async updateReportAsTOSM(reportId: number, updatedStatus: Status, staffUsername: string, comment?: string,): Promise<ReportDAO> {
-
-        const reportToUpdate = await this.repo.findOne({
-            where: { id: reportId },
-            relations: ['citizen', 'assignedStaff', 'assignedEM']
-        });
-
-        if(!reportToUpdate)
-            throw new NotFoundError(`Report with id '${reportId}' not found`);
-
-        if (reportToUpdate.assignedEM !== undefined)
-            throw new BadRequestError(`Report is assigned to EM '${reportToUpdate.assignedEM.username}'`);
-        else if(reportToUpdate.assignedStaff?.username !== staffUsername && staffUsername !== undefined)
-            throw new BadRequestError(`Report is assigned to TOSM '${reportToUpdate.assignedStaff?.username}'`);
-
-        if([Status.PENDING, Status.REJECTED, Status.RESOLVED].includes(reportToUpdate.status))
-            throw new BadRequestError(`Cannot update a ${reportToUpdate.status} report.`);
-
-        if(reportToUpdate.status === Status.SUSPENDED && updatedStatus === Status.RESOLVED)
-            throw new BadRequestError("Cannot resolve a suspended report.");
-
-        const updateData: any = {
-            status: updatedStatus
-        };
-
-        if (comment !== undefined) {
-            updateData.comment = comment;
-        }
-
-        await this.repo.update({ id: reportId }, updateData);
-
-        const result = findOrThrowNotFound(
-            await this.repo.find({where: { id: reportId }, relations: ['citizen', 'assignedStaff', 'assignedEM']}),
-            () => true,
-            `Report with id '${reportId}' not found after status update`
-        );
-
-        // Create notification for citizen if report status changed
-        if (result.citizen && updatedStatus !== reportToUpdate.status) {
-            let notificationTitle = "";
-            let notificationMessage = "";
-
-            if (updatedStatus === Status.IN_PROGRESS) {
-                notificationTitle = "Report In Progress";
-                notificationMessage = `Your report "${result.title}" has been assigned to ${staffUsername} and is now in progress.`;
-            } else if (updatedStatus === Status.SUSPENDED) {
-                notificationTitle = "Report Suspended";
-                notificationMessage = `Your report "${result.title}" has been suspended.`;
-            } else if (updatedStatus === Status.RESOLVED) {
-                notificationTitle = "Report Resolved";
-                notificationMessage = `Your report "${result.title}" has been marked as resolved.`;
-                if (comment) {
-                    notificationMessage += ` Comment: ${comment}`;
-                }
-            }
-
-            if (notificationTitle) {
-                await this.notificationRepo.createNotificationForCitizen(
-                    result,
-                    notificationTitle,
-                    notificationMessage
-                );
-            }
-        }
-
-        return result;
-    }
-
     async assignEMToReport(reportId: number, emStaffUsername: string, staffUsername: string,): Promise<ReportDAO> {
         const emStaff = findOrThrowNotFound(
             await this.staffRepo.find({where: {username: emStaffUsername, role: StaffRole.EM}}),
@@ -298,7 +230,7 @@ export class ReportRepository {
             throw new BadRequestError("Only reports with ASSIGNED status can be assigned to an EM.");
 
         if(reportToUpdate.assignedEM)
-            throw new BadRequestError(`Report is already assigned to EM '${reportToUpdate.assignedEM.username}'`);
+            throw new BadRequestError(`Report is already assigned to EM '${reportToUpdate.assignedEM?.username}'`);
 
         await this.repo.update(
             {id: reportId},
@@ -310,6 +242,114 @@ export class ReportRepository {
             () => true,
             `Report with id '${reportId}' not found after assignment`
         );
+    }
+
+    async updateReportAsTOSM(reportId: number, updatedStatus: Status, staffUsername: string, comment?: string,): Promise<ReportDAO> {
+
+        const reportToUpdate = await this.validateReport(reportId, updatedStatus);
+
+        if (reportToUpdate.assignedEM?.username !== undefined)
+            throw new BadRequestError(`Report is assigned to EM '${reportToUpdate.assignedEM?.username}'`);
+        
+        if(reportToUpdate.assignedStaff && reportToUpdate.assignedStaff?.username !== staffUsername)
+            throw new BadRequestError(`Report is assigned to TOSM '${reportToUpdate.assignedStaff?.username}'`);
+
+        const updateData: any = {
+            status: updatedStatus
+        };
+
+        if (comment !== undefined) {
+            updateData.comment = comment;
+        }
+
+        await this.repo.update({ id: reportId }, updateData);
+
+        const result = findOrThrowNotFound(
+            await this.repo.find({where: { id: reportId }, relations: ['citizen', 'assignedStaff', 'assignedEM']}),
+            () => true,
+            `Report with id '${reportId}' not found after status update`
+        );
+
+        // Create notification for citizen if report status changed
+        if (result.citizen && updatedStatus !== reportToUpdate.status)
+            await this.notifyCitizen(result, updatedStatus, staffUsername, comment);
+
+        return result;
+    }
+
+    async updateReportAsEM(reportId: number, updatedStatus: Status, staffUsername: string, comment?: string,): Promise<ReportDAO> {
+
+        const reportToUpdate = await this.validateReport(reportId, updatedStatus);
+
+        if(reportToUpdate.assignedStaff?.username === undefined)
+            throw new BadRequestError(`Report is not assigned to a TOSM yet.`);
+        
+        if(reportToUpdate.assignedEM && reportToUpdate.assignedEM?.username !== staffUsername)
+            throw new BadRequestError(`Report is assigned to EM '${reportToUpdate.assignedEM?.username}'`);
+
+        const updateData: any = {
+            status: updatedStatus
+        };
+
+        if (comment !== undefined) {
+            updateData.comment = comment;
+        }
+
+        await this.repo.update({ id: reportId }, updateData);
+
+        const result = findOrThrowNotFound(
+            await this.repo.find({where: { id: reportId }, relations: ['citizen', 'assignedStaff', 'assignedEM']}),
+            () => true,
+            `Report with id '${reportId}' not found after status update`
+        );
+
+        // Create notification for citizen if report status changed
+        if (result.citizen && updatedStatus !== reportToUpdate.status)
+            await this.notifyCitizen(result, updatedStatus, staffUsername, comment);
+
+        return result;
+    }
+
+    private async validateReport(reportId: number, updatedStatus: Status): Promise<ReportDAO> {
+        const report = await this.repo.findOne({
+            where: { id: reportId },
+            relations: ['citizen', 'assignedStaff', 'assignedEM']
+        });
+
+        if(!report)
+            throw new NotFoundError(`Report with id '${reportId}' not found`);
+
+        if([Status.PENDING, Status.REJECTED, Status.RESOLVED].includes(report.status))
+            throw new BadRequestError(`Cannot update a ${report.status} report.`);
+
+        if(report.status === Status.SUSPENDED && updatedStatus === Status.RESOLVED)
+            throw new BadRequestError("Cannot resolve a suspended report.");
+        return report;
+    }
+
+    private async notifyCitizen(report: ReportDAO, updatedStatus: Status, staffUsername: string, comment?: string){
+        let notificationTitle = "";
+        let notificationMessage = "";
+        if (updatedStatus === Status.IN_PROGRESS) {
+            notificationTitle = "Report In Progress";
+            notificationMessage = `Your report "${report.title}" has been assigned to ${staffUsername} and is now in progress.`;
+        } else if (updatedStatus === Status.SUSPENDED) {
+            notificationTitle = "Report Suspended";
+            notificationMessage = `Your report "${report.title}" has been suspended.`;
+        } else if (updatedStatus === Status.RESOLVED) {
+            notificationTitle = "Report Resolved";
+            notificationMessage = `Your report "${report.title}" has been marked as resolved.`;
+            if (comment) {
+                notificationMessage += ` Comment: ${comment}`;
+            }
+        }
+        if (notificationTitle) {
+            await this.notificationRepo.createNotificationForCitizen(
+                report,
+                notificationTitle,
+                notificationMessage
+            );
+        }
     }
 
     async addMessageToReport(report: ReportDAO, message: string, assignedStaff: StaffDAO | undefined): Promise<ReportDAO> {
