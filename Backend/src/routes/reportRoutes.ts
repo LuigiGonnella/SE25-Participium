@@ -2,12 +2,12 @@ import {Router} from "express";
 import {isAuthenticated} from "@middlewares/authMiddleware";
 import {mapReportDAOToDTO} from "@services/mapperService";
 import {
-    addMessageToReport,
+    addMessageToReport, assignReportToEM,
     createReport,
     getAllMessages,
     getMapReports,
     getReportById,
-    getReports,
+    getReports, selfAssignReport,
     updateReportAsMPRO,
     updateReportAsTOSM,
     uploadReportPictures
@@ -117,8 +117,7 @@ router.patch('/:reportId/manage', isAuthenticated([StaffRole.MPRO]), async (req,
 
         const { status, comment, category } = req.body;
 
-        const updatedStatus = validateStatusByRole(status, StaffRole.MPRO, comment, true)!; // MPRO always requires status
-
+        const updatedStatus = validateStatusByRole(status, StaffRole.MPRO, comment);
 
         let updatedCategory: OfficeCategory | undefined;
         if (category) {
@@ -133,25 +132,36 @@ router.patch('/:reportId/manage', isAuthenticated([StaffRole.MPRO]), async (req,
 });
 
 // PATCH TOSM: self assignment of reports
-router.patch(
-  "/:reportId/work",
-  isAuthenticated([StaffRole.TOSM]),
-  async (req, res, next) => {
+router.patch("/:reportId/assignSelf", isAuthenticated([StaffRole.TOSM]), async (req, res, next) => {
+    try {
+        const reportId = validateReportId(req.params.reportId);
+
+        const staffUsername = (req.user as Staff).username;
+
+        const report = await selfAssignReport(reportId, staffUsername);
+
+        res.status(200).json(report);
+    } catch (err) {
+        next(err);
+      }
+    }
+    );
+
+router.patch("/:reportId/updateStatus", isAuthenticated([StaffRole.TOSM]), async (req, res, next) => {
     try {
       const reportId = validateReportId(req.params.reportId);
 
       const { status, comment } = req.body;
 
-      // Allow undefined status for self-assignment without status change
-      const updatedStatus = validateStatusByRole(status, StaffRole.TOSM, comment, false);
+      const updatedStatus = validateStatusByRole(status, StaffRole.TOSM, comment);
 
-      const staffUsername = String((req.user as Staff).username).trim();
+      const staffUsername = (req.user as Staff).username;
 
       const report = await updateReportAsTOSM(
         reportId,
         updatedStatus,
-        comment,
-        staffUsername
+        staffUsername,
+        comment
       );
 
       res.status(200).json(report);
@@ -162,25 +172,17 @@ router.patch(
 );
 
 // PATCH TOSM: assignment reports to external maintainer
-router.patch(
-  "/:reportId/external",
-  isAuthenticated([StaffRole.TOSM]),
-  async (req, res, next) => {
+router.patch("/:reportId/assignExternal", isAuthenticated([StaffRole.TOSM]), async (req, res, next) => {
     try {
       const reportId = validateReportId(req.params.reportId);
 
-      const { staffEM, status } = req.body;
+      const staffUsername = (req.user as Staff).username;
 
-      const staffUsername = (staffEM as string).trim();
-    
-      const updatedStatus = validateStatusByRole(status, StaffRole.EM, undefined, false);
+      const { staffEM } = req.body;
 
-      const report = await updateReportAsTOSM(
-        reportId,
-        updatedStatus,
-        undefined,
-        staffUsername
-      );
+      const EM_Username = (staffEM as string).trim();
+
+      const report = await assignReportToEM(reportId, EM_Username, staffUsername);
 
       res.status(200).json(report);
     } catch (err) {
