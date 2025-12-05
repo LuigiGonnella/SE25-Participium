@@ -361,7 +361,7 @@ export class ReportRepository {
         await messageRepo.save(messageDAO);
 
         // Create notification for citizen if message is from staff
-        if (assignedStaff && report.citizen) {
+        if (assignedStaff && report.citizen && isPrivate === false) {
             await this.notificationRepo.createNotificationForCitizen(
                 report,
                 "New message on your report",
