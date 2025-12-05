@@ -22,4 +22,10 @@ export interface Message {
      * @memberof Message
      */
      staffUsername?: string;  
+     /**
+     * 
+     * @type {boolean}
+     * @memberof Message
+     */
+     isPrivate: boolean;  
 } 
