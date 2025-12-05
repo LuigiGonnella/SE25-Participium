@@ -6,15 +6,17 @@ import {ReportDAO, Status} from "@dao/reportDAO";
 import multer from "multer";
 import fs from "fs";
 import path from "path";
-import { mapMessageToDTO, mapReportDAOToDTO } from "@services/mapperService";
-import { Report } from "@models/dto/Report";
-import { OfficeCategory } from "@models/dao/officeDAO";
+import {mapMessageToDTO, mapReportDAOToDTO} from "@services/mapperService";
+import {Report} from "@models/dto/Report";
+import {OfficeCategory} from "@models/dao/officeDAO";
 import {findOrThrowNotFound} from "@utils";
-import {StaffDAO} from "@dao/staffDAO";
-import { Message } from "@models/dto/Message";
+import {StaffRole} from "@dao/staffDAO";
+import {Message} from "@models/dto/Message";
+import {StaffRepository} from "@repositories/staffRepository";
 
 const repo = new ReportRepository();
 const citizenRepo = new CitizenRepository();
+const staffRepo = new StaffRepository();
 
 const reportStorage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -136,33 +138,55 @@ export async function updateReportAsEM(reportId: number, updatedStatus: Status, 
     return mapReportDAOToDTO(updatedReportDAO);
 }
 
-export async function addMessageToReport(reportId: number, username: string, userType: 'CITIZEN' | 'STAFF', message: string): Promise<Report> {
+export async function addMessageToReport(reportId: number, username: string, userType: 'CITIZEN' | 'STAFF', message: string, isPrivate?: boolean): Promise<Report> {
     const reportDAO = findOrThrowNotFound(
         [await repo.getReportById(reportId)],
         () => true,
         `Report with id ${reportId} not found`
     );
 
-    let assignedStaff: StaffDAO | undefined = undefined;
-    if (userType === 'STAFF') {
-        if(reportDAO.assignedStaff?.username !== username)
-            throw new BadRequestError(`Staff member ${username} is not assigned to report ${reportId}`);
-        assignedStaff = reportDAO.assignedStaff;
-    } else if (userType === 'CITIZEN' && reportDAO.citizen?.username !== username) {
-        throw new BadRequestError(`Citizen ${username} is not the owner of report ${reportId}`);
-    }
+    let updatedReportDAO: ReportDAO;
 
-    const updatedReportDAO = await repo.addMessageToReport(reportDAO, message, assignedStaff);
+    if (userType === 'STAFF') {
+        const user = await staffRepo.getStaffByUsername(username);
+        if (!user) {
+            throw new NotFoundError(`Staff with username ${username} not found`);
+        }
+        if (user.role === StaffRole.TOSM) {
+            if (!reportDAO.assignedStaff || reportDAO.assignedStaff.username !== user.username)
+                throw new BadRequestError(`This report is not assigned to you`);
+            if (isPrivate === undefined)
+                throw new BadRequestError(`isPrivate field must be specified for TOSM`);
+            updatedReportDAO = await repo.addMessageToReport(reportDAO, message, user, isPrivate);
+        } else if (user.role === StaffRole.EM) {
+            if (!reportDAO.assignedEM || reportDAO.assignedEM.username !== user.username)
+                throw new BadRequestError(`This report is not assigned to you`);
+            updatedReportDAO = await repo.addMessageToReport(reportDAO, message, user, true);
+        } else {
+            throw new BadRequestError(`Only TOSM and EM staff can add messages to reports`);
+        }
+    } else {
+        const user = await citizenRepo.getCitizenByUsername(username);
+        if (!user) {
+            throw new NotFoundError(`Citizen with username ${username} not found`);
+        }
+        if (reportDAO.citizen.username !== user.username)
+            throw new BadRequestError(`Citizen ${username} is not the owner of report ${reportId}`);
+        updatedReportDAO = await repo.addMessageToReport(reportDAO, message);
+    }
 
     return mapReportDAOToDTO(updatedReportDAO);
 }
 
-export async function getAllMessages(reportId: number): Promise<Message[]> {
+export async function getAllMessages(reportId: number, userType: 'CITIZEN' | 'STAFF'): Promise<Message[]> {
     const reportDAO = findOrThrowNotFound(
         [await repo.getReportById(reportId)],
         () => true,
         `Report with id ${reportId} not found`
     );
-    const messages = await repo.getAllMessages(reportDAO.id);
-    return messages.map(mapMessageToDTO);
+
+    if (userType === 'CITIZEN') {
+        return (await repo.getAllPublicMessages(reportDAO.id)).map(mapMessageToDTO);
+    }
+    return (await repo.getAllMessages(reportDAO.id)).map(mapMessageToDTO);
 }

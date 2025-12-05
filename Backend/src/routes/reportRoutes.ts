@@ -2,15 +2,17 @@ import {Router} from "express";
 import {isAuthenticated} from "@middlewares/authMiddleware";
 import {mapReportDAOToDTO} from "@services/mapperService";
 import {
-    addMessageToReport, assignReportToEM,
+    addMessageToReport,
+    assignReportToEM,
     createReport,
     getAllMessages,
     getMapReports,
     getReportById,
-    getReports, selfAssignReport,
+    getReports,
+    selfAssignReport,
+    updateReportAsEM,
     updateReportAsMPRO,
     updateReportAsTOSM,
-    updateReportAsEM,
     uploadReportPictures
 } from "@controllers/reportController";
 import {Citizen} from "@dto/Citizen";
@@ -206,13 +208,13 @@ router.post('/:reportId/messages', isAuthenticated(['CITIZEN', 'STAFF']), async 
         const user = req.user as ((Citizen | Staff) & { type: 'CITIZEN' | 'STAFF' });
         const reportId = validateReportId(req.params.reportId);
 
-        const { message } = req.body;
+        const { message, isPrivate } = req.body;
 
         if (!message || typeof message !== 'string' || message.trim() === '') {
             throw new BadRequestError('Message cannot be empty.');
         }
 
-        res.status(201).json(await addMessageToReport(reportId, user.username, user.type, message.trim()));
+        res.status(201).json(await addMessageToReport(reportId, user.username, user.type, message.trim(), isPrivate));
     } catch (err) {
         next(err);
     }
@@ -222,7 +224,9 @@ router.get('/:reportId/messages', isAuthenticated(['CITIZEN', 'STAFF']), async (
     try {
         const reportId = validateReportId(req.params.reportId);
 
-        res.status(200).json(await getAllMessages(reportId));
+        const user = req.user as ((Citizen | Staff) & { type: 'CITIZEN' | 'STAFF' });
+
+        res.status(200).json(await getAllMessages(reportId, user.type));
     } catch (err) {
         next(err);
     }
