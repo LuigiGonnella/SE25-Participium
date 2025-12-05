@@ -192,7 +192,7 @@ const updateReport = async (
     const endpoint =
         role === "Municipal Public Relations Officer"
             ? `/reports/${id}/manage`
-            : `/reports/${id}/work`;
+            : `/reports/${id}/updateStatus`;
 
     const response = await fetch(`${BACKEND_URL}${endpoint}`, {
         method: "PATCH",
@@ -206,7 +206,7 @@ const updateReport = async (
 };
 
 const assignReportToSelf = async (reportId: number): Promise<Report> => {
-    const response = await fetch(`${BACKEND_URL}/reports/${reportId}/work`, {
+    const response = await fetch(`${BACKEND_URL}/reports/${reportId}/assignSelf`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -253,7 +253,7 @@ const assignReportToMaintainer = async (reportId: number): Promise<Report> => {
     }
     
     // Use the first available EM
-    const response = await fetch(`${BACKEND_URL}/reports/${reportId}/external`, {
+    const response = await fetch(`${BACKEND_URL}/reports/${reportId}/assignExternal`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
