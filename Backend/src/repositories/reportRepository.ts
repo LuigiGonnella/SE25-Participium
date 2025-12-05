@@ -190,11 +190,15 @@ export class ReportRepository {
     }
 
     async assignEMToReport(reportId: number, emStaffUsername: string, staffUsername: string,): Promise<ReportDAO> {
-        const emStaff = findOrThrowNotFound(
-            await this.staffRepo.find({where: {username: emStaffUsername, role: StaffRole.EM}}),
-            () => true,
-            `External maintainer with username '${emStaffUsername}' not found`
-        );
+        let emStaff;
+        if (emStaffUsername !== ""){
+            emStaff = findOrThrowNotFound(
+                await this.staffRepo.find({where: {username: emStaffUsername, role: StaffRole.EM}}),
+                () => true,
+                `External maintainer with username '${emStaffUsername}' not found`
+            );
+        }
+        
 
         const reportToUpdate = findOrThrowNotFound(
             await this.repo.find({where: {id: reportId}, relations: ['citizen', 'assignedStaff', 'assignedEM']}),
@@ -211,9 +215,14 @@ export class ReportRepository {
         if(reportToUpdate.assignedEM)
             throw new BadRequestError(`Report is already assigned to EM '${reportToUpdate.assignedEM.username}'`);
 
+        let updateData: any = { isExternal: true }
+        if (emStaff){
+            updateData.assignedEM = emStaff;
+        }
+
         await this.repo.update(
             {id: reportId},
-            { assignedEM: emStaff }
+            updateData,
         );
 
         return findOrThrowNotFound(

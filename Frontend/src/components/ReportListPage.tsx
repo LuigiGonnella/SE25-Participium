@@ -138,7 +138,7 @@ export default function ReportListPage({ user }: ReportListProps) {
         isTOSM(user) && report.status === ReportStatus.ASSIGNED && !report.assignedStaff;
     
     const canAssignToEM = (report: Report) => 
-        isTOSM(user) && report.status === ReportStatus.ASSIGNED && report.assignedStaff === user.username && !report.assignedEM;
+        isTOSM(user) && report.status === ReportStatus.ASSIGNED && report.assignedStaff === user.username && !report.assignedEM && !report.isExternal;
 
     const filteredReports = reports.filter(r => {
         // MPRO sees all reports
@@ -282,14 +282,25 @@ export default function ReportListPage({ user }: ReportListProps) {
                                                     <span className="text-muted">
                                                         Category: <strong className="text-dark">{r.category}</strong>
                                                     </span>
-                                                    {(r.assignedStaff || r.assignedEM) && (
+                                                    {(r.assignedStaff) && (
                                                         <>
                                                             <span className="text-muted">•</span>
                                                             <span className="text-muted">
                                                                 Assigned: <strong className="text-dark">
-                                                                    {r.assignedStaff && r.assignedEM 
-                                                                        ? `${r.assignedStaff}, ${r.assignedEM}`
-                                                                        : r.assignedStaff || r.assignedEM}
+                                                                    { r.assignedStaff }
+                                                                </strong>
+                                                            </span>
+                                                        </>
+                                                    )}
+                                                    {(r.isExternal) && (
+                                                        <>
+                                                            <span className="text-muted">•</span>
+                                                            <span className="text-muted">
+                                                                External Assigned: <strong className="text-dark">
+                                                                    {r.assignedEM 
+                                                                        ? `${r.assignedEM}`
+                                                                        : `Unregistered EM`
+                                                                    }
                                                                 </strong>
                                                             </span>
                                                         </>
@@ -333,7 +344,7 @@ export default function ReportListPage({ user }: ReportListProps) {
                                                     </Button>) : (
                                                         <>
                                                             <select value={username} onChange={(e) => setUsername(e.target.value)}>
-                                                                <option  disabled value="">Select Maintainer</option>
+                                                                <option value="">Unregistered EM</option>
                                                                 {EMlist.map((em) => (
                                                                     <option key={em.username} value={em.username}>{em.name} ({em.username})</option>
                                                                 ))}

@@ -157,7 +157,7 @@ router.patch("/:reportId/assignExternal", isAuthenticated([StaffRole.TOSM]), asy
 
       const { staffEM } = req.body;
 
-      if (!staffEM) {
+      if (staffEM === undefined) {
         throw new BadRequestError('External maintainer username missing.');
       }
 

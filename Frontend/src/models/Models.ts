@@ -141,6 +141,7 @@ export interface Report {
     comment?: string;
     assignedStaff?: string;
     assignedEM?: string;
+    isExternal: boolean;
     messages?: Message[];
 }
 
