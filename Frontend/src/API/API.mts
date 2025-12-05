@@ -241,24 +241,15 @@ const getEMStaffByCategory = async (category: string): Promise<Staff[]> => {
     return handleAPIError(response, "Get EM Staff");
 };
 
-const assignReportToMaintainer = async (reportId: number): Promise<Report> => {
-    // First, get the report to know its category
-    const report = await getReportById(reportId);
-    
-    // Get EM staff for this category
-    const emStaff = await getEMStaffByCategory(report.category);
-    
-    if (!emStaff || emStaff.length === 0) {
-        throw new APIError("No External Maintainer found for this category", 404);
-    }
-    
+const assignReportToMaintainer = async (report: Report, username: string): Promise<Report> => {
+
     // Use the first available EM
-    const response = await fetch(`${BACKEND_URL}/reports/${reportId}/assignExternal`, {
+    const response = await fetch(`${BACKEND_URL}/reports/${report.id}/assignExternal`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({ 
-            staffEM: emStaff[0].username
+            staffEM: username
             // No status change - keeps report in ASSIGNED status
         }),
     });
@@ -335,5 +326,5 @@ const updateCitizenProfile = async (
     return handleAPIError(response, 'Update Citizen Profile');
 };
 
-const API = { login, register, getUserInfo, logout, municipalityRegister, getOffices, createReport, getReports, getMapReports, getReportById, updateReport, assignReportToSelf, assignReportToMaintainer, getNotifications, markNotificationAsRead, createMessage, getAllMessages, updateCitizenProfile };
+const API = { login, register, getUserInfo, logout, municipalityRegister, getOffices, createReport, getReports, getMapReports, getReportById, updateReport, assignReportToSelf, getEMStaffByCategory, assignReportToMaintainer, getNotifications, markNotificationAsRead, createMessage, getAllMessages, updateCitizenProfile };
 export default API;

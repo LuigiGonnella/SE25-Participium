@@ -32,6 +32,9 @@ export default function ReportListPage({ user }: ReportListProps) {
 
     const [assignedToMe, setAssignedToMe] = useState<boolean>(false);
 
+    const [EMlist, setEMlist] = useState<Staff[]>([]);
+    const [username, setUsername] = useState<string>("");
+
     // FILTER STATE
     const [statusFilter, setStatusFilter] = useState("");
     
@@ -88,19 +91,11 @@ export default function ReportListPage({ user }: ReportListProps) {
         loadReports();
     }, [loadReports]);
 
-    const getExternalCompanyName = (category: string): string => {
-        const categoryMap: Record<string, string> = {
-            "Water Supply": "External Company - Water Supply",
-            "Architectural Barriers": "External Company - Architectural Barriers",
-            "Sewer System": "External Company - Sewer System",
-            "Public Lighting": "External Company - Public Lighting",
-            "Waste": "External Company - Waste",
-            "Road Signs and Traffic Lights": "External Company - Road Signs and Traffic Lights",
-            "Roads and Urban Furnishings": "External Company - Roads and Urban Furnishings",
-            "Public Green Areas and Playgrounds": "External Company - Public Green Areas and Playgrounds",
-        };
-        return categoryMap[category] || `External Company - ${category}`;
-    };
+    const selectExternalCategory = async (report: Report): Promise<void> => {
+        const state = await API.getEMStaffByCategory(report.category);
+        setEMlist(state);
+        setAssigningToMaintainer(report.id);
+    }
 
     const handleAssign = async (reportId: number, e: React.MouseEvent) => {
         e.preventDefault();
@@ -120,16 +115,17 @@ export default function ReportListPage({ user }: ReportListProps) {
         }
     };
 
-    const handleAssignToMaintainer = async (reportId: number, e: React.MouseEvent) => {
+
+
+    const handleAssignToMaintainer = async (report: Report, e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
         
-        setAssigningToMaintainer(reportId);
         try {
-            const updatedReport = await API.assignReportToMaintainer(reportId);
+            const updatedReport = await API.assignReportToMaintainer(report, username);
             // Immediately update the local report state
             setReports(prevReports => 
-                prevReports.map(r => r.id === reportId ? updatedReport : r)
+                prevReports.map(r => r.id === report.id ? updatedReport : r)
             );
         } catch (err: any) {
             setError(err.details || "Failed to assign report to maintainer");
@@ -205,7 +201,7 @@ export default function ReportListPage({ user }: ReportListProps) {
             {!loading && filteredReports.length > 0 && (
                 <div className="container-fluid px-4" style={{ maxWidth: "1400px" }}>
                     <div className="list-group">
-                        {filteredReports.map((r, index) => (
+                        {filteredReports.map((r) => (
                             <div
                                 key={r.id}
                                 className="list-group-item d-flex align-items-center"
@@ -307,7 +303,7 @@ export default function ReportListPage({ user }: ReportListProps) {
                                             <div className="d-flex gap-2 align-items-center ms-auto" style={{ minWidth: "fit-content" }}>
                                                 <Button
                                                     variant="primary"
-                                                    size={filteredReports.length <= 3 ? "lg" : filteredReports.length <= 6 ? "md" : "sm"}
+                                                    size={filteredReports.length <= 3 ? "lg" : "sm"}
                                                     onClick={(e) => handleAssign(r.id, e)}
                                                     disabled={assigningId === r.id}
                                                     className="text-nowrap"
@@ -320,23 +316,38 @@ export default function ReportListPage({ user }: ReportListProps) {
                                                 </Button>
                                             </div>
                                         )}
-                                        {canAssignToEM(r) && (
+                                        {canAssignToEM(r) && ( 
                                             <div className="d-flex gap-2 align-items-center ms-auto" style={{ minWidth: "fit-content" }}>
-                                                <Button
-                                                    variant="secondary"
-                                                    size={filteredReports.length <= 3 ? "lg" : filteredReports.length <= 6 ? "md" : "sm"}
-                                                    onClick={(e) => handleAssignToMaintainer(r.id, e)}
-                                                    disabled={assigningToMaintainer === r.id}
-                                                    className="text-nowrap"
-                                                    style={{ 
-                                                        fontSize: filteredReports.length <= 3 ? "1.15rem" : filteredReports.length <= 6 ? "1rem" : "0.9rem",
-                                                        padding: filteredReports.length <= 3 ? "0.75rem 1.5rem" : filteredReports.length <= 6 ? "0.5rem 1rem" : "0.375rem 0.75rem"
-                                                    }}
-                                                >
-                                                    {assigningToMaintainer === r.id ? "Assigning..." : `Assign to ${getExternalCompanyName(r.category)}`}
-                                                </Button>
+                                                {(assigningToMaintainer !== r.id) ? (
+                                                    <Button
+                                                        variant="secondary"
+                                                        size={filteredReports.length <= 3 ? "lg" : "sm"}
+                                                        onClick={() => selectExternalCategory(r)}
+                                                        disabled={assigningToMaintainer === r.id}
+                                                        className="text-nowrap"
+                                                        style={{ 
+                                                            fontSize: filteredReports.length <= 3 ? "1.15rem" : filteredReports.length <= 6 ? "1rem" : "0.9rem",
+                                                            padding: filteredReports.length <= 3 ? "0.75rem 1.5rem" : filteredReports.length <= 6 ? "0.5rem 1rem" : "0.375rem 0.75rem"
+                                                        }}
+                                                    > Assign to External Maintainer
+                                                    </Button>) : (
+                                                        <>
+                                                            <select value={username} onChange={(e) => setUsername(e.target.value)}>
+                                                                <option  disabled value="">Select Maintainer</option>
+                                                                {EMlist.map((em) => (
+                                                                    <option key={em.username} value={em.username}>{em.name} ({em.username})</option>
+                                                                ))}
+                                                            </select>
+                                                            <Button
+                                                                variant="primary"
+                                                                size={filteredReports.length <= 3 ? "lg" : "sm"}
+                                                                onClick={(e) => handleAssignToMaintainer(r, e)}
+                                                                >Assign
+                                                            </Button>
+                                                        </>
+                                                    )}
                                             </div>
-                                        )}
+                                        )  }
                                     </>
                                 )}
                             </div>
