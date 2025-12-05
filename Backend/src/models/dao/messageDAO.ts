@@ -19,4 +19,6 @@ export class MessageDAO {
     @ManyToOne(() => StaffDAO, (staff) => staff.username, {onDelete: "SET NULL", nullable: true})
     staff?: StaffDAO;
 
+    @Column({ nullable: false, default: false})
+    isPrivate: boolean;
 }
