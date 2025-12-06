@@ -31,12 +31,18 @@ export class PendingVerificationRepository {
 
         if (existing.length > 1) {
             throw new InternalServerError("Multiple pending verifications found for the same citizen and type");
-        } else if (existing.length === 1 && existing[0].expiresAt > new Date()) {
-            throw new ConflictError("A pending verification already exists for this citizen and type");
+        } else if (existing.length === 1) {
+            if (existing[0].expiresAt > new Date()) {
+                // Code still valid - throw error
+                throw new ConflictError("A pending verification already exists for this citizen and type");
+            } else {
+                // Code expired - delete old one and create new
+                await this.repo.remove(existing[0]);
+            }
         }
 
 
-        const expiresAt = new Date(Date.now() + 2 * 60 * 1000); // 30 minutes from now
+        const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes from now
 
         const verificationCode = getDigitalCode(6).toString();
 
@@ -53,7 +59,6 @@ export class PendingVerificationRepository {
         const pendingVerification = findOrThrowNotFound(
             await this.repo.find({
                 where: {
-                    valueToVerify: username,
                     verificationCode: code,
                     type: type,
                     expiresAt: MoreThan(new Date())
@@ -66,7 +71,7 @@ export class PendingVerificationRepository {
         // If found, update citizen
         const citizen = pendingVerification.citizen;
         if (type === "email") {
-            //citizen.email = pendingVerification.valueToVerify;
+            citizen.email = pendingVerification.valueToVerify;
         } else if (type === "telegram") {
             citizen.telegram_username = pendingVerification.valueToVerify;
         }

@@ -3,7 +3,9 @@ import {
     uploadProfilePicture,
     registerMunicipalityUser,
     login,
-    verifyTelegramUser, createTelegramVerification
+    verifyTelegramUser, 
+    createTelegramVerification,
+    verifyEmailUser
 } from '@controllers/authController';
 import {Citizen, CitizenToJSON} from '@models/dto/Citizen';
 import {Router} from "express";
@@ -113,6 +115,21 @@ router.post('/verifyTelegramUser', telegramBotAuth, async (req, res, next) => {
     } catch (error) {
         next(error);
     }
-})
+});
+
+router.post('/verify-email', async (req, res, next) => {
+    try {
+        const { code } = req.body;
+        
+        if (!code || !code.trim()) {
+            return res.status(400).json({ error: 'Invalid or missing verification code' });
+        }
+        
+        await verifyEmailUser(code);
+        res.status(200).json({ message: 'Email verified successfully' });
+    } catch (error) {
+        next(error);
+    }
+});
 
 export default router;

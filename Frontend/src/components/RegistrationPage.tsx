@@ -117,7 +117,7 @@ function RegistrationForm({ handleRegistration }: RegistrationFormProps) {
             await handleRegistration?.(newCitizen);
             setIsHidden(false);
             setTimeout(() => {
-                navigate('/login');
+                navigate('/verify-email');
             }, 3000);
         } catch (err) {
             setErrorMessage('Error: ' + (err instanceof APIError ? err.details : err));
@@ -294,7 +294,7 @@ function RegistrationForm({ handleRegistration }: RegistrationFormProps) {
                         <Alert variant="success" hidden={isHidden} className="mt-2">
                             <Row className="align-items-center">
                                 <Col className="col-auto">
-                                    Registration successful! You will be redirected to the login page.
+                                    Registration successful! Check your email for the verification code. Redirecting to verification page...
                                 </Col>
                                 <Col>
                                     <Spinner active small />

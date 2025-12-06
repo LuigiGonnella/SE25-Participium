@@ -8,8 +8,8 @@ export class CitizenDAO {
     @PrimaryGeneratedColumn('increment', { type: 'int', unsigned: true })
     id: number;
 
-    @Column({ unique: true, nullable: false })
-    email: string;
+    @Column({ type: 'varchar', unique: true, nullable: true })
+    email: string | null;
 
     @Column({ unique: true, nullable: false })
     username: string;

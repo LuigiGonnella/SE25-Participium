@@ -64,8 +64,9 @@ export class CitizenRepository {
             `Citizen already exists with username ${username}`,
         );
 
+        // Save citizen without email (email will be set after verification)
         return await this.repo.save({
-            email,
+            email: null, // Email is null until verified
             username,
             name,
             surname,

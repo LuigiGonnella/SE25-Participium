@@ -285,5 +285,19 @@ const updateCitizenProfile = async (
     return handleAPIError(response, 'Update Citizen Profile');
 };
 
-const API = { login, register, getUserInfo, logout, municipalityRegister, getOffices, createReport, getReports, getMapReports, getReportById, updateReport, assignReportToSelf, getNotifications, markNotificationAsRead, createMessage, getAllMessages, updateCitizenProfile };
+const verifyEmail = async (code: string): Promise<void> => {
+    const response = await fetch(`${BACKEND_URL}/auth/verify-email`, {
+        method: 'POST',
+        headers: { "Content-Type": "application/json" },
+        credentials: 'include',
+        body: JSON.stringify({ code }),
+    });
+
+    if (response.ok) return;
+    return handleAPIError(response, 'Email Verification');
+};
+
+export { verifyEmail };
+
+const API = { login, register, getUserInfo, logout, municipalityRegister, getOffices, createReport, getReports, getMapReports, getReportById, updateReport, assignReportToSelf, getNotifications, markNotificationAsRead, createMessage, getAllMessages, updateCitizenProfile, verifyEmail };
 export default API;

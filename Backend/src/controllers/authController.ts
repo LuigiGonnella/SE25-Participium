@@ -12,6 +12,7 @@ import passport from 'passport';
 import {BadRequestError} from "@errors/BadRequestError";
 import {PendingVerificationRepository} from "@repositories/pendingVerificationRepository";
 import {Citizen} from "@dto/Citizen";
+import { sendVerificationEmail } from "@services/emailService";
 
 // storage configuration
 const storage = multer.diskStorage({
@@ -55,6 +56,7 @@ export async function register(
     telegram_username?: string
 ) {
     const citizenRepo = new CitizenRepository();
+    const pendingVerificationRepo = new PendingVerificationRepository();
     const hashedPassword = await bcrypt.hash(password, 10);
     
     // image path
@@ -62,6 +64,7 @@ export async function register(
         ? `/uploads/profiles/${profilePictureFile.filename}`
         : undefined;
 
+    // Create citizen WITHOUT email (will be set after verification)
     const citizenDAO = await citizenRepo.createCitizen(
         email,
         username,
@@ -72,6 +75,16 @@ export async function register(
         profilePicture,
         telegram_username
     );
+
+    // Create pending verification for email
+    const pendingVerification = await pendingVerificationRepo.createPendingVerification(
+        citizenDAO,
+        email,
+        "email"
+    );
+
+    // Send verification email
+    await sendVerificationEmail(email, name, pendingVerification.verificationCode);
 
     return mapCitizenDAOToDTO(citizenDAO);
 
@@ -151,4 +164,12 @@ export async function verifyTelegramUser(username: string, code: string): Promis
     }
     const pvRepo = new PendingVerificationRepository();
     await pvRepo.verifyPendingVerification(username, code, "telegram");
+}
+
+export async function verifyEmailUser(code: string): Promise<void> {
+    if (!code || !code.trim()) {
+        throw new BadRequestError('Invalid or missing verification code');
+    }
+    const pvRepo = new PendingVerificationRepository();
+    await pvRepo.verifyPendingVerification("", code, "email");
 }

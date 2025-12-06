@@ -1,5 +1,5 @@
 export interface Citizen {
-    email: string;
+    email: string | null;
     username: string;
     name: string;
     surname: string;
