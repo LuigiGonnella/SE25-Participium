@@ -277,12 +277,12 @@ const markNotificationAsRead = async (notificationId: number): Promise<null> => 
     return handleAPIError(response, "Mark Notification as Read");
 }
 
-const createMessage = async (reportId: number, message: string): Promise<Report> => {
+const createMessage = async (reportId: number, message: string, isPrivate: boolean): Promise<Report> => {
     const response = await fetch(`${BACKEND_URL}/reports/${reportId}/messages`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ message }),
+        body: JSON.stringify({ message, isPrivate }),
     });
     if (response.ok) return await response.json();
     return handleAPIError(response, "Create Message");

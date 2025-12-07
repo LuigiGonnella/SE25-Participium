@@ -171,4 +171,5 @@ export interface Message {
     reportId: number,
     message: string,
     staffUsername: string
+    isPrivate: boolean
 }
