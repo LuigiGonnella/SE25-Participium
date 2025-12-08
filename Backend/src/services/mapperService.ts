@@ -110,6 +110,7 @@ export function mapMessageToDTO(messageDAO: MessageDAO): MessageDTO {
     return removeNullAttributes({
         timestamp: messageDAO.timestamp.toISOString(),
         message: messageDAO.message,
-        staffUsername: messageDAO.staff?.username
+        staffUsername: messageDAO.staff?.username,
+        isPrivate: messageDAO.isPrivate
     }) as MessageDTO;
 }

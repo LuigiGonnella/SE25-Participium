@@ -348,19 +348,20 @@ export class ReportRepository {
         }
     }
 
-    async addMessageToReport(report: ReportDAO, message: string, assignedStaff: StaffDAO | undefined): Promise<ReportDAO> {
+    async addMessageToReport(report: ReportDAO, message: string, assignedStaff?: StaffDAO, isPrivate: boolean = false): Promise<ReportDAO> {
         const messageRepo = AppDataSource.getRepository(MessageDAO);
         
         const messageDAO = new MessageDAO();
         messageDAO.message = message;
         messageDAO.staff = assignedStaff;
         messageDAO.report = report;
+        messageDAO.isPrivate = isPrivate;
 
         // Save message directly to avoid circular reference issues
         await messageRepo.save(messageDAO);
 
         // Create notification for citizen if message is from staff
-        if (assignedStaff && report.citizen) {
+        if (assignedStaff && report.citizen && isPrivate === false) {
             await this.notificationRepo.createNotificationForCitizen(
                 report,
                 "New message on your report",
@@ -378,11 +379,20 @@ export class ReportRepository {
     async getAllMessages(reportId: number): Promise<MessageDAO[]> {
         const messageRepo = AppDataSource.getRepository(MessageDAO);
 
-        const messages = await messageRepo.find({
-            where: { report: { id: reportId } },
+        return await messageRepo.find({
+            where: {report: {id: reportId}},
             relations: ['staff'],
-            order: { timestamp: 'DESC' }
+            order: {timestamp: 'DESC'}
         });
-        return messages;
+    }
+
+    async getAllPublicMessages(reportId: number): Promise<MessageDAO[]> {
+        const messageRepo = AppDataSource.getRepository(MessageDAO);
+
+        return await messageRepo.find({
+            where: {report: {id: reportId}, isPrivate: false},
+            relations: ['staff'],
+            order: {timestamp: 'DESC'}
+        });
     }
 }

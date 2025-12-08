@@ -12,8 +12,8 @@ import {
     ReportStatus,
     type User
 } from "../models/Models.ts";
-import {Card, Carousel, CarouselSlide} from "design-react-kit";
-import {Alert, Button, Col, Form, Row} from "react-bootstrap";
+import {Card, Carousel, CarouselSlide, Toggle} from "design-react-kit";
+import {Alert, Button, Col, Form, Row, FormGroup } from "react-bootstrap";
 
 interface ReportDetailPageProps {
   user?: User;
@@ -41,6 +41,9 @@ export default function ReportDetailPage({ user }: ReportDetailPageProps) {
   const [messageError, setMessageError] = useState<string>("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [loadingMessages, setLoadingMessages] = useState(false);
+  const [isPrivate, setPrivate] = useState(false);
+  const [publicMessage, setPublicMessage] = useState<string>("");
+  const [privateMessage, setPrivateMessage] = useState<string>("");
 
   const [statusUpdate, setStatusUpdate] = useState("");
 
@@ -132,15 +135,21 @@ export default function ReportDetailPage({ user }: ReportDetailPageProps) {
     }
   };
 
-  const handleMessage = async (e: React.FormEvent) => {
+  const handleMessage = async (e: React.FormEvent, isPrivate: boolean) => {
     e.preventDefault();
-    if (!report || !user || !isTOSM(user) ) return;
+    if (!report || !user || !(isTOSM(user)||isEM(user)) ) return;
     setMessageLoading(true);
     setMessageError("");
 
     try {
-      await API.createMessage(report.id, messageInput);
-      setMessageInput("");
+    const message = isPrivate ? privateMessage : publicMessage;
+      await API.createMessage(report.id, message, isPrivate);
+
+      if (isPrivate) {
+        setPrivateMessage("");
+      } else {
+        setPublicMessage("");
+      }
 
       // Reload messages
       const msgs = await API.getAllMessages(report.id);
@@ -148,12 +157,12 @@ export default function ReportDetailPage({ user }: ReportDetailPageProps) {
 
       const updateReport = await API.getReportById(report.id);
       setReport(updateReport);
-  } catch (err: any) {
+      } catch (err: any) {
       setMessageError(err?.details || "Failed to send message");
-    } finally {
+      } finally {
       setMessageLoading(false);
-    }
-  };
+      }
+    };
 
     const handleStatusUpdate = async () => {
         setError("");
@@ -186,7 +195,11 @@ return (
 
             <div className="row">
                 {/* LEFT COLUMN — REPORT DETAILS */}
-                <div className={(isTOSM(user) && report.assignedStaff === user.username) || report.status === ReportStatus.PENDING ? "col-md-8" : "col-12"}>
+                <div className={(
+                    (isTOSM(user) && report.assignedStaff === user.username) ||
+                    report.status === ReportStatus.PENDING) ||
+                    (isEM(user) && report.assignedEM === user.username)
+                    ? "col-md-8" : "col-12"}>
                     <div className="card shadow-sm h-100 d-flex flex-column">
                         <div className="card-header">
                             <h2>{report.title}</h2>
@@ -244,6 +257,13 @@ return (
                                         <i>Unknown</i>
                                     )}
                                 </p>
+
+                                {isTOSM(user) && report.assignedEM && (
+                                    <>
+                                        <h5>External Maintainer</h5>
+                                        <p>{report.assignedEM}</p>
+                                    </>
+                                )}
                             </div>
 
                             <div className="col-md-6">
@@ -328,69 +348,173 @@ return (
 
                 <div className="col-md-4">
                     {/* RIGHT COLUMN — MESSAGES CHAT (for TOSM) */}
-                    {user && isTOSM(user) && report.assignedStaff === user.username && (
-                        <div className="card shadow-sm h-100 d-flex flex-column">
-                            <div className="card-header">
-                                <h5 className="mb-0">Messages</h5>
-                            </div>
-                            <div className="card-body flex-grow-1 d-flex flex-column"
-                                 style={{maxHeight: "calc(100vh - 250px)"}}>
-                                {/* Messages Display */}
-                                <div className="flex-grow-1 overflow-auto mb-3 border rounded p-3"
-                                     style={{backgroundColor: "#f8f9fa"}}>
-                                    {loadingMessages ? (
-                                        <div className="text-center text-muted">Loading messages...</div>
-                                    ) : messages.length === 0 ? (
-                                        <div className="text-center text-muted">No messages yet. Start the
-                                            conversation!</div>
-                                    ) : (
-                                        <div className="d-flex flex-column-reverse gap-2">
-                                            {messages.map((msg, index) => (
-                                                <div key={index} className="d-flex flex-column p-3 rounded shadow-sm"
-                                                     style={{backgroundColor: "white"}}>
-                                                    <div className="d-flex justify-content-between align-items-center mb-2">
-                                                        <span className="fw-bold text-primary">
-                                                            <i className="bi bi-person-circle me-2"></i>
-                                                            {msg.staffUsername === user.username ? ("You") : (report.citizenUsername)}
-                                                        </span>
-                                                        <span className="text-muted" style={{fontSize: "0.85rem"}}>
-                                                            {new Date(msg.timestamp).toLocaleString()}
-                                                        </span>
-                                                    </div>
-                                                    <div className="ps-4">
-                                                        {msg.message}
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
+    {user && ((isTOSM(user) && report.assignedStaff === user.username)
+        || (isEM(user) && report.assignedEM === user.username)) && (
+        <div className="card shadow-sm h-100 d-flex flex-column">
+            <div className="card-header">
+                <div className="d-flex justify-content-between align-items-center">
+                    <h5 className="mb-0">Communications</h5>
+                </div>
+            </div>
+            
+            <div className="card-body p-0 flex-grow-1">
+                
+                {/* CITIZEN CHAT SECTION */}
+                {isTOSM(user) && (<div className="border-bottom">
+                    <div 
+                        className="d-flex justify-content-between align-items-center p-3 bg-light cursor-pointer"
+                        data-bs-toggle="collapse" 
+                        data-bs-target="#citizenChat"
+                        aria-expanded="true"
+                        style={{cursor: "pointer"}}
+                    >
+                        <div className="d-flex align-items-center">
+                            <i className="bi bi-broadcast-pin me-2 text-primary"></i>
+                            <span className="fw-semibold">Public Messages</span>
+                        </div>
+                        <i className="bi bi-chevron-down"></i>
+                    </div>
 
-                                {/* Message Input */}
-                                <div className="mt-auto">
-                                    <form onSubmit={handleMessage}>
-                                        <div className="mb-2">
-                                            <textarea
-                                                className="form-control"
-                                                rows={3}
-                                                value={messageInput}
-                                                onChange={(e) => setMessageInput(e.target.value)}
-                                                required
+                    <div className="collapse show" id="citizenChat">
+                        <div className="flex-grow-1 d-flex flex-column">
+                            {/* Messages Display */}
+                            <div className="flex-grow-1 overflow-auto mb-3 border-bottom p-3" style={{maxHeight: "calc(70vh - 250px)", backgroundColor: "#f8f9fa"}}>
+                                {loadingMessages ? (
+                                    <div className="text-center text-muted">Loading messages...</div>
+                                ) : messages.filter(msg => !msg.isPrivate).length === 0 ? (
+                                    <div className="text-center text-muted">No public messages yet.</div>
+                                ) : (
+                                    <div className="d-flex flex-column-reverse gap-2">
+                                        {messages.filter(msg => !msg.isPrivate).map((msg, index) => (
+                                            <div key={index} className="d-flex flex-column p-3 rounded shadow-sm"
+                                                 style={{backgroundColor: "white"}}>
+                                                <div className="d-flex justify-content-between align-items-center mb-2">
+                                                    <span className="fw-bold text-primary">
+                                                        <i className="bi bi-person-circle me-2"></i>
+                                                            You
+                                                    </span>
+                                                    <span className="text-muted" style={{fontSize: "0.85rem"}}>
+                                                        {new Date(msg.timestamp).toLocaleString()}
+                                                    </span>
+                                                </div>
+                                                <div className="ps-4">
+                                                    {msg.message}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Message Input */}
+                                <div className="mt-auto mb-3">
+                                    <form onSubmit={(e) => handleMessage(e, false)}>
+                                    <div className="mb-2">
+                                        <textarea
+                                            className="form-control"
+                                            rows={2}
+                                            value={publicMessage}
+                                            onChange={(e) => setPublicMessage(e.target.value)}
+                                            required
                                                 placeholder="Type your message here..."
-                                                disabled={messageLoading}
-                                            />
-                                        </div>
-                                        {messageError && <div className="alert alert-danger py-2 mb-2">{messageError}</div>}
-                                        <button type="submit" className="btn btn-primary w-100"
-                                                disabled={messageLoading || !messageInput.trim()}>
-                                            <i className="bi bi-send me-2"></i>
+                                            disabled={messageLoading}
+                                        />
+                                    </div>
+                                    {messageError && <div className="alert alert-danger py-2 mb-2">{messageError}</div>}
+                                    <button type="submit" className="btn btn-primary w-100"
+                                            disabled={messageLoading || !publicMessage.trim()}>
+                                        <i className="bi bi-send me-2"></i>
                                             {messageLoading ? "Sending..." : "Send Message"}
-                                        </button>
-                                    </form>
-                                </div>
+                                    </button>
+                                </form>
                             </div>
                         </div>
-                    )}
+                    </div>
+                </div>)}
+
+                {/* INTERNAL MESSAGES SECTION */}
+                {((isTOSM(user) && report.assignedEM) || isEM(user)) && (<div>
+                    <div 
+                        className="d-flex justify-content-between align-items-center p-3 bg-light cursor-pointer"
+                        data-bs-toggle="collapse" 
+                        data-bs-target="#staffChat"
+                        aria-expanded="true"
+                        style={{cursor: "pointer"}}
+                    >
+                        <div className="d-flex align-items-center">
+                            <i className="bi bi-lock me-2 text-primary"></i>
+                            <span className="fw-semibold">Internal Notes</span>
+                        </div>
+                        <i className="bi bi-chevron-down"></i>
+                    </div>
+                    
+                    <div className="collapse show" id="staffChat">
+                        <div className="flex-grow-1 d-flex flex-column">
+                            {/* Messages Display */}
+                            <div className="flex-grow-1 overflow-auto mb-3 border-bottom p-3" style={{maxHeight: "calc(70vh - 250px)", backgroundColor: "#f8f9fa"}}>
+                                {loadingMessages ? (
+                                    <div className="text-center text-muted">Loading notes...</div>
+                                ) : messages.filter(msg => msg.isPrivate).length === 0 ? (
+                                    <div className="text-center text-muted">
+                                        No internal notes yet.
+                                    </div>
+                                ) : (
+                                    <div className="d-flex flex-column-reverse gap-2">
+                                        {messages.filter(msg => msg.isPrivate).map((msg, index) => (
+                                            <div key={index} className="d-flex flex-column p-3 rounded shadow-sm"
+                                                 style={{backgroundColor: "white"}}>
+                                                <div className="d-flex justify-content-between align-items-center mb-2">
+                                                    <span className="fw-bold text-primary">
+                                                        <i className="bi bi-person-circle me-2"></i>
+                                                        {(isTOSM(user) && msg.staffUsername === user.username)
+                                                            || (isEM(user) && msg.staffUsername === user.username) ? (
+                                                            "You"
+                                                        ) : (
+                                                            `${msg.staffUsername}`
+                                                        )}
+                                                    </span>
+                                                    <span className="text-muted" style={{fontSize: "0.85rem"}}>
+                                                        {new Date(msg.timestamp).toLocaleString()}
+                                                    </span>
+                                                </div>
+                                                <div className="ps-4">
+                                                    {msg.message}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Message Input */}
+                            <div className="mt-auto">
+                                    <form onSubmit={(e) => handleMessage(e, true)}>
+                                    <div className="mb-2">
+                                        <textarea
+                                            className="form-control"
+                                            rows={2}
+                                            value={privateMessage}
+                                            onChange={(e) => setPrivateMessage(e.target.value)}
+                                            required
+                                            placeholder="Internal note for EM..."
+                                            disabled={messageLoading}
+                                        />
+                                    </div>
+                                    {messageError && <div className="alert alert-danger py-2 mb-2">{messageError}</div>}
+                                    <button type="submit" className="btn btn-primary w-100"
+                                            disabled={messageLoading || !privateMessage.trim()}>
+                                        <i className="bi bi-send me-2"></i>
+                                            {messageLoading ? "Sending..." : "Send Message"}
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                )}
+            </div>
+        </div>
+    )}
 
                     {/* RIGHT COLUMN — MANAGE REPORT (for MPRO) */}
                     {user && isMPRO(user) && report.status === ReportStatus.PENDING && (
