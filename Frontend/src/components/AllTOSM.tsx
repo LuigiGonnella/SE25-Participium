@@ -152,9 +152,7 @@ function AdminTOSMPage() {
                                             }}
                                             required
                                         >
-                                            {availableOffices.length > 1 && (
                                                 <option value="">Select an office...</option>
-                                            )}
 
                                             {availableOffices.map((office) => (
                                                 <option key={office.id} value={office.name}>

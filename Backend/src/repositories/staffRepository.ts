@@ -2,10 +2,9 @@ import {AppDataSource} from "@database";
 import {StaffDAO, StaffRole} from "@models/dao/staffDAO";
 import {In, Repository} from "typeorm";
 import bcrypt from "bcrypt";
-import {findOrThrowNotFound, throwConflictIfFound} from "@utils";
+import {throwConflictIfFound} from "@utils";
 import {OfficeCategory, OfficeDAO} from "@dao/officeDAO";
 import {BadRequestError} from "@errors/BadRequestError";
-import { NotFoundError } from "@models/errors/NotFoundError";
 
 export class StaffRepository {
     private repo: Repository<StaffDAO>;
@@ -48,7 +47,7 @@ export class StaffRepository {
                 {
                     where: {
                         ...(isExternal !== undefined ? { role: StaffRole.EM } : {}),
-                        ...(category !== undefined ? { office: { category } } : {})
+                        ...(category !== undefined ? { offices: { category } } : {})
                     },
                     relations: ["offices"]
                 }

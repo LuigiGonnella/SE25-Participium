@@ -84,7 +84,7 @@ router.get('/', isAuthenticated(['STAFF']), async (req, res, next) => {
             filters.category = validateOfficeCategory(category);
         }
 
-        const reports = await getReports(filters);
+        const reports = await getReports((req.user as Staff).username, filters);
         res.status(200).json(reports);
 
     }

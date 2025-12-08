@@ -1,4 +1,4 @@
-import {And, Between, Not, Repository} from "typeorm";
+import {And, Between, In, Not, Repository} from "typeorm";
 import {AppDataSource} from "@database";
 import {ReportDAO, Status} from "@dao/reportDAO";
 import {CitizenDAO} from "@dao/citizenDAO";
@@ -57,7 +57,7 @@ export class ReportRepository {
         });
     }
 
-    async getReports(filters?: ReportFilters): Promise<ReportDAO[]> {
+    async getReports(staffUser: StaffDAO, filters?: ReportFilters): Promise<ReportDAO[]> {
         const where: any = {};
 
         if (filters?.citizen_username) {
@@ -75,6 +75,14 @@ export class ReportRepository {
         if (filters?.category) {
             where.category = filters.category;
         }
+        if ([StaffRole.TOSM, StaffRole.EM].includes(staffUser.role)) {
+            const staffCategories = staffUser.offices.map(o => o.category);
+            if (where.category && !staffCategories.includes(where.category))
+                return [];
+            else if (!where.category)
+                where.category = In(staffCategories);
+        }
+
 
         if (filters?.staff_username) {
             where.assignedStaff = { username: filters.staff_username };
@@ -96,13 +104,11 @@ export class ReportRepository {
     // Get approved reports for map view
     async getMapReports(): Promise<ReportDAO[]> {
 
-        const reports = await this.repo.find({
-            where: { status: And(Not(Status.PENDING), Not(Status.REJECTED)) },
+        return await this.repo.find({
+            where: {status: And(Not(Status.PENDING), Not(Status.REJECTED))},
             relations: ['citizen', 'assignedStaff', 'assignedEM'],
-            order: { timestamp: 'ASC' },
+            order: {timestamp: 'ASC'},
         });
-
-        return reports;
     }
 
     async getReportById(reportId: number): Promise<ReportDAO> {
@@ -174,6 +180,9 @@ export class ReportRepository {
         if (reportToAssign.status !== Status.ASSIGNED)
             throw new BadRequestError("Only reports with ASSIGNED status can be self-assigned.");
 
+        if (!staff.offices.map(o => o.category).includes(reportToAssign.category))
+            throw new BadRequestError(`Staff '${staff.username}' cannot be assigned to reports of category '${reportToAssign.category}'`);
+
         if (reportToAssign.assignedStaff)
             throw new BadRequestError(`Report is already assigned to staff '${reportToAssign.assignedStaff.username}'`);
 
@@ -217,6 +226,8 @@ export class ReportRepository {
 
         let updateData: any = { isExternal: true }
         if (emStaff){
+            if (!emStaff.offices.map(o => o.category).includes(reportToUpdate.category))
+                throw new BadRequestError(`External maintainer '${emStaff.username}' cannot be assigned to reports of category '${reportToUpdate.category}'`);
             updateData.assignedEM = emStaff;
         }
 
@@ -361,7 +372,7 @@ export class ReportRepository {
         await messageRepo.save(messageDAO);
 
         // Create notification for citizen if message is from staff
-        if (assignedStaff && report.citizen && isPrivate === false) {
+        if (assignedStaff && report.citizen && !isPrivate) {
             await this.notificationRepo.createNotificationForCitizen(
                 report,
                 "New message on your report",

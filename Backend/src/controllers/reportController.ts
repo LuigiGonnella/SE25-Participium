@@ -98,8 +98,12 @@ export async function createReport(body: any, citizen: string, photos: Express.M
     );
 }
 
-export async function getReports(filters?: ReportFilters): Promise<Report[]> {
-    const reportDAOs = await repo.getReports(filters);
+export async function getReports(staffUsername: string, filters?: ReportFilters): Promise<Report[]> {
+    const staffDAO = await staffRepo.getStaffByUsername(staffUsername);
+    if (!staffDAO) {
+        throw new NotFoundError(`Staff with username ${staffUsername} not found`);
+    }
+    const reportDAOs = await repo.getReports(staffDAO, filters);
     return reportDAOs.map(mapReportDAOToDTO);
 }
 
