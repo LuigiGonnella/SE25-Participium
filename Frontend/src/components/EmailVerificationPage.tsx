@@ -40,7 +40,7 @@ function EmailVerificationPage() {
                 <Col lg={6} md={8}>
                     <Card className="shadow">
                         <CardBody>
-                            <CardTitle tag="h2" className="text-center mb-4">
+                            <CardTitle tag="h2" className="text-center mb-4 mt-4">
                                 Email Verification
                             </CardTitle>
                             
@@ -51,7 +51,7 @@ function EmailVerificationPage() {
                             ) : (
                                 <>
                                     <p className="text-center text-muted mb-4">
-                                        Please enter the 6-digit verification code sent to your email address.
+                                        Please enter the 6-digit verification code sent to your email address.<br />
                                         The code is valid for 30 minutes.
                                     </p>
 
@@ -66,7 +66,6 @@ function EmailVerificationPage() {
                                             <Input
                                                 type="text"
                                                 id="verificationCode"
-                                                label="Verification Code"
                                                 value={code}
                                                 onChange={(e) => setCode(e.target.value)}
                                                 maxLength={6}
@@ -77,15 +76,16 @@ function EmailVerificationPage() {
                                                 required
                                             />
                                         </div>
-
+                                        <div className="text-center">
                                         <Button
                                             color="primary"
                                             type="submit"
-                                            className="w-100"
+                                            style={{ width: '25vw' }}
                                             disabled={loading || code.length !== 6}
                                         >
                                             {loading ? 'Verifying...' : 'Verify Email'}
                                         </Button>
+                                        </div>
                                     </form>
 
                                     <div className="text-center mt-4">
