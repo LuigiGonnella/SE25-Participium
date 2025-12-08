@@ -4,6 +4,7 @@ import {Router} from "express";
 import {isAuthenticated} from '@middlewares/authMiddleware';
 import { StaffToJSON } from '@models/dto/Staff';
 import { StaffRole } from '@models/dao/staffDAO';
+import { getAllTOSM } from '@controllers/staffController';
 
 const router = Router();
 
@@ -63,6 +64,12 @@ router.patch(
     '/staff/:id/offices',
     isAuthenticated([StaffRole.ADMIN]),
     (req, res, next) => updateStaffOffices(req, res, next)
+);
+
+router.get(
+    '/staff/tosm',
+    isAuthenticated([StaffRole.ADMIN]),
+    (req, res) => getAllTOSM(req, res)
 );
 
 router.post('/login', async (req, res, next) => {

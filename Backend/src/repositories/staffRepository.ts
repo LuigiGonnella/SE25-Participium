@@ -5,6 +5,7 @@ import bcrypt from "bcrypt";
 import {findOrThrowNotFound, throwConflictIfFound} from "@utils";
 import {OfficeCategory, OfficeDAO} from "@dao/officeDAO";
 import {BadRequestError} from "@errors/BadRequestError";
+import { NotFoundError } from "@models/errors/NotFoundError";
 
 export class StaffRepository {
     private repo: Repository<StaffDAO>;
@@ -49,16 +50,33 @@ export class StaffRepository {
                         ...(isExternal !== undefined ? { role: StaffRole.EM } : {}),
                         ...(category !== undefined ? { office: { category } } : {})
                     },
-                    relations: ["office"]
+                    relations: ["offices"]
                 }
             )
         }
-        return await this.repo.find({ relations: ["office"] });
+        return await this.repo.find({ relations: ["offices"] });
+    }
+
+    // get all tosm
+    async getAllTOSM(category?: OfficeCategory): Promise<StaffDAO[]> {
+        return await this.repo.find({
+            where: {
+                role: StaffRole.TOSM,
+                ...(category ? { offices: { category } } : {})
+            },
+            relations: ["offices"]
+        });
     }
 
     // get staff by ID
     async getStaffById(id: number): Promise<StaffDAO | null> {
-        return await this.repo.findOne({ where: { id }, relations: ["offices"] });
+        const staff = await this.repo.findOne({
+            where: { id },
+            relations: ["offices"]
+        });
+    
+        if (!staff) throw new NotFoundError("Staff not found");
+        return staff;    
     }
 
     // get staff by username
