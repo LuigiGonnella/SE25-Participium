@@ -166,7 +166,7 @@ export class ReportRepository {
 
     async selfAssignReport(reportId: number, staffUsername: string): Promise<ReportDAO> {
         const staff = findOrThrowNotFound(
-            await this.staffRepo.find({where: {username: staffUsername}}),
+            await this.staffRepo.find({where: {username: staffUsername}, relations: ['offices']}),
             () => true,
             `Staff with username '${staffUsername}' not found`
         );
@@ -202,7 +202,7 @@ export class ReportRepository {
         let emStaff;
         if (emStaffUsername !== ""){
             emStaff = findOrThrowNotFound(
-                await this.staffRepo.find({where: {username: emStaffUsername, role: StaffRole.EM}}),
+                await this.staffRepo.find({where: {username: emStaffUsername, role: StaffRole.EM}, relations: ['offices']}),
                 () => true,
                 `External maintainer with username '${emStaffUsername}' not found`
             );
