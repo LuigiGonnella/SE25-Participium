@@ -407,7 +407,7 @@ return (
                             </div>
 
                             {/* Message Input */}
-                                <div className="mt-auto">
+                                <div className="mt-auto mb-3">
                                     <form onSubmit={(e) => handleMessage(e, false)}>
                                     <div className="mb-2">
                                         <textarea
