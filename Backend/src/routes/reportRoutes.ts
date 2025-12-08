@@ -1,14 +1,24 @@
 import {Router} from "express";
 import {isAuthenticated} from "@middlewares/authMiddleware";
 import {mapReportDAOToDTO} from "@services/mapperService";
-import {createReport, uploadReportPictures, getReports, getReportById, updateReportAsTOSM, updateReportAsMPRO, getMapReports, addMessageToReport, getAllMessages} from "@controllers/reportController";
+import {
+    addMessageToReport, assignReportToEM,
+    createReport,
+    getAllMessages,
+    getMapReports,
+    getReportById,
+    getReports, selfAssignReport,
+    updateReportAsMPRO,
+    updateReportAsTOSM,
+    uploadReportPictures
+} from "@controllers/reportController";
 import {Citizen} from "@dto/Citizen";
-import { ReportFilters } from "@repositories/reportRepository";
-import { BadRequestError } from "@errors/BadRequestError";
-import { Status } from "@models/dao/reportDAO";
-import { OfficeCategory } from "@models/dao/officeDAO";
-import { StaffRole } from "@models/dao/staffDAO";
+import {ReportFilters} from "@repositories/reportRepository";
+import {BadRequestError} from "@errors/BadRequestError";
+import {OfficeCategory} from "@models/dao/officeDAO";
+import {StaffRole} from "@models/dao/staffDAO";
 import {Staff} from "@dto/Staff";
+import {validateDate, validateOfficeCategory, validateReportId, validateStatus, validateStatusByRole} from "@utils";
 
 const router = Router();
 
@@ -51,45 +61,23 @@ router.get('/', isAuthenticated(['STAFF']), async (req, res, next) => {
         }
 
         if (fromDate) {
-            const date = new Date(String(fromDate));
-            if (isNaN(date.getTime())) {
-                throw new BadRequestError('Invalid fromDate format.');
-            }
-            filters.fromDate = date;
+            filters.fromDate = validateDate(fromDate, 'fromDate');
         }
 
         if (toDate) {
-            const date = new Date(String(toDate));
-            if (isNaN(date.getTime())) {
-                throw new BadRequestError('Invalid toDate format.');
-            }
-            filters.toDate = date;
+            filters.toDate = validateDate(toDate, 'toDate');
         }
 
         if (filters.fromDate && filters.toDate && filters.fromDate > filters.toDate) {
             throw new BadRequestError('fromDate cannot be after toDate.');
         }
 
-        if (status) {
-            const statusValue = String(status);
-            
-            const validStatus = Object.keys(Status)
-                .filter(key => isNaN(Number(key)))
-                .find(key => key.toUpperCase() === statusValue.toUpperCase());
-           
-            if (!validStatus) {
-                throw new BadRequestError('Invalid status.');
-            }
-            filters.status = Status[validStatus as keyof typeof Status];
+        if (typeof status === 'string') {
+            filters.status = validateStatus(status);
         }
 
-        if (category) {
-            const categoryValue = String(category);
-           
-            if (!(categoryValue in OfficeCategory)) {
-                throw new BadRequestError('Invalid category.');
-            }
-            filters.category = OfficeCategory[categoryValue as keyof typeof OfficeCategory];
+        if (typeof category === 'string') {
+            filters.category = validateOfficeCategory(category);
         }
 
         const reports = await getReports(filters);
@@ -113,10 +101,7 @@ router.get('/public', isAuthenticated(['CITIZEN']), async (req, res, next) => {
 
 router.get('/:reportId', isAuthenticated(['STAFF']), async (req, res, next) => {
     try {
-        const reportId = parseInt(req.params.reportId);
-        if (isNaN(reportId)) {
-            throw new BadRequestError('Invalid reportId.');
-        }
+        const reportId = validateReportId(req.params.reportId);
 
         const report = await getReportById(reportId);
         res.status(200).json(report);
@@ -128,49 +113,15 @@ router.get('/:reportId', isAuthenticated(['STAFF']), async (req, res, next) => {
 // PATCH MPRO: change status, category and (optionally) assigned staff
 router.patch('/:reportId/manage', isAuthenticated([StaffRole.MPRO]), async (req, res, next) => {
     try {
-
-        const reportId = parseInt(req.params.reportId);
-        if (isNaN(reportId)) {
-            throw new BadRequestError('Invalid reportId.');
-        }
+        const reportId = validateReportId(req.params.reportId);
 
         const { status, comment, category } = req.body;
 
-        let updatedStatus: Status;
+        const updatedStatus = validateStatusByRole(status, StaffRole.MPRO, comment);
+
         let updatedCategory: OfficeCategory | undefined;
-
-        if (status) {
-            const statusValue = String(status);           
-            const validStatus = Object.keys(Status)
-                .filter(key => isNaN(Number(key)))
-                .find(key => key.toUpperCase() === statusValue.toUpperCase());
-                
-            if (!validStatus) {
-                throw new BadRequestError('Invalid status.');
-            }
-
-            updatedStatus = Status[validStatus as keyof typeof Status];
-            
-        } else {
-            throw new BadRequestError('Status is required.');
-        }
-
-        if(updatedStatus !== Status.PENDING && updatedStatus !== Status.ASSIGNED && updatedStatus !== Status.REJECTED)
-            throw new BadRequestError(`Invalid status for ${StaffRole.MPRO}.`);
-
-        if((updatedStatus === Status.PENDING || updatedStatus === Status.ASSIGNED) && comment)
-            throw new BadRequestError("Comments can only be added when report is rejected.");
-
-        if(updatedStatus === Status.REJECTED && !comment)
-            throw new BadRequestError("A comment is required when rejecting a report.");
-
         if (category) {
-            const categoryValue = String(category);
-
-            if (!(categoryValue in OfficeCategory) || category === 'MOO') {
-                throw new BadRequestError('Invalid category.');
-            }
-            updatedCategory = OfficeCategory[categoryValue as keyof typeof OfficeCategory];
+            updatedCategory = validateOfficeCategory(category);
         }
 
         const report = await updateReportAsMPRO(reportId, updatedStatus, comment, updatedCategory);
@@ -181,56 +132,57 @@ router.patch('/:reportId/manage', isAuthenticated([StaffRole.MPRO]), async (req,
 });
 
 // PATCH TOSM: self assignment of reports
-router.patch(
-  "/:reportId/work",
-  isAuthenticated([StaffRole.TOSM]),
-  async (req, res, next) => {
+router.patch("/:reportId/assignSelf", isAuthenticated([StaffRole.TOSM]), async (req, res, next) => {
     try {
-      const reportId = parseInt(req.params.reportId);
-      if (isNaN(reportId)) {
-        throw new BadRequestError("Invalid reportId.");
+        const reportId = validateReportId(req.params.reportId);
+
+        const staffUsername = (req.user as Staff).username;
+
+        const report = await selfAssignReport(reportId, staffUsername);
+
+        res.status(200).json(report);
+    } catch (err) {
+        next(err);
       }
+    }
+    );
 
-      const { status, comment, staff } = req.body;
+router.patch("/:reportId/updateStatus", isAuthenticated([StaffRole.TOSM]), async (req, res, next) => {
+    try {
+      const reportId = validateReportId(req.params.reportId);
 
-      let updatedStatus: Status;
+      const { status, comment } = req.body;
 
-      if (staff) {
-        throw new BadRequestError(
-          "Technical Office Staff Members cannot assign the report to another staff member."
-        );
-      }
+      const updatedStatus = validateStatusByRole(status, StaffRole.TOSM, comment);
 
-      if (status) {
-        const statusValue = String(status);
-        const validStatus = Object.keys(Status)
-          .filter((key) => isNaN(Number(key)))
-          .find((key) => key.toUpperCase() === statusValue.toUpperCase());
-
-        if (!validStatus) {
-          throw new BadRequestError("Invalid status.");
-        }
-
-        updatedStatus = Status[validStatus as keyof typeof Status];
-        
-      } else {
-        throw new BadRequestError("Status is required.");
-      }
-
-      if(updatedStatus !== Status.IN_PROGRESS && updatedStatus !== Status.SUSPENDED && updatedStatus !== Status.RESOLVED)
-        throw new BadRequestError(`Invalid status for ${StaffRole.TOSM}.`);
-
-      if((updatedStatus !== Status.RESOLVED) && comment)
-            throw new BadRequestError("Comments can only be added when report is resolved.");
-
-      const staffUsername = String((req.user as Staff).username).trim();
+      const staffUsername = (req.user as Staff).username;
 
       const report = await updateReportAsTOSM(
         reportId,
         updatedStatus,
-        comment,
-        staffUsername
+        staffUsername,
+        comment
       );
+
+      res.status(200).json(report);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// PATCH TOSM: assignment reports to external maintainer
+router.patch("/:reportId/assignExternal", isAuthenticated([StaffRole.TOSM]), async (req, res, next) => {
+    try {
+      const reportId = validateReportId(req.params.reportId);
+
+      const staffUsername = (req.user as Staff).username;
+
+      const { staffEM } = req.body;
+
+      const EM_Username = (staffEM as string).trim();
+
+      const report = await assignReportToEM(reportId, EM_Username, staffUsername);
 
       res.status(200).json(report);
     } catch (err) {
@@ -243,10 +195,7 @@ router.patch(
 router.post('/:reportId/messages', isAuthenticated(['CITIZEN', 'STAFF']), async (req, res, next) => {
     try {
         const user = req.user as ((Citizen | Staff) & { type: 'CITIZEN' | 'STAFF' });
-        const reportId = parseInt(req.params.reportId);
-        if (isNaN(reportId)) {
-            throw new BadRequestError('Invalid reportId.');
-        }
+        const reportId = validateReportId(req.params.reportId);
 
         const { message } = req.body;
 
@@ -262,10 +211,8 @@ router.post('/:reportId/messages', isAuthenticated(['CITIZEN', 'STAFF']), async 
 
 router.get('/:reportId/messages', isAuthenticated(['CITIZEN', 'STAFF']), async (req, res, next) => {
     try {
-        const reportId = parseInt(req.params.reportId);
-        if (isNaN(reportId)) {
-            throw new BadRequestError('Invalid reportId.');
-        }        
+        const reportId = validateReportId(req.params.reportId);
+
         res.status(200).json(await getAllMessages(reportId));
     } catch (err) {
         next(err);

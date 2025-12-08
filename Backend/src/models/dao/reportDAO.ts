@@ -61,6 +61,9 @@ export class ReportDAO {
     @ManyToOne(() => StaffDAO, { nullable: true })
     assignedStaff?: StaffDAO;
 
+    @ManyToOne(() => StaffDAO, { nullable: true })
+    assignedEM?: StaffDAO;
+
     @OneToMany(() => MessageDAO, (message) => message.report, { cascade: true })
     messages: MessageDAO[];
 }

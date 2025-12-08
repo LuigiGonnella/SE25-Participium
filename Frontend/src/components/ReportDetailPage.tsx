@@ -5,6 +5,7 @@ import {
     isMPRO,
     isStaff,
     isTOSM,
+    isEM,
     type Message,
     OfficeCategory,
     type Report,
@@ -133,7 +134,7 @@ export default function ReportDetailPage({ user }: ReportDetailPageProps) {
 
   const handleMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!report || !user || !isTOSM(user)) return;
+    if (!report || !user || !isTOSM(user) ) return;
     setMessageLoading(true);
     setMessageError("");
 
@@ -276,7 +277,7 @@ return (
                                 </Carousel>
                             </div>
                         </div>
-                        { (isTOSM(user) && report.assignedStaff === user.username) &&
+                        { ((isTOSM(user) || isEM(user)) && (report.assignedStaff === user.username || report.assignedEM === user.username)) &&
                         <div className="row px-4">
                             {!loading && error && <Alert variant="danger">{error}</Alert>}
                             <div className="ms-4 pt-3">

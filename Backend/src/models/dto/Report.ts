@@ -71,6 +71,8 @@ export interface Report {
 
     assignedStaff?: string;
 
+    assignedEM?: string;
+
     messages?: MessageDAO[];
 }
 
@@ -95,6 +97,7 @@ export function ReportToJSONTyped(value?: Report | null, ignoreDiscriminator: bo
         'photos': value['photos'],
         'comment': value['comment'],
         'assignedStaff': value['assignedStaff'],
+        'assignedEM': value['assignedEM'],
         'messages': value['messages'],
     };
 }

@@ -111,21 +111,23 @@ export async function getReportById(reportId: number): Promise<Report> {
     return mapReportDAOToDTO(reportDAO);
 }
 
-export async function updateReportAsMPRO(reportId: number,
-                                    updatedStatus: Status,
-                                    comment?: string,
-                                    updatedCategory?: OfficeCategory,
-                                ): Promise<Report> {
+export async function updateReportAsMPRO(reportId: number, updatedStatus: Status, comment?: string, updatedCategory?: OfficeCategory): Promise<Report> {
     const updatedReportDAO = await repo.updateReportAsMPRO(reportId, updatedStatus, comment, updatedCategory);
     return mapReportDAOToDTO(updatedReportDAO);
 }
 
-export async function updateReportAsTOSM(reportId: number,
-                                    updatedStatus: Status,
-                                    comment?: string,
-                                    staffUsername?: string
-                                ): Promise<Report> {
-    const updatedReportDAO = await repo.updateReportAsTOSM(reportId, updatedStatus, comment, staffUsername);
+export async function selfAssignReport(reportId: number, staffUsername: string): Promise<Report> {
+    const updatedReportDAO = await repo.selfAssignReport(reportId, staffUsername);
+    return mapReportDAOToDTO(updatedReportDAO);
+}
+
+export async function updateReportAsTOSM(reportId: number, updatedStatus: Status, staffUsername: string, comment?: string): Promise<Report> {
+    const updatedReportDAO = await repo.updateReportAsTOSM(reportId, updatedStatus, staffUsername, comment);
+    return mapReportDAOToDTO(updatedReportDAO);
+}
+
+export async function assignReportToEM(reportId: number, emUsername: string, staffUsername: string): Promise<Report> {
+    const updatedReportDAO = await repo.assignEMToReport(reportId, emUsername, staffUsername);
     return mapReportDAOToDTO(updatedReportDAO);
 }
 
@@ -156,6 +158,6 @@ export async function getAllMessages(reportId: number): Promise<Message[]> {
         () => true,
         `Report with id ${reportId} not found`
     );
-    const messages = await repo.getAllMessages(reportId);
+    const messages = await repo.getAllMessages(reportDAO.id);
     return messages.map(mapMessageToDTO);
 }

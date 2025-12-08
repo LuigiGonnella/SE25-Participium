@@ -1,9 +1,22 @@
 import { Request, Response } from "express";
 import { OfficeRepository } from "@repositories/officeRepository";
-import AppError from "@models/errors/AppError";
-import {BadRequestError} from "@errors/BadRequestError";
 
 export class OfficeController {
+
+  static async getAllOffices(req: Request, res: Response) {
+    try {
+      const isExternalParam = req.query.isExternal?.toString().toLowerCase();
+      const isExternal = isExternalParam === "true" ? true : (isExternalParam === "false" ? false : undefined);
+      const officeRepo = new OfficeRepository();
+      const offices = await officeRepo.getAllOffices(isExternal);
+      return res.status(200).json(offices);
+    } catch (error: any) {
+      console.error("Error fetching offices:", error);
+      return res.status(500).json({ message: "Failed to fetch offices" });
+    }
+  }
+  
+  /*
   static async createOffice(req: Request, res: Response) {
     try {
       const { name, description, category } = req.body;
@@ -30,16 +43,6 @@ export class OfficeController {
         message: "Internal server error while creating office",
       });
     }
-  }
+  }*/
 
-  static async getAllOffices(req: Request, res: Response) {
-    try {
-      const officeRepo = new OfficeRepository();
-      const offices = await officeRepo.getAllOffices();
-      return res.status(200).json(offices);
-    } catch (error: any) {
-      console.error("Error fetching offices:", error);
-      return res.status(500).json({ message: "Failed to fetch offices" });
-    }
-  }
 }

@@ -6,7 +6,8 @@ export enum StaffRole {
     ADMIN = "Admin",
     MPRO = "Municipal Public Relations Officer",
     MA = "Municipal Administrator",
-    TOSM = "Technical Office Staff Member"
+    TOSM = "Technical Office Staff Member",
+    EM = "External Maintainer"
 }
 
 @Entity("staff")
