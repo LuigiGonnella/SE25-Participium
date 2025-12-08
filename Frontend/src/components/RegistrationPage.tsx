@@ -369,10 +369,19 @@ function MunicipalityRegistrationForm({ handleStaffRegistration }: RegistrationF
                     )
                 );
                 setFilteredOffices(filtered);
-                setFormData(prev => ({
-                    ...prev,
-                    officeNames: [""]
-                }));
+                if (filtered.length === 1) {
+                    setFormData(prev => ({
+                        ...prev,
+                        officeNames: [filtered[0].name]
+                    }));
+                }
+
+                else {
+                    setFormData(prev => ({
+                        ...prev,
+                        officeNames: [""]
+                    }));
+                }
             } else {
                 setFilteredOffices([]);
             }
