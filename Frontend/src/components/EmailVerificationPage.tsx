@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { verifyEmail } from '../API/API.mts';
+import API from '../API/API.mts';
 import { Alert, Button, Card, CardBody, CardTitle, Container, Input, Row, Col } from 'design-react-kit';
 
 function EmailVerificationPage() {
@@ -22,7 +22,7 @@ function EmailVerificationPage() {
         }
 
         try {
-            await verifyEmail(code.trim());
+            await API.verifyEmail(code.trim());
             setSuccess(true);
             setTimeout(() => {
                 navigate('/login');

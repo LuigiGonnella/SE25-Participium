@@ -5,15 +5,13 @@ import {
     login,
     verifyTelegramUser,
     createTelegramVerification,
-    verifyEmailUser,
-    updateStaffOffices
+    verifyEmailUser
 } from '@controllers/authController';
 import {Citizen, CitizenToJSON} from '@models/dto/Citizen';
 import {Router} from "express";
 import {isAuthenticated, telegramBotAuth} from '@middlewares/authMiddleware';
 import { StaffToJSON } from '@models/dto/Staff';
 import { StaffRole } from '@models/dao/staffDAO';
-import { getAllTOSM } from '@controllers/staffController';
 
 const router = Router();
 
@@ -68,18 +66,6 @@ router.post('/register-municipality', isAuthenticated([StaffRole.ADMIN]), async 
         next(error);
     }
 });
-
-router.patch(
-    '/staff/:username/offices',
-    isAuthenticated([StaffRole.ADMIN]),
-    (req, res, next) => updateStaffOffices(req, res, next)
-);
-
-router.get(
-    '/staff/tosm',
-    isAuthenticated([StaffRole.ADMIN]),
-    (req, res) => getAllTOSM(req, res)
-);
 
 router.post('/login', async (req, res, next) => {
     try {

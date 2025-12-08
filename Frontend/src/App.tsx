@@ -40,6 +40,7 @@ function App() {
                 setLoggedIn(true);
                 setUser(user);
             } catch (err) {
+                console.error(err);
                 setLoggedIn(false);
                 setUser(undefined);
             } finally {
@@ -55,7 +56,7 @@ function App() {
             setLoggedIn(true);
             setUser(user);
         } catch (err) {
-            throw err;
+            console.error(err);
         }
     };
 
@@ -63,7 +64,7 @@ function App() {
         try {
             await API.register(newCitizen);
         } catch (err) {
-            throw err;
+             console.error(err);
         }
     };
 
@@ -71,7 +72,7 @@ function App() {
         try {
             await API.municipalityRegister(newStaff);
         } catch (err) {
-            throw err;
+            console.error(err);
         }
     };
 

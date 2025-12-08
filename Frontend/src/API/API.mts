@@ -9,8 +9,7 @@ import type {
     NewReport,
     Report,
     Notification,
-    Message,
-    OfficeCategory
+    Message
 } from "../models/Models.ts";
 import {handleAPIError} from "../services/ErrorHandler.ts";
 
@@ -62,7 +61,7 @@ const municipalityRegister = async (newStaff: NewStaff): Promise<Staff> => {
 }
 
 const updateTOSMOffices = async (username: string, offices: string[]): Promise<Staff> => {
-    const response = await fetch(`${BACKEND_URL}/auth/staff/${username}/offices`, {
+    const response = await fetch(`${BACKEND_URL}/staffs/${username}/offices`, {
         method: 'PATCH',
         headers: { "Content-Type": "application/json" },
         credentials: 'include',
@@ -77,7 +76,7 @@ const updateTOSMOffices = async (username: string, offices: string[]): Promise<S
 }
 
 const getAllTOSM = async (): Promise<Staff[]> => {
-    const response = await fetch(`${BACKEND_URL}/auth/staff/tosm`,{
+    const response = await fetch(`${BACKEND_URL}/staffs/tosm`,{
         method: 'GET',
         credentials: 'include'
     })
