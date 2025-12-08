@@ -1,4 +1,4 @@
-import {Column, Entity, ManyToMany, ManyToOne, OneToMany, PrimaryGeneratedColumn} from "typeorm";
+import {Column, Entity, JoinTable, ManyToMany, ManyToOne, OneToMany, PrimaryGeneratedColumn} from "typeorm";
 import {OfficeDAO} from "./officeDAO";
 import { ReportDAO } from "./reportDAO";
 
@@ -31,8 +31,13 @@ export class StaffDAO {
     @Column({ type: "simple-enum", enum: StaffRole, nullable: false })
     role: StaffRole;
 
-    @ManyToMany(() => OfficeDAO, (office) => office.members, {onDelete: "SET NULL", nullable: true})
-    office: OfficeDAO[];
+    @ManyToMany(() => OfficeDAO, (office) => office.members)
+    @JoinTable({
+        name: "staff_offices",
+        joinColumn: { name: "staff_id" },
+        inverseJoinColumn: { name: "office_id" }
+    })
+    offices: OfficeDAO[];
 
     @OneToMany(() => ReportDAO, (report) => report.assignedStaff)
     assignedReports: ReportDAO[];

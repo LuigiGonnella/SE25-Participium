@@ -81,7 +81,7 @@ export async function registerMunicipalityUser(
     surname: string,
     password: string,
     role: string,
-    officeName: string
+    officeNames: string[]
 ) {
     const staffRepo = new StaffRepository();
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -98,10 +98,45 @@ export async function registerMunicipalityUser(
         surname,
         hashedPassword,
         validRole,
-        officeName,
+        officeNames,
     );
 
     return mapStaffDAOToDTO(staffDAO);
+}
+
+export async function updateStaffOffices(req: Request, res: Response, next: NextFunction) {
+    try {
+        const id = Number(req.params.id);
+        if (isNaN(id)) {
+            return res.status(400).json({ message: "Invalid staff ID" });
+        }
+
+        const repo = new StaffRepository();
+        const { offices, add, remove } = req.body;
+
+        if (Array.isArray(offices)) {
+            const updated = await repo.updateStaffOffices(id, offices);
+            return res.status(200).json(mapStaffDAOToDTO(updated));
+        }
+
+        if (typeof add === "string") {
+            const updated = await repo.addOfficeToStaff(id, add);
+            return res.status(200).json(mapStaffDAOToDTO(updated));
+        }
+
+        if (typeof remove === "string") {
+            const updated = await repo.removeOfficeFromStaff(id, remove);
+            return res.status(200).json(mapStaffDAOToDTO(updated));
+        }
+
+        return res.status(400).json({
+            message:
+                "PATCH must contain { offices: [...] } or { add: 'officeName' } or { remove: 'officeName' }"
+        });
+
+    } catch (err) {
+        next(err);
+    }
 }
 
 export async function login(req: Request, res: Response, next: NextFunction) {

@@ -1,4 +1,4 @@
-import {register, uploadProfilePicture, registerMunicipalityUser, login} from '@controllers/authController';
+import {register, uploadProfilePicture, registerMunicipalityUser, login, updateStaffOffices} from '@controllers/authController';
 import {CitizenToJSON} from '@models/dto/Citizen';
 import {Router} from "express";
 import {isAuthenticated} from '@middlewares/authMiddleware';
@@ -51,13 +51,19 @@ router.post('/register-municipality', isAuthenticated([StaffRole.ADMIN]), async 
             req.body.surname,
             req.body.password,
             req.body.role,
-            req.body.officeName 
+            req.body.officeNames
         );
         res.status(201).json(StaffToJSON(staff)); // does not expose password
     } catch (error) {
         next(error);
     }
 });
+
+router.patch(
+    '/staff/:id/offices',
+    isAuthenticated([StaffRole.ADMIN]),
+    (req, res, next) => updateStaffOffices(req, res, next)
+);
 
 router.post('/login', async (req, res, next) => {
     try {
