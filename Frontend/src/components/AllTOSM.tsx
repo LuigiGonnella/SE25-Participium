@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import API from "../API/API.mts";
 import type { Staff, Office } from "../models/Models";
 import { ROLE_OFFICE_MAP } from "../models/Models";
-import { Button, Container, Table, Alert, Form, Row, Col } from "react-bootstrap";
+import {Button, Container, Table, Alert, Form, Row, Col, Modal, ModalHeader, ModalBody, ModalFooter, ModalTitle} from "react-bootstrap";
 
 function AdminTOSMPage() {
     const [tosms, setTosms] = useState<Staff[]>([]);
@@ -81,6 +81,11 @@ function AdminTOSMPage() {
         }
     };
 
+    const handleClose = () => {
+        setSelected(null);
+        setOfficeNames([]);
+    }
+
     return (
         <Container className="py-4">
             <h2 className="mb-4">Technical Office Staff Members</h2>
@@ -88,8 +93,8 @@ function AdminTOSMPage() {
             {error && <Alert variant="danger">{error}</Alert>}
             {success && <Alert variant="success">{success}</Alert>}
 
-            <Table bordered hover>
-                <thead>
+                <Table responsive bordered hover>
+                    <thead>
                     <tr className="text-center">
                         <th>Username</th>
                         <th>Name</th>
@@ -126,10 +131,11 @@ function AdminTOSMPage() {
                 </tbody>
             </Table>
 
-            {selected && (
-                <div className="p-3 border rounded mt-4">
-                    <h4>Edit Offices for {selected.username}</h4>
-
+            <Modal className="mt-lg-2 pb-5 px-0 px-lg-3 overflow-hidden" show={selected !== null} onHide={handleClose} centered fullscreen="sm-down" dialogClassName="ms-0 ms-lg-auto">
+                <ModalHeader className="pt-3" closeButton>
+                    <ModalTitle>Edit Offices for {selected?.username}</ModalTitle>
+                </ModalHeader>
+                <ModalBody style={{ overflowY: 'auto' }}>
                     {officeNames.map((selectedName, index) => {
                         const availableOffices = filteredOffices.filter(
                             (office) =>
@@ -139,10 +145,9 @@ function AdminTOSMPage() {
 
                         return (
                             <Row key={index} className="align-items-center">
-                                <Col xs={10}>
+                                <Col xs={10} className="px-0 px-lg-3">
                                     <Form.Group className="mb-3" controlId={`editOffice${index}`}>
                                         <Form.Label>{`Office ${index + 1}`}</Form.Label>
-
                                         <Form.Select
                                             value={selectedName}
                                             onChange={(e) => {
@@ -152,8 +157,7 @@ function AdminTOSMPage() {
                                             }}
                                             required
                                         >
-                                                <option value="">Select an office...</option>
-
+                                            <option value="">Select an office...</option>
                                             {availableOffices.map((office) => (
                                                 <option key={office.id} value={office.name}>
                                                     {office.name}
@@ -164,8 +168,9 @@ function AdminTOSMPage() {
                                 </Col>
 
                                 {index > 0 && (
-                                    <Col xs={2} className="mt-4">
+                                    <Col xs={2} className="px-0 px-lg-3">
                                         <Button
+                                            className="px-3 py-2"
                                             variant="danger"
                                             onClick={() => {
                                                 const updated = [...officeNames];
@@ -201,23 +206,16 @@ function AdminTOSMPage() {
                             Add another office
                         </Button>
                     )}
-
-                    <div className="mt-3">
-                        <Button variant="success" onClick={handleSave} className="me-2">
-                            Save
-                        </Button>
-                        <Button
-                            variant="secondary"
-                            onClick={() => {
-                                setSelected(null);
-                                setOfficeNames([]);
-                            }}
-                        >
-                            Cancel
-                        </Button>
-                    </div>
-                </div>
-            )}
+                </ModalBody>
+                <ModalFooter>
+                    <Button variant="secondary" onClick={handleClose}>
+                        Cancel
+                    </Button>
+                    <Button variant="success" onClick={handleSave}>
+                        Save
+                    </Button>
+                </ModalFooter>
+            </Modal>
         </Container>
     );
 }
