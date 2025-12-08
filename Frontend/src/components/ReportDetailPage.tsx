@@ -395,7 +395,7 @@ return (
                                                         {new Date(msg.timestamp).toLocaleString()}
                                                     </span>
                                                 </div>
-                                                <div className="ps-4">
+                                                <div className="ps-4" style={{ whiteSpace: "pre-line" }}>
                                                     {msg.message}
                                                 </div>
                                             </div>
@@ -414,7 +414,7 @@ return (
                                             value={publicMessage}
                                             onChange={(e) => setPublicMessage(e.target.value)}
                                             required
-                                                placeholder="Type your message here..."
+                                                placeholder="Type your message here."
                                             disabled={messageLoading}
                                         />
                                     </div>
@@ -475,7 +475,7 @@ return (
                                                         {new Date(msg.timestamp).toLocaleString()}
                                                     </span>
                                                 </div>
-                                                <div className="ps-4">
+                                                <div className="ps-4" style={{ whiteSpace: "pre-line" }}>
                                                     {msg.message}
                                                 </div>
                                             </div>
@@ -494,7 +494,7 @@ return (
                                             value={privateMessage}
                                             onChange={(e) => setPrivateMessage(e.target.value)}
                                             required
-                                            placeholder="Internal note for EM..."
+                                            placeholder="Type your message here."
                                             disabled={messageLoading}
                                         />
                                     </div>
