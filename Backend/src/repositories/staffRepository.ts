@@ -129,8 +129,8 @@ export class StaffRepository {
     }
 
     // update staff offices
-    async updateStaffOffices(staffId: number, officeNames: string[]): Promise<StaffDAO> {
-        const staff = await this.getStaffById(staffId);
+    async updateStaffOffices(staffUsername: string, officeNames: string[]): Promise<StaffDAO> {
+        const staff = await this.getStaffByUsername(staffUsername);
         if (!staff) throw new BadRequestError("Staff not found");
 
         if (!Array.isArray(officeNames)) {
@@ -152,8 +152,8 @@ export class StaffRepository {
     }
 
     // add staff offices
-    async addOfficeToStaff(staffId: number, officeName: string): Promise<StaffDAO> {
-        const staff = await this.getStaffById(staffId);
+    async addOfficeToStaff(staffUsername: string, officeName: string): Promise<StaffDAO> {
+        const staff = await this.getStaffByUsername(staffUsername);
         if (!staff) throw new BadRequestError("Staff not found");
 
         const office = await this.officeRepo.findOne({ where: { name: officeName } });
@@ -169,8 +169,8 @@ export class StaffRepository {
     }
 
     // remove staff office
-    async removeOfficeFromStaff(staffId: number, officeName: string): Promise<StaffDAO> {
-        const staff = await this.getStaffById(staffId);
+    async removeOfficeFromStaff(staffUsername: string, officeName: string): Promise<StaffDAO> {
+        const staff = await this.getStaffByUsername(staffUsername);
         if (!staff) throw new BadRequestError("Staff not found");
 
         const office = await this.officeRepo.findOne({ where: { name: officeName } });

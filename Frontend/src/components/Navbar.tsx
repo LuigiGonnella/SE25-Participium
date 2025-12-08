@@ -91,6 +91,11 @@ function NavComponent({loggedIn, user, handleLogout}: NavComponentProps) {
                                     </LinkListItem>
                                 )}
                                 {(loggedIn && isStaff(user) && user.role === StaffRole.ADMIN) && (
+                                    <LinkListItem inDropdown href="/tosms" active={ window.location.pathname === '/tosms' }>
+                                        Staff Management
+                                    </LinkListItem>
+                                )}
+                                {(loggedIn && isStaff(user) && user.role === StaffRole.ADMIN) && (
                                     <LinkListItem inDropdown href="/municipality-registration" active={ window.location.pathname === '/municipality-registration' }>
                                         Staff registration
                                     </LinkListItem>

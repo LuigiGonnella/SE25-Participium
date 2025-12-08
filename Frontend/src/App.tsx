@@ -24,6 +24,7 @@ import {
     isStaff, StaffRole,
     isMPRO, isTOSM, isCitizen, isEM
 } from "./models/Models.ts";
+import AdminTOSMPage from './components/AllTOSM.tsx';
 
 
 function App() {
@@ -117,6 +118,11 @@ function App() {
                     loggedIn && user ? (
                         isStaff(user) ? <StaffProfile user={user} /> : <CitizenProfile user={user} />
                     ) : <Navigate replace to="/login"/>
+                }/>
+                <Route path="/tosms" element={
+                    loggedIn && isStaff(user) && user.role === StaffRole.ADMIN ? 
+                        <AdminTOSMPage />
+                    : <Navigate replace to="/"/>
                 }/>
                 <Route path="*" element={<Navigate replace to="/"/>}/>
             </Route>

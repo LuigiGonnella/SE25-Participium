@@ -106,26 +106,23 @@ export async function registerMunicipalityUser(
 
 export async function updateStaffOffices(req: Request, res: Response, next: NextFunction) {
     try {
-        const id = Number(req.params.id);
-        if (isNaN(id)) {
-            return res.status(400).json({ message: "Invalid staff ID" });
-        }
+        const username = String(req.params.username);
 
         const repo = new StaffRepository();
         const { offices, add, remove } = req.body;
 
         if (Array.isArray(offices)) {
-            const updated = await repo.updateStaffOffices(id, offices);
+            const updated = await repo.updateStaffOffices(username, offices);
             return res.status(200).json(mapStaffDAOToDTO(updated));
         }
 
         if (typeof add === "string") {
-            const updated = await repo.addOfficeToStaff(id, add);
+            const updated = await repo.addOfficeToStaff(username, add);
             return res.status(200).json(mapStaffDAOToDTO(updated));
         }
 
         if (typeof remove === "string") {
-            const updated = await repo.removeOfficeFromStaff(id, remove);
+            const updated = await repo.removeOfficeFromStaff(username, remove);
             return res.status(200).json(mapStaffDAOToDTO(updated));
         }
 

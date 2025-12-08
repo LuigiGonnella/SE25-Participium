@@ -61,7 +61,7 @@ router.post('/register-municipality', isAuthenticated([StaffRole.ADMIN]), async 
 });
 
 router.patch(
-    '/staff/:id/offices',
+    '/staff/:username/offices',
     isAuthenticated([StaffRole.ADMIN]),
     (req, res, next) => updateStaffOffices(req, res, next)
 );
