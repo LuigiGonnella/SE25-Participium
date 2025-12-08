@@ -171,7 +171,7 @@ function NavComponent({loggedIn, user, handleLogout}: NavComponentProps) {
                                             <br/>
                                             <em><small>{user.role}</small></em>
                                             <br/>
-                                            <em>{user.officeNames.map((o) => (
+                                            <em>{user.officeNames?.map((o) => (
                                                 <span key={o} className="badge text-white border border-white me-1">
                                                     {o}
                                                 </span>
