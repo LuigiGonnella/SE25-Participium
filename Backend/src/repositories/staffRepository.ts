@@ -109,7 +109,7 @@ export class StaffRepository {
             where: { name: In(officeNames) }
         });
     
-        if (offices.length !== officeNames.length) {
+        if (!officeNames || officeNames.length === 0) {
             const found = offices.map(o => o.name);
             const missing = officeNames.filter(n => !found.includes(n));
             throw new BadRequestError(`Offices not found: ${missing.join(", ")}`);
