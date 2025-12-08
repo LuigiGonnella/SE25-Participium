@@ -10,6 +10,7 @@ import {
     getReports, selfAssignReport,
     updateReportAsMPRO,
     updateReportAsTOSM,
+    updateReportAsEM,
     uploadReportPictures
 } from "@controllers/reportController";
 import {Citizen} from "@dto/Citizen";
@@ -147,30 +148,6 @@ router.patch("/:reportId/assignSelf", isAuthenticated([StaffRole.TOSM]), async (
     }
     );
 
-router.patch("/:reportId/updateStatus", isAuthenticated([StaffRole.TOSM]), async (req, res, next) => {
-    try {
-      const reportId = validateReportId(req.params.reportId);
-
-      const { status, comment } = req.body;
-
-      const updatedStatus = validateStatusByRole(status, StaffRole.TOSM, comment);
-
-      const staffUsername = (req.user as Staff).username;
-
-      const report = await updateReportAsTOSM(
-        reportId,
-        updatedStatus,
-        staffUsername,
-        comment
-      );
-
-      res.status(200).json(report);
-    } catch (err) {
-      next(err);
-    }
-  }
-);
-
 // PATCH TOSM: assignment reports to external maintainer
 router.patch("/:reportId/assignExternal", isAuthenticated([StaffRole.TOSM]), async (req, res, next) => {
     try {
@@ -180,9 +157,41 @@ router.patch("/:reportId/assignExternal", isAuthenticated([StaffRole.TOSM]), asy
 
       const { staffEM } = req.body;
 
+      if (staffEM === undefined) {
+        throw new BadRequestError('External maintainer username missing.');
+      }
+
       const EM_Username = (staffEM as string).trim();
 
       const report = await assignReportToEM(reportId, EM_Username, staffUsername);
+
+      res.status(200).json(report);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// PATCH TOSM/EM: update status of reports
+router.patch("/:reportId/updateStatus", isAuthenticated([StaffRole.TOSM, StaffRole.EM]), async (req, res, next) => {
+    try {
+      const reportId = validateReportId(req.params.reportId);
+
+      const { status, comment } = req.body;
+
+      const updatedStatus = validateStatusByRole(status, StaffRole.TOSM, comment);
+
+      const staffUser = req.user as Staff
+
+      const staffUsername = staffUser.username;
+
+      let report;
+
+      if (staffUser.role === StaffRole.TOSM) {
+        report = await updateReportAsTOSM(reportId, updatedStatus, staffUsername, comment);
+      } else if (staffUser.role === StaffRole.EM) {
+        report = await updateReportAsEM(reportId, updatedStatus, staffUsername, comment);
+      }
 
       res.status(200).json(report);
     } catch (err) {

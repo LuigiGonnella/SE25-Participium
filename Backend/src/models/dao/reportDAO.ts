@@ -61,6 +61,9 @@ export class ReportDAO {
     @ManyToOne(() => StaffDAO, { nullable: true })
     assignedStaff?: StaffDAO;
 
+    @Column({ nullable: false, default: false })
+    isExternal: boolean
+
     @ManyToOne(() => StaffDAO, { nullable: true })
     assignedEM?: StaffDAO;
 
