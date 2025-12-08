@@ -37,7 +37,18 @@ export class StaffRepository {
     }
 
     // get all staffs
-    async getAllStaffs(): Promise<StaffDAO[]> {
+    async getAllStaffs(isExternal?: boolean, category?: OfficeCategory): Promise<StaffDAO[]> {
+        if (isExternal !== undefined || category !== undefined) {
+            return await this.repo.find(
+                {
+                    where: {
+                        ...(isExternal !== undefined ? { role: StaffRole.EM } : {}),
+                        ...(category !== undefined ? { office: { category } } : {})
+                    },
+                    relations: ["office"]
+                }
+            )
+        }
         return await this.repo.find({ relations: ["office"] });
     }
 
@@ -58,7 +69,7 @@ export class StaffRepository {
         surname: string,
         password: string,
         role: StaffRole,
-        officeName: string
+        officeName: string,
     ): Promise<StaffDAO> {
         if (!username || !name || !surname || !password) {
             throw new BadRequestError("Invalid input data: username, name, surname, and password are required");
@@ -91,7 +102,7 @@ export class StaffRepository {
             surname,
             password,
             role,
-            office 
+            office
         });
         
         return await this.repo.save(staff);

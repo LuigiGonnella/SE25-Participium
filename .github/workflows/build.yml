@@ -1,0 +1,36 @@
+name: Build
+on:
+ push:
+   branches:
+     - "main"
+ pull_request:
+   types: [opened, synchronize, reopened]
+jobs:
+  sonarqube:
+    name: SonarQube Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 
+      
+      - name: Install Backend dependencies
+        working-directory: ./Backend
+        run: npm install
+      
+      - name: Backend Test and coverage
+        working-directory: ./Backend
+        run: npm run test:coverage
+      
+      - name: Install Frontend dependencies
+        working-directory: ./Frontend
+        run: npm install
+      
+      - name: SonarQube Scan
+        uses: SonarSource/sonarcloud-github-action@v2
+        with:
+          projectBaseDir: .
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: "https://sonarcloud.io"
+          SONAR_ORGANIZATION: "luigigonnella"
