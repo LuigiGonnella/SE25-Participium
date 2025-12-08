@@ -15,7 +15,7 @@ export interface Citizen {
      * @type {string}
      * @memberof Citizen
      */
-    email: string;
+    email: string | null;
     /**
      * 
      * @type {string}

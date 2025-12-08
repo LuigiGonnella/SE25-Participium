@@ -64,8 +64,9 @@ export class CitizenRepository {
             `Citizen already exists with username ${username}`,
         );
 
+        // Save citizen without email (email will be set after verification)
         return await this.repo.save({
-            email,
+            email: null, // Email is null until verified
             username,
             name,
             surname,
@@ -103,5 +104,9 @@ export class CitizenRepository {
         }
 
         return await this.repo.save(citizen);
+    }
+
+    async getCitizenByTelegramUsername(telegram_username: string): Promise<CitizenDAO | null> {
+        return await this.repo.findOne({ where: { telegram_username } });
     }
 }

@@ -230,9 +230,9 @@ const getEMStaffByCategory = async (category: string): Promise<Staff[]> => {
         "Roads and Urban Furnishings": "RUFO",
         "Public Green Areas and Playgrounds": "PGAPO",
     };
-    
+
     const categoryCode = categoryCodeMap[category] || category;
-    
+
     const response = await fetch(`${BACKEND_URL}/staffs/external?category=${encodeURIComponent(categoryCode)}`, {
         credentials: "include",
     });
@@ -248,7 +248,7 @@ const assignReportToMaintainer = async (report: Report, username: string): Promi
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ 
+        body: JSON.stringify({
             staffEM: username
             // No status change - keeps report in ASSIGNED status
         }),
@@ -326,5 +326,17 @@ const updateCitizenProfile = async (
     return handleAPIError(response, 'Update Citizen Profile');
 };
 
-const API = { login, register, getUserInfo, logout, municipalityRegister, getOffices, createReport, getReports, getMapReports, getReportById, updateReport, assignReportToSelf, getEMStaffByCategory, assignReportToMaintainer, getNotifications, markNotificationAsRead, createMessage, getAllMessages, updateCitizenProfile };
+const verifyEmail = async (code: string): Promise<void> => {
+    const response = await fetch(`${BACKEND_URL}/auth/verify-email`, {
+        method: 'POST',
+        headers: { "Content-Type": "application/json" },
+        credentials: 'include',
+        body: JSON.stringify({ code }),
+    });
+
+    if (response.ok) return;
+    return handleAPIError(response, 'Email Verification');
+};
+
+const API = { login, register, getUserInfo, logout, municipalityRegister, getOffices, createReport, getReports, getMapReports, getReportById, updateReport, assignReportToSelf, getEMStaffByCategory, assignReportToMaintainer, getNotifications, markNotificationAsRead, createMessage, getAllMessages, updateCitizenProfile, verifyEmail };
 export default API;

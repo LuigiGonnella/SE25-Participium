@@ -1,7 +1,15 @@
 import { Router } from "express";
-import { CitizenToJSON } from "@models/dto/Citizen";
-import { getAllCitizens, getCitizenByEmail, getCitizenById, getCitizenByUsername, updateCitizenProfile, uploadProfilePicture } from "@controllers/citizenController";
-import { isAuthenticated } from "@middlewares/authMiddleware";
+import {Citizen, CitizenToJSON} from "@models/dto/Citizen";
+import {
+    getAllCitizens,
+    getCitizenByEmail,
+    getCitizenById,
+    getCitizenByTelegramUsername,
+    getCitizenByUsername,
+    updateCitizenProfile,
+    uploadProfilePicture
+} from "@controllers/citizenController";
+import {isAuthenticated, telegramBotAuth} from "@middlewares/authMiddleware";
 
 const router = Router();
 
@@ -64,7 +72,7 @@ router.get('/username/:username', async (req, res, next) => {
 router.patch('/:username', isAuthenticated(['CITIZEN']), uploadProfilePicture.single('profilePicture'), async (req, res, next) => {
     try {
         const username = req.params.username;
-        const authenticatedUser = req.user as any;
+        const authenticatedUser = req.user as Citizen;
 
         // Verify that the citizen can only update their own profile
         if (authenticatedUser.username !== username) {
@@ -90,6 +98,15 @@ router.patch('/:username', isAuthenticated(['CITIZEN']), uploadProfilePicture.si
         const updatedCitizen = await updateCitizenProfile(username, updates);
         
         res.status(200).json(CitizenToJSON(updatedCitizen));
+    } catch (error) {
+        next(error);
+    }
+});
+
+router.get('/telegram/:username', telegramBotAuth, async (req, res, next) => {
+    try {
+        const { username } = req.params;
+        res.status(200).json(await getCitizenByTelegramUsername(username));
     } catch (error) {
         next(error);
     }

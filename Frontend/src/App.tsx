@@ -11,6 +11,7 @@ import ReportListPage from "./components/ReportListPage";
 import ReportDetailPage from "./components/ReportDetailPage";
 import StaffProfile from "./components/StaffProfile";
 import CitizenProfile from "./components/CitizenProfile";
+import EmailVerificationPage from "./components/EmailVerificationPage";
 import 'bootstrap-italia/dist/css/bootstrap-italia.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.min.css';
 import 'typeface-titillium-web/index.css';
@@ -85,7 +86,7 @@ function App() {
                 <Route path="" element={!loggedIn || isCitizen(user) ? <HomePage/> : <Navigate replace to="/reports"/>}/>
                 <Route path="login" element={
                     loggedIn ?
-                        <Navigate replace to={isCitizen(user) ? "/map" : "/reports"}/> :
+                        (isCitizen(user) && !user.email ? <Navigate replace to="/verify-email"/> : <Navigate replace to={isCitizen(user) ? "/map" : "/reports"}/>) :
                         <LoginForm handleLogin={handleLogin}/>
                 }/>
                 <Route path="registration" element={
@@ -93,6 +94,7 @@ function App() {
                         <Navigate replace to="/"/> :
                         <RegistrationForm handleRegistration={handleRegistration}/>
                 }/>
+                <Route path="verify-email" element={<EmailVerificationPage />}/>
                 <Route path="municipality-registration" element={
                     (loggedIn && isStaff(user) && user.role === StaffRole.ADMIN) ?
                         <MunicipalityRegistrationForm handleStaffRegistration={handleMunicipalityRegistration}/> :
@@ -100,7 +102,7 @@ function App() {
                 }/>
                 <Route path="/map" element={
                     loggedIn && isCitizen(user) ?
-                    <TurinMaskedMap isLoggedIn={loggedIn} user={user}/> :
+                    (user.email ? <TurinMaskedMap isLoggedIn={loggedIn} user={user}/> : <Navigate replace to="/verify-email"/>) :
                     <Navigate replace to="/"/>
                 }/>
                 <Route path="/reports" element={
@@ -115,7 +117,7 @@ function App() {
                 }/>
                 <Route path="/profile" element={
                     loggedIn && user ? (
-                        isStaff(user) ? <StaffProfile user={user} /> : <CitizenProfile user={user} />
+                        isStaff(user) ? <StaffProfile user={user} /> : (user.email ? <CitizenProfile user={user} /> : <Navigate replace to="/verify-email"/>)
                     ) : <Navigate replace to="/login"/>
                 }/>
                 <Route path="*" element={<Navigate replace to="/"/>}/>
