@@ -60,7 +60,7 @@ export default function ReportDetailsPanel({ report, onClose }: ReportDetailsPan
             setLoadingMessages(true);
             try {
                 const msgs = await API.getAllMessages(report.id);
-                setMessages(msgs);
+                setMessages(msgs.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()));
             } catch (error) {
                 console.error("Failed to load messages:", error);
             } finally {
@@ -130,13 +130,13 @@ export default function ReportDetailsPanel({ report, onClose }: ReportDetailsPan
                     {messages.length > 0 && (
                         <div className="mt-4">
                             <strong>Messages</strong>
-                            <div className="mt-2 border rounded p-3" style={{ backgroundColor: "#f8f9fa", maxHeight: "300px", overflowY: "auto" }}>
+                            <div className="mt-2 border rounded p-3" style={{ backgroundColor: "#f0f8ff", maxHeight: "300px", overflowY: "auto" }}>
                                 {loadingMessages ? (
                                     <div className="text-center text-muted">Loading messages...</div>
                                 ) : (
                                     <div className="d-flex flex-column gap-2">
                                         {messages.filter(msg => !msg.isPrivate).map((msg, index) => (
-                                            <div key={index} className="d-flex flex-column p-2 rounded" style={{ backgroundColor: "white", border: "1px solid #dee2e6" }}>
+                                            <div key={index} className="d-flex flex-column p-2 rounded" style={{ backgroundColor: "#cde6ff" }}>
                                                 <div className="d-flex justify-content-between align-items-center mb-1">
                                                     <span className="fw-bold text-primary" style={{ fontSize: "0.9rem" }}>
                                                         <i className="bi bi-person-circle me-1"></i>
