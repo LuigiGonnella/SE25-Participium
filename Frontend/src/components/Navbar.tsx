@@ -91,6 +91,11 @@ function NavComponent({loggedIn, user, handleLogout}: NavComponentProps) {
                                     </LinkListItem>
                                 )}
                                 {(loggedIn && isStaff(user) && user.role === StaffRole.ADMIN) && (
+                                    <LinkListItem inDropdown href="/tosms" active={ window.location.pathname === '/tosms' }>
+                                        Staff Management
+                                    </LinkListItem>
+                                )}
+                                {(loggedIn && isStaff(user) && user.role === StaffRole.ADMIN) && (
                                     <LinkListItem inDropdown href="/municipality-registration" active={ window.location.pathname === '/municipality-registration' }>
                                         Staff registration
                                     </LinkListItem>
@@ -166,7 +171,12 @@ function NavComponent({loggedIn, user, handleLogout}: NavComponentProps) {
                                             <br/>
                                             <em><small>{user.role}</small></em>
                                             <br/>
-                                            <em>({user.officeName})</em>
+                                            <em>{user.officeNames?.map((o) => (
+                                                <span key={o} className="badge text-white border border-white me-1">
+                                                    {o}
+                                                </span>
+                                            ))}
+                                            </em>
                                         </>
                                     }
                                 </UncontrolledTooltip>

@@ -9,7 +9,8 @@ import type {
     NewReport,
     Report,
     Notification,
-    Message
+    Message,
+    OfficeCategory
 } from "../models/Models.ts";
 import {handleAPIError} from "../services/ErrorHandler.ts";
 
@@ -58,6 +59,34 @@ const municipalityRegister = async (newStaff: NewStaff): Promise<Staff> => {
     }
 
     return handleAPIError(response, 'Municipality Registration');
+}
+
+const updateTOSMOffices = async (username: string, offices: string[]): Promise<Staff> => {
+    const response = await fetch(`${BACKEND_URL}/auth/staff/${username}/offices`, {
+        method: 'PATCH',
+        headers: { "Content-Type": "application/json" },
+        credentials: 'include',
+        body: JSON.stringify({offices})
+    })
+
+    if(response.ok) {
+        return await response.json();
+    }
+
+    return handleAPIError(response, "TOSM Offices Update")
+}
+
+const getAllTOSM = async (): Promise<Staff[]> => {
+    const response = await fetch(`${BACKEND_URL}/auth/staff/tosm`,{
+        method: 'GET',
+        credentials: 'include'
+    })
+
+    if (response.ok){
+        return await response.json()
+    }
+
+    return handleAPIError(response, "Get All TOSM")
 }
 
 const login = async (credentials: Credentials, type: 'CITIZEN' | 'STAFF'): Promise<User> => {
@@ -338,5 +367,5 @@ const verifyEmail = async (code: string): Promise<void> => {
     return handleAPIError(response, 'Email Verification');
 };
 
-const API = { login, register, getUserInfo, logout, municipalityRegister, getOffices, createReport, getReports, getMapReports, getReportById, updateReport, assignReportToSelf, getEMStaffByCategory, assignReportToMaintainer, getNotifications, markNotificationAsRead, createMessage, getAllMessages, updateCitizenProfile, verifyEmail };
+const API = { login, register, getUserInfo, logout, municipalityRegister, updateTOSMOffices, getAllTOSM, getOffices, createReport, getReports, getMapReports, getReportById, updateReport, assignReportToSelf, getEMStaffByCategory, assignReportToMaintainer, getNotifications, markNotificationAsRead, createMessage, getAllMessages, updateCitizenProfile, verifyEmail };
 export default API;

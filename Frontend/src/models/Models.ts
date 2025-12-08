@@ -17,7 +17,7 @@ export interface Staff {
     surname: string;
     password: string;
     role: string;
-    officeName: string;
+    officeNames: string[];
     type: string;
 }
 
@@ -62,7 +62,7 @@ export interface NewStaff {
     username: string;
     password: string;
     role: string;
-    officeName: string;
+    officeNames: string[];
 }
 
 export const StaffRole = {

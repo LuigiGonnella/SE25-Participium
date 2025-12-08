@@ -3,15 +3,17 @@ import {
     uploadProfilePicture,
     registerMunicipalityUser,
     login,
-    verifyTelegramUser, 
+    verifyTelegramUser,
     createTelegramVerification,
-    verifyEmailUser
+    verifyEmailUser,
+    updateStaffOffices
 } from '@controllers/authController';
 import {Citizen, CitizenToJSON} from '@models/dto/Citizen';
 import {Router} from "express";
 import {isAuthenticated, telegramBotAuth} from '@middlewares/authMiddleware';
 import { StaffToJSON } from '@models/dto/Staff';
 import { StaffRole } from '@models/dao/staffDAO';
+import { getAllTOSM } from '@controllers/staffController';
 
 const router = Router();
 
@@ -59,13 +61,25 @@ router.post('/register-municipality', isAuthenticated([StaffRole.ADMIN]), async 
             req.body.surname,
             req.body.password,
             req.body.role,
-            req.body.officeName 
+            req.body.officeNames
         );
         res.status(201).json(StaffToJSON(staff)); // does not expose password
     } catch (error) {
         next(error);
     }
 });
+
+router.patch(
+    '/staff/:username/offices',
+    isAuthenticated([StaffRole.ADMIN]),
+    (req, res, next) => updateStaffOffices(req, res, next)
+);
+
+router.get(
+    '/staff/tosm',
+    isAuthenticated([StaffRole.ADMIN]),
+    (req, res) => getAllTOSM(req, res)
+);
 
 router.post('/login', async (req, res, next) => {
     try {
@@ -120,11 +134,11 @@ router.post('/verifyTelegramUser', telegramBotAuth, async (req, res, next) => {
 router.post('/verify-email', async (req, res, next) => {
     try {
         const { code } = req.body;
-        
+
         if (!code || !code.trim()) {
             return res.status(400).json({ error: 'Invalid or missing verification code' });
         }
-        
+
         await verifyEmailUser(code);
         res.status(200).json({ message: 'Email verified successfully' });
     } catch (error) {

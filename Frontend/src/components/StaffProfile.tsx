@@ -23,7 +23,11 @@ export default function StaffProfile({ user }: StaffProfileProps) {
                         </Col>
                         <Col md={6}>
                             <p><strong>Role:</strong> {user.role}</p>
-                            <p><strong>Office:</strong> {user.officeName}</p>
+                            <p><strong>Offices:</strong> {user.officeNames.map((o) => (
+                                    <span key={o} className="badge text-black me-1 border">
+                                        {o}
+                                    </span>
+                                ))}</p>
                         </Col>
                     </Row>
                 </Card.Body>
