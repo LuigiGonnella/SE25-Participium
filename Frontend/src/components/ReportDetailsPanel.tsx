@@ -135,7 +135,7 @@ export default function ReportDetailsPanel({ report, onClose }: ReportDetailsPan
                                     <div className="text-center text-muted">Loading messages...</div>
                                 ) : (
                                     <div className="d-flex flex-column gap-2">
-                                        {messages.map((msg, index) => (
+                                        {messages.filter(msg => !msg.isPrivate).map((msg, index) => (
                                             <div key={index} className="d-flex flex-column p-2 rounded" style={{ backgroundColor: "white", border: "1px solid #dee2e6" }}>
                                                 <div className="d-flex justify-content-between align-items-center mb-1">
                                                     <span className="fw-bold text-primary" style={{ fontSize: "0.9rem" }}>

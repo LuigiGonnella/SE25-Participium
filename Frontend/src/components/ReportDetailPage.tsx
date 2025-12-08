@@ -378,8 +378,7 @@ return (
                     <div className="collapse show" id="citizenChat">
                         <div className="flex-grow-1 d-flex flex-column">
                             {/* Messages Display */}
-                            <div className="flex-grow-1 overflow-auto mb-3 border-bottom p-3"
-                                 style={{backgroundColor: "#f8f9fa"}}>
+                            <div className="flex-grow-1 overflow-auto mb-3 border-bottom p-3" style={{maxHeight: "calc(70vh - 250px)", backgroundColor: "#f8f9fa"}}>
                                 {loadingMessages ? (
                                     <div className="text-center text-muted">Loading messages...</div>
                                 ) : messages.filter(msg => !msg.isPrivate).length === 0 ? (
@@ -452,8 +451,7 @@ return (
                     <div className="collapse show" id="staffChat">
                         <div className="flex-grow-1 d-flex flex-column">
                             {/* Messages Display */}
-                            <div className="flex-grow-1 overflow-auto mb-3 border-bottom p-3"
-                                 style={{backgroundColor: "#f8f9fa"}}>
+                            <div className="flex-grow-1 overflow-auto mb-3 border-bottom p-3" style={{maxHeight: "calc(70vh - 250px)", backgroundColor: "#f8f9fa"}}>
                                 {loadingMessages ? (
                                     <div className="text-center text-muted">Loading notes...</div>
                                 ) : messages.filter(msg => msg.isPrivate).length === 0 ? (
@@ -466,7 +464,7 @@ return (
                                             <div key={index} className="d-flex flex-column p-3 rounded shadow-sm"
                                                  style={{backgroundColor: "white"}}>
                                                 <div className="d-flex justify-content-between align-items-center mb-2">
-                                                    <span className="fw-bold text-warning-emphasis">
+                                                    <span className="fw-bold text-primary">
                                                         <i className="bi bi-person-circle me-2"></i>
                                                         {(isTOSM(user) && msg.staffUsername === user.username)
                                                             || (isEM(user) && msg.staffUsername === user.username) ? (
