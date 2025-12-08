@@ -70,13 +70,7 @@ export class StaffRepository {
 
     // get staff by ID
     async getStaffById(id: number): Promise<StaffDAO | null> {
-        const staff = await this.repo.findOne({
-            where: { id },
-            relations: ["offices"]
-        });
-    
-        if (!staff) throw new NotFoundError("Staff not found");
-        return staff;    
+        return await this.repo.findOne({ where: { id }, relations: ["offices"] });
     }
 
     // get staff by username
