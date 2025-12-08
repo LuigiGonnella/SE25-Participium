@@ -360,7 +360,7 @@ return (
                 {/* CITIZEN CHAT SECTION */}
                 {isTOSM(user) && (<div className="border-bottom">
                     <div 
-                        className="d-flex justify-content-between align-items-center p-3 bg-light cursor-pointer"
+                        className="d-flex justify-content-between align-items-center p-3 bg-primary bg-opacity-10 cursor-pointer"
                         data-bs-toggle="collapse" 
                         data-bs-target="#citizenChat"
                         aria-expanded="true"
@@ -376,7 +376,7 @@ return (
                     <div className="collapse show" id="citizenChat">
                         <div className="flex-grow-1 d-flex flex-column">
                             {/* Messages Display */}
-                            <div className="flex-grow-1 overflow-auto mb-3 border-bottom p-3" style={{maxHeight: "calc(70vh - 250px)", backgroundColor: "#f8f9fa"}}>
+                            <div className="flex-grow-1 overflow-auto mb-3 border-bottom p-3" style={{maxHeight: "calc(70vh - 250px)", backgroundColor: "#f0f8ff"}}>
                                 {loadingMessages ? (
                                     <div className="text-center text-muted">Loading messages...</div>
                                 ) : messages.filter(msg => !msg.isPrivate).length === 0 ? (
@@ -385,7 +385,7 @@ return (
                                     <div className="d-flex flex-column-reverse gap-2">
                                         {messages.filter(msg => !msg.isPrivate).map((msg, index) => (
                                             <div key={index} className="d-flex flex-column p-3 rounded shadow-sm"
-                                                 style={{backgroundColor: "white"}}>
+                                                 style={{backgroundColor: "#cde6ff"}}>
                                                 <div className="d-flex justify-content-between align-items-center mb-2">
                                                     <span className="fw-bold text-primary">
                                                         <i className="bi bi-person-circle me-2"></i>
@@ -433,14 +433,14 @@ return (
                 {/* INTERNAL MESSAGES SECTION */}
                 {((isTOSM(user) && report.assignedEM) || isEM(user)) && (<div>
                     <div 
-                        className="d-flex justify-content-between align-items-center p-3 bg-light cursor-pointer"
+                        className="d-flex justify-content-between align-items-center p-3 bg-warning bg-opacity-10 cursor-pointer"
                         data-bs-toggle="collapse" 
                         data-bs-target="#staffChat"
                         aria-expanded="true"
                         style={{cursor: "pointer"}}
                     >
                         <div className="d-flex align-items-center">
-                            <i className="bi bi-lock me-2 text-primary"></i>
+                            <i className="bi bi-lock me-2 text-warning"></i>
                             <span className="fw-semibold">Internal Notes</span>
                         </div>
                         <i className="bi bi-chevron-down"></i>
@@ -449,7 +449,7 @@ return (
                     <div className="collapse show" id="staffChat">
                         <div className="flex-grow-1 d-flex flex-column">
                             {/* Messages Display */}
-                            <div className="flex-grow-1 overflow-auto mb-3 border-bottom p-3" style={{maxHeight: "calc(70vh - 250px)", backgroundColor: "#f8f9fa"}}>
+                            <div className="flex-grow-1 overflow-auto mb-3 border-bottom p-3" style={{maxHeight: "calc(70vh - 250px)", backgroundColor: "#fffbf0"}}>
                                 {loadingMessages ? (
                                     <div className="text-center text-muted">Loading notes...</div>
                                 ) : messages.filter(msg => msg.isPrivate).length === 0 ? (
@@ -460,9 +460,9 @@ return (
                                     <div className="d-flex flex-column-reverse gap-2">
                                         {messages.filter(msg => msg.isPrivate).map((msg, index) => (
                                             <div key={index} className="d-flex flex-column p-3 rounded shadow-sm"
-                                                 style={{backgroundColor: "white"}}>
+                                                 style={{backgroundColor: "#fff3cd"}}>
                                                 <div className="d-flex justify-content-between align-items-center mb-2">
-                                                    <span className="fw-bold text-primary">
+                                                    <span className="fw-bold text-warning">
                                                         <i className="bi bi-person-circle me-2"></i>
                                                         {(isTOSM(user) && msg.staffUsername === user.username)
                                                             || (isEM(user) && msg.staffUsername === user.username) ? (
@@ -499,7 +499,7 @@ return (
                                         />
                                     </div>
                                     {messageError && <div className="alert alert-danger py-2 mb-2">{messageError}</div>}
-                                    <button type="submit" className="btn btn-primary w-100"
+                                    <button type="submit" className="btn btn-warning w-100"
                                             disabled={messageLoading || !privateMessage.trim()}>
                                         <i className="bi bi-send me-2"></i>
                                             {messageLoading ? "Sending..." : "Send Message"}
