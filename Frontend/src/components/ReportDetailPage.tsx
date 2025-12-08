@@ -12,8 +12,8 @@ import {
     ReportStatus,
     type User
 } from "../models/Models.ts";
-import {Card, Carousel, CarouselSlide, Toggle} from "design-react-kit";
-import {Alert, Button, Col, Form, Row, FormGroup } from "react-bootstrap";
+import {Card, Carousel, CarouselSlide} from "design-react-kit";
+import {Alert, Button, Col, Form, Row } from "react-bootstrap";
 
 interface ReportDetailPageProps {
   user?: User;
@@ -36,12 +36,10 @@ export default function ReportDetailPage({ user }: ReportDetailPageProps) {
   const [success, setSuccess] = useState("");
 
   // Message state
-  const [messageInput, setMessageInput] = useState<string>("");
   const [messageLoading, setMessageLoading] = useState<boolean>(false);
   const [messageError, setMessageError] = useState<string>("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [loadingMessages, setLoadingMessages] = useState(false);
-  const [isPrivate, setPrivate] = useState(false);
   const [publicMessage, setPublicMessage] = useState<string>("");
   const [privateMessage, setPrivateMessage] = useState<string>("");
 
