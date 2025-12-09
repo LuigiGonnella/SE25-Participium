@@ -1,7 +1,7 @@
 import {PendingVerificationDAO} from "@dao/pendingVerificationDAO";
-import {MoreThan, Repository} from "typeorm";
+import {FindOptionsWhere, MoreThan, Repository} from "typeorm";
 import {AppDataSource} from "@database";
-import {findOrThrowNotFound} from "@utils";
+import {findOrThrowNotFound, throwConflictIfFound} from "@utils";
 import {CitizenDAO} from "@dao/citizenDAO";
 import {InternalServerError} from "@errors/InternalServerError";
 import { getDigitalCode } from 'node-verification-code';
@@ -22,6 +22,13 @@ export class PendingVerificationRepository {
         type: "email" | "telegram"
     ): Promise<PendingVerificationDAO> {
 
+        throwConflictIfFound(
+            (type === 'telegram' ? 
+                await this.citizenRepo.find({ where: { telegram_username: valueToVerify}}) :
+                await this.citizenRepo.find({ where: { email: valueToVerify}})),
+            () => true,
+            `This ${type} account is already associated with another profile.`
+        )
         const existing = await this.repo.find({
             where: {
                 citizenId: citizen.id,
@@ -33,8 +40,10 @@ export class PendingVerificationRepository {
             throw new InternalServerError("Multiple pending verifications found for the same citizen and type");
         } else if (existing.length === 1) {
             if (existing[0].expiresAt > new Date()) {
-                // Code still valid - throw error
-                throw new ConflictError("A pending verification already exists for this citizen and type");
+                if(existing[0].valueToVerify !== valueToVerify)
+                    throw new ConflictError(`A pending verification already exists for a different ${type} account.`)
+                // Code still valid
+                return existing[0]
             } else {
                 // Code expired - delete old one and create new
                 await this.repo.remove(existing[0]);
@@ -56,13 +65,18 @@ export class PendingVerificationRepository {
     }
 
     async verifyPendingVerification(username: string, code: string, type: "email" | "telegram"): Promise<void> {
+        const whereClause: FindOptionsWhere<PendingVerificationDAO> = { 
+            verificationCode: code,
+            type: type,
+            expiresAt: MoreThan(new Date())
+        }
+        console.log(username)
+        if (type === "telegram"){
+            whereClause.valueToVerify = username.toLowerCase();
+        }
         const pendingVerification = findOrThrowNotFound(
             await this.repo.find({
-                where: {
-                    verificationCode: code,
-                    type: type,
-                    expiresAt: MoreThan(new Date())
-                },
+                where: whereClause,
                 relations: ["citizen"]
             }),
             () => true,

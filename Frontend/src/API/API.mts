@@ -354,6 +354,18 @@ const updateCitizenProfile = async (
     return handleAPIError(response, 'Update Citizen Profile');
 };
 
+const verifyTelegram = async(tgUsername: string): Promise<{code: string}> => {
+    const response = await fetch(`${BACKEND_URL}/auth/createTelegramVerification`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ username: tgUsername.replace('@', '') })
+    })
+
+    if (response.ok ) return await response.json()
+    return handleAPIError(response, 'Telegram Verification');
+}
+
 const verifyEmail = async (code: string): Promise<void> => {
     const response = await fetch(`${BACKEND_URL}/auth/verify-email`, {
         method: 'POST',
@@ -366,5 +378,5 @@ const verifyEmail = async (code: string): Promise<void> => {
     return handleAPIError(response, 'Email Verification');
 };
 
-const API = { login, register, getUserInfo, logout, municipalityRegister, updateTOSMOffices, getAllTOSM, getOffices, createReport, getReports, getMapReports, getReportById, updateReport, assignReportToSelf, getEMStaffByCategory, assignReportToMaintainer, getNotifications, markNotificationAsRead, createMessage, getAllMessages, updateCitizenProfile, verifyEmail };
+const API = { login, register, getUserInfo, logout, municipalityRegister, updateTOSMOffices, getAllTOSM, getOffices, createReport, getReports, getMapReports, getReportById, updateReport, assignReportToSelf, getEMStaffByCategory, assignReportToMaintainer, getNotifications, markNotificationAsRead, createMessage, getAllMessages, updateCitizenProfile, verifyEmail, verifyTelegram };
 export default API;

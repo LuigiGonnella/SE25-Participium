@@ -51,29 +51,17 @@ function App() {
     }, []);
 
     const handleLogin = async (credentials: Credentials, type: 'CITIZEN' | 'STAFF') => {
-        try {
-            const user = await API.login(credentials, type);
-            setLoggedIn(true);
-            setUser(user);
-        } catch (err) {
-            console.error(err);
-        }
+        const user = await API.login(credentials, type);
+        setLoggedIn(true);
+        setUser(user);
     };
 
     const handleRegistration = async (newCitizen: NewCitizen): Promise<void> => {
-        try {
-            await API.register(newCitizen);
-        } catch (err) {
-             console.error(err);
-        }
+        await API.register(newCitizen);
     };
 
     const handleMunicipalityRegistration = async (newStaff: NewStaff): Promise<void> => {
-        try {
-            await API.municipalityRegister(newStaff);
-        } catch (err) {
-            console.error(err);
-        }
+        await API.municipalityRegister(newStaff);
     };
 
     const handleLogout = async (): Promise<void> => {
