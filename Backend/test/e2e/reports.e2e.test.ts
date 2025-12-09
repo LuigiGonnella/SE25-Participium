@@ -71,7 +71,7 @@ describe("Reports API E2E Tests", () => {
 
         // Create default offices
         await officeRepo.createDefaultOfficesIfNotExist();
-        await staffRepo.createDefaultAdminIfNotExists();
+        await staffRepo.createDefaultStaffMembersIfNotExists();
 
         // Get test citizens
         testCitizen1 = await TestDataSource

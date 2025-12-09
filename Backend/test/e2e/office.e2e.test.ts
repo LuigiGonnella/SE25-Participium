@@ -38,7 +38,7 @@ beforeAll(async () => {
     staffRepo = new StaffRepository();
 
     await officeRepo.createDefaultOfficesIfNotExist();
-    await staffRepo.createDefaultAdminIfNotExists();
+    await staffRepo.createDefaultStaffMembersIfNotExists();
 
     const loginResponse = await request(app)
         .post('/api/v1/auth/login?type=STAFF')

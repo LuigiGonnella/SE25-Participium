@@ -167,7 +167,7 @@ describe("StaffRepository - test suite", () => {
         const office = await TestDataSource
             .getRepository(OfficeDAO)
             .save(office1);
-        await staffRepo.createDefaultAdminIfNotExists();
+        await staffRepo.createDefaultStaffMembersIfNotExists();
         
         const admin = await TestDataSource
             .getRepository(StaffDAO)
@@ -186,8 +186,8 @@ describe("StaffRepository - test suite", () => {
             .getRepository(OfficeDAO)
             .save(office1);
 
-        await staffRepo.createDefaultAdminIfNotExists();
-        await staffRepo.createDefaultAdminIfNotExists();
+        await staffRepo.createDefaultStaffMembersIfNotExists();
+        await staffRepo.createDefaultStaffMembersIfNotExists();
         
         const admins = await TestDataSource
             .getRepository(StaffDAO)
@@ -198,7 +198,7 @@ describe("StaffRepository - test suite", () => {
 
     it("should not create default admin if no MOO office exists", async () => {
         await expect(
-            staffRepo.createDefaultAdminIfNotExists()
+            staffRepo.createDefaultStaffMembersIfNotExists()
         ).rejects.toThrow("No Municipal Organization Office found to assign to default admin");
     });
 

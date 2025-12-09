@@ -52,7 +52,8 @@ export async function beforeAllE2e(): Promise<void> {
     }
 
     await (new OfficeRepository()).createDefaultOfficesIfNotExist();
-    await (new StaffRepository()).createDefaultAdminIfNotExists();
+    await (new StaffRepository()).createDefaultStaffMembersIfNotExists();
+    await (new CitizenRepository()).createDefaultCitizensIfNotExist();
 
     // Clear existing data
     await TestDataSource.getRepository(CitizenDAO).clear();

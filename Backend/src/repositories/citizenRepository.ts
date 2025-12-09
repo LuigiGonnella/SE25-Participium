@@ -3,12 +3,43 @@ import {CitizenDAO} from "@models/dao/citizenDAO";
 import {throwConflictIfFound} from "@utils";
 import {Repository} from "typeorm";
 import AppError from "@models/errors/AppError";
+import bcrypt from "bcrypt";
 
 export class CitizenRepository {
     private repo: Repository<CitizenDAO>;
 
     constructor() {
         this.repo = AppDataSource.getRepository(CitizenDAO);
+    }
+
+    async createDefaultCitizensIfNotExist(count: number = 3): Promise<void> {
+        for (let i = 1; i <= count; i++) {
+            const username = `cit_${i}`;
+            const email = `example${i}@example.com`;
+            const passwordPlain = `cit123`;
+
+            const existing = await this.repo.findOne({
+                where: [
+                    { email },
+                    { username }
+                ]
+            });
+
+            if (!existing) {
+                const newCitizen = this.repo.create({
+                    email,
+                    username,
+                    name: `Default${i}`,
+                    surname: "Citizen",
+                    password: bcrypt.hashSync(passwordPlain, 10),
+                    receive_emails: false,
+                });
+                await this.repo.save(newCitizen);
+                console.log(`Default citizen ${username} created with password 'cit123'.`);
+            } else {
+                console.log(`Default citizen ${username} already exists.`);
+            }
+        }
     }
 
     // get all citizens
