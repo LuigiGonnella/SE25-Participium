@@ -73,7 +73,7 @@ describe("NotificationRepository", () => {
     beforeEach(async () => {
         await officeRepo.createOffice(fakeOffice.name, fakeOffice.description, fakeOffice.category);
         citizen = await citizenRepo.createCitizen(fakeCitizen.email, fakeCitizen.username, fakeCitizen.name, fakeCitizen.surname, fakeCitizen.password, fakeCitizen.receive_emails, fakeCitizen.profilePicture, fakeCitizen.telegram_username);
-        staff = await staffRepo.createStaff(fakeStaff.username, fakeStaff.name, fakeStaff.surname, fakeStaff.password, fakeStaff.role, fakeStaff.officeName);
+        staff = await staffRepo.createStaff(fakeStaff.username, fakeStaff.name, fakeStaff.surname, fakeStaff.password, fakeStaff.role, [fakeStaff.officeName]);
         report = await reportRepo.create(citizen, "Test Report", "Description", OfficeCategory.RSTLO, 45, 7, false, "photo.jpg");
     });
 

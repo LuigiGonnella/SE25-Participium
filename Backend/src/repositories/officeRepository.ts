@@ -1,6 +1,9 @@
 import { AppDataSource } from "@database";
 import { OfficeCategory, OfficeDAO } from "@models/dao/officeDAO";
+import { ConflictError } from "@models/errors/ConflictError";
+import { NotFoundError } from "@models/errors/NotFoundError";
 import { Repository } from "typeorm";
+
 
 export class OfficeRepository {
     private repo: Repository<OfficeDAO>;
@@ -148,13 +151,13 @@ export class OfficeRepository {
     /* TODO: check if this function down are correct */
 
     // create new office
-    /* async createOffice(
+    async createOffice(
         name: string,
         description: string,
         category: OfficeCategory
     ): Promise<OfficeDAO> {
         if (!name || !category) {
-            throw new AppError("Invalid input data: name and category are required", 400);
+            throw new NotFoundError("Invalid input data: name and category are required");
         }
         
         name = name.trim();
@@ -164,25 +167,21 @@ export class OfficeRepository {
         }
 
         // Check if office with same name exists
-        throwConflictIfFound(
-            await this.repo.find({ where: { name }}),
-            () => true,
-            `Office already exists with name ${name}`,
-        );
+        if(await this.repo.findOne({ where: { name }})){
+            throw new ConflictError(`Office already exists with name ${name}`);
+        }
 
         // Check if office with same category exists
-        throwConflictIfFound(
-            await this.repo.find({ where: { category }}),
-            () => true,
-            `Office already exists with category ${category}`,
-        );
+        if(await this.repo.findOne({ where: { category }})){
+            throw new ConflictError(`Office already exists with category ${category}`);
+        }
 
         return await this.repo.save({
             name,
             description,
             category
         });
-    } */
+    }
 
     // update office
     /* async updateOffice(

@@ -31,13 +31,24 @@ const fakeCitizen = {
     telegram_username: ""
 };
 
+const fakeOffice = {
+    id: 1,
+    name: "Road Signs and Traffic Lights Office",
+    description: "Handles issues related to road signs and traffic lights.",
+    category: OfficeCategory.RSTLO,
+    isExternal: false,
+    members: []
+};
+
 const fakeStaff = {
+    id: 1,
     username: "staffuser",
     name: "Jane",
     surname: "Smith",
     password: "password123",
     role: StaffRole.TOSM,
-    officeName: "Road Signs and Traffic Lights Office"
+    offices: [fakeOffice],
+    assignedReports: [],
 };
 
 beforeAll(async () => {
@@ -212,7 +223,7 @@ describe("ReportRepository - getReports", () => {
         await reportRepo.create(citizen, "Report 1", "Desc 1", OfficeCategory.WSO, 45, 7, false, "/1.jpg");
         await reportRepo.create(citizen, "Report 2", "Desc 2", OfficeCategory.WO, 45, 7, false, "/2.jpg");
 
-        const reports = await reportRepo.getReports();
+        const reports = await reportRepo.getReports(fakeStaff);
         expect(reports).toHaveLength(2);
     });
 
@@ -223,7 +234,7 @@ describe("ReportRepository - getReports", () => {
         await reportRepo.create(citizen1, "Report C1", "Desc", OfficeCategory.WSO, 45, 7, false, "/1.jpg");
         await reportRepo.create(citizen2, "Report C2", "Desc", OfficeCategory.WO, 45, 7, false, "/2.jpg");
 
-        const reports = await reportRepo.getReports({ citizen_username: "citizen1" });
+        const reports = await reportRepo.getReports(fakeStaff, { citizen_username: "citizen1" });
         expect(reports).toHaveLength(1);
         expect(reports[0].title).toBe("Report C1");
     });
@@ -243,7 +254,7 @@ describe("ReportRepository - getReports", () => {
         const report = await reportRepo.create(citizen, "Report", "Desc", OfficeCategory.WSO, 45, 7, false, "/1.jpg");
         await TestDataSource.getRepository(ReportDAO).update({ id: report.id }, { status: Status.ASSIGNED });
 
-        const reports = await reportRepo.getReports({ status: Status.ASSIGNED });
+        const reports = await reportRepo.getReports(fakeStaff,{ status: Status.ASSIGNED });
         expect(reports).toHaveLength(1);
         expect(reports[0].status).toBe(Status.ASSIGNED);
     });
@@ -263,7 +274,7 @@ describe("ReportRepository - getReports", () => {
         await reportRepo.create(citizen, "Water", "Desc", OfficeCategory.WSO, 45, 7, false, "/1.jpg");
         await reportRepo.create(citizen, "Garbage", "Desc", OfficeCategory.WO, 45, 7, false, "/2.jpg");
 
-        const reports = await reportRepo.getReports({ category: OfficeCategory.WSO });
+        const reports = await reportRepo.getReports(fakeStaff, { category: OfficeCategory.WSO });
         expect(reports).toHaveLength(1);
         expect(reports[0].category).toBe(OfficeCategory.WSO);
     });
@@ -283,7 +294,7 @@ describe("ReportRepository - getReports", () => {
         await reportRepo.create(citizen, "Specific Title", "Desc", OfficeCategory.WSO, 45, 7, false, "/1.jpg");
         await reportRepo.create(citizen, "Other", "Desc", OfficeCategory.WO, 45, 7, false, "/2.jpg");
 
-        const reports = await reportRepo.getReports({ title: "Specific Title" });
+        const reports = await reportRepo.getReports(fakeStaff, { title: "Specific Title" });
         expect(reports).toHaveLength(1);
         expect(reports[0].title).toBe("Specific Title");
     });
@@ -414,7 +425,7 @@ describe("ReportRepository - updateReportAsTOSM", () => {
         );
 
         const office = await officeRepo.createOffice(
-            fakeStaff.officeName,
+            fakeStaff.offices[0].name,
             "Office description",
             OfficeCategory.RSTLO
         );
@@ -425,13 +436,13 @@ describe("ReportRepository - updateReportAsTOSM", () => {
             fakeStaff.surname,
             fakeStaff.password,
             fakeStaff.role,
-            fakeStaff.officeName
+            [fakeStaff.offices[0].name]
         );
 
         const report = await reportRepo.create(citizen, "Report", "Desc", OfficeCategory.RSTLO, 45, 7, false, "/1.jpg");
         await TestDataSource.getRepository(ReportDAO).update({ id: report.id }, { status: Status.ASSIGNED });
 
-        const updated = await reportRepo.updateReportAsTOSM(report.id, Status.IN_PROGRESS, undefined, staff.username);
+        const updated = await reportRepo.updateReportAsTOSM(report.id, Status.IN_PROGRESS, staff.username);
         expect(updated.status).toBe(Status.IN_PROGRESS);
         expect(updated.assignedStaff).toBeTruthy();
     });
@@ -471,12 +482,12 @@ describe("ReportRepository - updateReportAsTOSM", () => {
         const report = await reportRepo.create(citizen, "Report", "Desc", OfficeCategory.WSO, 45, 7, false, "/1.jpg");
         await TestDataSource.getRepository(ReportDAO).update({ id: report.id }, { status: Status.IN_PROGRESS });
 
-        const updated = await reportRepo.updateReportAsTOSM(report.id, Status.SUSPENDED);
+        const updated = await reportRepo.updateReportAsTOSM(report.id, Status.SUSPENDED, "staffuser");
         expect(updated.status).toBe(Status.SUSPENDED);
     });
 
     it("throws NotFoundError when report does not exist", async () => {
-        await expect(reportRepo.updateReportAsTOSM(9999, Status.IN_PROGRESS)).rejects.toThrow(NotFoundError);
+        await expect(reportRepo.updateReportAsTOSM(9999, Status.IN_PROGRESS, fakeStaff.username)).rejects.toThrow(NotFoundError);
     });
 
     it("throws BadRequestError when report is PENDING", async () => {
@@ -493,7 +504,7 @@ describe("ReportRepository - updateReportAsTOSM", () => {
 
         const report = await reportRepo.create(citizen, "Report", "Desc", OfficeCategory.WSO, 45, 7, false, "/1.jpg");
 
-        await expect(reportRepo.updateReportAsTOSM(report.id, Status.IN_PROGRESS)).rejects.toThrow(BadRequestError);
+        await expect(reportRepo.updateReportAsTOSM(report.id, Status.IN_PROGRESS, fakeStaff.username)).rejects.toThrow(BadRequestError);
     });
 
     it("throws BadRequestError when report is REJECTED", async () => {
@@ -511,7 +522,7 @@ describe("ReportRepository - updateReportAsTOSM", () => {
         const report = await reportRepo.create(citizen, "Report", "Desc", OfficeCategory.WSO, 45, 7, false, "/1.jpg");
         await TestDataSource.getRepository(ReportDAO).update({ id: report.id }, { status: Status.REJECTED });
 
-        await expect(reportRepo.updateReportAsTOSM(report.id, Status.IN_PROGRESS)).rejects.toThrow(BadRequestError);
+        await expect(reportRepo.updateReportAsTOSM(report.id, Status.IN_PROGRESS, fakeStaff.username)).rejects.toThrow(BadRequestError);
     });
 
     it("throws BadRequestError when report is RESOLVED", async () => {
@@ -529,7 +540,7 @@ describe("ReportRepository - updateReportAsTOSM", () => {
         const report = await reportRepo.create(citizen, "Report", "Desc", OfficeCategory.WSO, 45, 7, false, "/1.jpg");
         await TestDataSource.getRepository(ReportDAO).update({ id: report.id }, { status: Status.RESOLVED });
 
-        await expect(reportRepo.updateReportAsTOSM(report.id, Status.IN_PROGRESS)).rejects.toThrow(BadRequestError);
+        await expect(reportRepo.updateReportAsTOSM(report.id, Status.IN_PROGRESS, fakeStaff.username)).rejects.toThrow(BadRequestError);
     });
 
     it("throws NotFoundError when staff does not exist", async () => {
@@ -547,7 +558,7 @@ describe("ReportRepository - updateReportAsTOSM", () => {
         const report = await reportRepo.create(citizen, "Report", "Desc", OfficeCategory.WSO, 45, 7, false, "/1.jpg");
         await TestDataSource.getRepository(ReportDAO).update({ id: report.id }, { status: Status.ASSIGNED });
 
-        await expect(reportRepo.updateReportAsTOSM(report.id, Status.IN_PROGRESS, undefined, "nonexistent")).rejects.toThrow(NotFoundError);
+        await expect(reportRepo.updateReportAsTOSM(report.id, Status.IN_PROGRESS, "nonexistent")).rejects.toThrow(NotFoundError);
     });
 
     it("throws BadRequestError when staff office category does not match report category", async () => {
@@ -563,7 +574,7 @@ describe("ReportRepository - updateReportAsTOSM", () => {
         );
 
         const office = await officeRepo.createOffice(
-            fakeStaff.officeName,
+            fakeStaff.offices[0].name,
             "Office description",
             OfficeCategory.RSTLO
         );
@@ -574,13 +585,13 @@ describe("ReportRepository - updateReportAsTOSM", () => {
             fakeStaff.surname,
             fakeStaff.password,
             fakeStaff.role,
-            fakeStaff.officeName
+            [fakeStaff.offices[0].name]
         );
 
         const report = await reportRepo.create(citizen, "Report", "Desc", OfficeCategory.WSO, 45, 7, false, "/1.jpg");
         await TestDataSource.getRepository(ReportDAO).update({ id: report.id }, { status: Status.ASSIGNED });
 
-        await expect(reportRepo.updateReportAsTOSM(report.id, Status.IN_PROGRESS, undefined, staff.username)).rejects.toThrow(BadRequestError);
+        await expect(reportRepo.updateReportAsTOSM(report.id, Status.IN_PROGRESS, staff.username)).rejects.toThrow(BadRequestError);
     });
 
 });
@@ -592,7 +603,7 @@ describe("ReportRepository - Messages", () => {
 
     beforeEach(async () => {
         await officeRepo.createOffice(
-            fakeStaff.officeName,
+            fakeStaff.offices[0].name,
             "Office for testing",
             OfficeCategory.RSTLO
         );
@@ -612,7 +623,7 @@ describe("ReportRepository - Messages", () => {
             fakeStaff.surname,
             fakeStaff.password,
             fakeStaff.role,
-            fakeStaff.officeName
+            [fakeStaff.offices[0].name]
         );
         report = await reportRepo.create(
             citizen,
