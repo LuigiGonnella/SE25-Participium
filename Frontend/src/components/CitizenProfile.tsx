@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Card, Row, Col, Form, Button, Alert } from "react-bootstrap";
+import { Card, Row, Col, Form, Button, Alert, Modal } from "react-bootstrap";
 import type { Citizen } from "../models/Models.ts";
 import defaultProfile from "/default-profile.png";
 import API, { STATIC_URL } from "../API/API.mts";
@@ -9,13 +9,19 @@ interface CitizenProfileProps {
 }
 
 export default function CitizenProfile({ user }: CitizenProfileProps) {
-    const [telegramUsername, setTelegramUsername] = useState(user.telegram_username || "");
+    const [telegramUsername, setTelegramUsername] = useState(user.telegram_username ? "@" + user.telegram_username : "");
     const [receiveEmails, setReceiveEmails] = useState(user.receive_emails);
     const [profilePic, setProfilePic] = useState<string | null>(null);
     const [profilePicFile, setProfilePicFile] = useState<File | null>(null);
+
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const [showVerifyModal, setShowVerifyModal] = useState(false);
+    const [verificationCode, setVerificationCode] = useState<string | null>(null);
+    const [isVerifying, setIsVerifying] = useState(false);
 
     const handleProfilePicChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -26,15 +32,12 @@ export default function CitizenProfile({ user }: CitizenProfileProps) {
     };
 
     const handleTelegramChange = (value: string) => {
-        if (value === "") {
+        if (!value) {
             setTelegramUsername("");
             return;
         }
-        if (!value.startsWith("@")) {
-            setTelegramUsername("@" + value);
-        } else {
-            setTelegramUsername(value);
-        }
+        if (!value.startsWith("@")) value = "@" + value;
+        setTelegramUsername(value);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -45,14 +48,10 @@ export default function CitizenProfile({ user }: CitizenProfileProps) {
 
         try {
             const updates: {
-                telegram_username?: string;
                 receive_emails?: boolean;
                 profilePicture?: File;
             } = {};
 
-            if (telegramUsername !== (user.telegram_username || "")) {
-                updates.telegram_username = telegramUsername;
-            }
             if (receiveEmails !== user.receive_emails) {
                 updates.receive_emails = receiveEmails;
             }
@@ -76,12 +75,29 @@ export default function CitizenProfile({ user }: CitizenProfileProps) {
         }
     };
 
+    const startTelegramVerification = async () => {
+        try {
+            setIsVerifying(true);
+            const result = await API.verifyTelegram(telegramUsername); // backend returns {code}
+            setVerificationCode(result.code);
+            setShowVerifyModal(true);
+        } catch (err: any) {
+            setErrorMessage(err.details || "Failed to generate verification code");
+        } finally {
+            setIsVerifying(false);
+        }
+    };
+
+    const finishVerification = async () => {
+        setShowVerifyModal(false);
+
+    };
+
     return (
         <div className="container py-4 d-flex flex-column align-items-center" >
             <h2 className="mb-1">Profile</h2>
-                            
-            {/* PERSONAL INFO SECTION */}
-            <Card style={{ width: "100%", maxWidth: "700px"}} className="shadow-sm">
+
+            <Card style={{ width: "100%", maxWidth: "700px" }} className="shadow-sm">
                 <Card.Body className="px-4">
                     <h4 className="text-center mb-4">Personal Information</h4>
 
@@ -99,6 +115,7 @@ export default function CitizenProfile({ user }: CitizenProfileProps) {
                         >
                             Change Profile Picture
                         </Form.Label>
+
                         <Form.Control
                             id="profilePicInput"
                             type="file"
@@ -108,37 +125,58 @@ export default function CitizenProfile({ user }: CitizenProfileProps) {
                         />
                     </div>
 
-                    <Form onSubmit={handleSubmit}>
-                        {successMessage && (
-                            <Alert variant="success" dismissible onClose={() => setSuccessMessage(null)}>
-                                {successMessage}
-                            </Alert>
-                        )}
-                        {errorMessage && (
-                            <Alert variant="danger" dismissible onClose={() => setErrorMessage(null)}>
-                                {errorMessage}
-                            </Alert>
-                        )}
+                    {successMessage && (
+                        <Alert variant="success" dismissible onClose={() => setSuccessMessage(null)}>
+                            {successMessage}
+                        </Alert>
+                    )}
+                    {errorMessage && (
+                        <Alert variant="danger" dismissible onClose={() => setErrorMessage(null)}>
+                            {errorMessage}
+                        </Alert>
+                    )}
 
+                    <Form onSubmit={handleSubmit}>
                         <Row className="mb-1">
                             <Col>
-                                <p className="mb-3"><strong>Name:</strong> {user.name} {user.surname}</p>
-                                <p className="mb-3"><strong>Username:</strong> {user.username}</p>
-                                <p className="mb-3"><strong>Email:</strong> {user.email}</p>
+                                <p><strong>Name:</strong> {user.name} {user.surname}</p>
+                                <p><strong>Username:</strong> {user.username}</p>
+                                <p><strong>Email:</strong> {user.email}</p>
                             </Col>
                         </Row>
 
-                        <Form.Group className="mb-4" style={{ maxWidth: "250px" }}>
-                            <Form.Label className="fw-bold" style={{ fontSize: '1.1rem' }}>Telegram Username</Form.Label>
-                            <Form.Control
-                                type="text"
-                                value={telegramUsername}
-                                onChange={(e) => handleTelegramChange(e.target.value)}
-                                placeholder="@username"
-                            />
+                        <Form.Group className="mb-3" style={{ maxWidth: "250px" }}>
+                            <Form.Label className="fw-bold">Telegram Username</Form.Label>
+                            <div className="input-group align-items-center">
+                            {telegramUsername &&
+                                telegramUsername === ("@" + user.telegram_username || "") &&
+                                        <span title="Verified"> <i className="bi bi-patch-check-fill text-success"></i></span>
+                                }
+                                <Form.Control
+                                    type="text"
+                                    value={telegramUsername}
+                                    onChange={(e) => handleTelegramChange(e.target.value)}
+                                    placeholder="@username"
+                                />
+
+                            </div>
+
+
                         </Form.Group>
 
-                        <Form.Group className="mb-3 mt-2">
+                        {telegramUsername &&
+                            telegramUsername !== ("@" + user.telegram_username || "") && (
+                                <Button
+                                    variant="secondary"
+                                    disabled={isVerifying}
+                                    className="mb-3"
+                                    onClick={startTelegramVerification}
+                                >
+                                    {isVerifying ? "Generating..." : "Verify Telegram"}
+                                </Button>
+                        )}
+
+                        <Form.Group className="mb-3">
                             <Form.Check
                                 type="checkbox"
                                 label="Receive email notifications"
@@ -149,13 +187,30 @@ export default function CitizenProfile({ user }: CitizenProfileProps) {
                         </Form.Group>
 
                         <div className="d-flex justify-content-center">
-                            <Button variant="primary" type="submit" className="px-4" disabled={isSubmitting}>
+                            <Button type="submit" disabled={isSubmitting}>
                                 {isSubmitting ? "Saving..." : "Save Changes"}
                             </Button>
                         </div>
                     </Form>
                 </Card.Body>
             </Card>
+
+            <Modal show={showVerifyModal} onHide={() => setShowVerifyModal(false)} centered>
+                <Modal.Header closeButton>
+                    <Modal.Title>Telegram Verification</Modal.Title>
+                </Modal.Header>
+
+                <Modal.Body className="text-center">
+                    <p>Send this code to our <a href="https://t.me/ParticipiumBot" target="_blank">Telegram Bot</a> using <strong>/verify</strong>:</p>
+                    <h3 className="fw-bold py-2">{verificationCode}</h3>
+                </Modal.Body>
+
+                <Modal.Footer>
+                    <Button variant="primary" onClick={finishVerification}>
+                        Done
+                    </Button>
+                </Modal.Footer>
+            </Modal>
         </div>
     );
 }
