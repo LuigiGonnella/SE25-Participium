@@ -9,7 +9,7 @@ import path from "path";
 import {mapMessageToDTO, mapReportDAOToDTO} from "@services/mapperService";
 import {Report} from "@models/dto/Report";
 import {OfficeCategory} from "@models/dao/officeDAO";
-import {findOrThrowNotFound} from "@utils";
+import {findOrThrowNotFound, isWithinTurin} from "@utils";
 import {StaffRole} from "@dao/staffDAO";
 import {Message} from "@models/dto/Message";
 import {StaffRepository} from "@repositories/staffRepository";
@@ -82,7 +82,9 @@ export async function createReport(body: any, citizen: string, photos: Express.M
     const lat = parseFloat(latitude);
     const lon = parseFloat(longitude);
 
-    //TODO: must be inside Turin perimeter
+    if (!isWithinTurin(lat, lon)) {
+        throw new BadRequestError("Report location must be within Turin city boundaries");
+    }
 
     return await repo.create(
         citizenDAO,

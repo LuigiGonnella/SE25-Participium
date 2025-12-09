@@ -84,7 +84,11 @@ function App() {
                         <Navigate replace to="/"/> :
                         <RegistrationForm handleRegistration={handleRegistration}/>
                 }/>
-                <Route path="verify-email" element={<EmailVerificationPage />}/>
+                <Route path="verify-email" element={
+                    (isCitizen(user) && !user.email) ?
+                        <EmailVerificationPage /> :
+                        <Navigate replace to="/"/>
+                }/>
                 <Route path="municipality-registration" element={
                     (loggedIn && isStaff(user) && user.role === StaffRole.ADMIN) ?
                         <MunicipalityRegistrationForm handleStaffRegistration={handleMunicipalityRegistration}/> :

@@ -72,7 +72,7 @@ export class PendingVerificationRepository {
         }
         console.log(username)
         if (type === "telegram"){
-            whereClause.valueToVerify = username.toLowerCase();
+            whereClause.valueToVerify = username;
         }
         const pendingVerification = findOrThrowNotFound(
             await this.repo.find({

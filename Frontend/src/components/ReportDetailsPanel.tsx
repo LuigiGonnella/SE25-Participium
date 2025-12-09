@@ -98,7 +98,7 @@ export default function ReportDetailsPanel({ report, onClose }: ReportDetailsPan
                         {report.citizenUsername ? (
                         <>{report.citizenUsername}</>
                         ) : (
-                        <i>Unknown</i>
+                        <i>Anonymous</i>
                         )}
                     </p>
 

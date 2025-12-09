@@ -4,6 +4,8 @@ import {StaffRole} from "@dao/staffDAO";
 import {Status} from "@dao/reportDAO";
 import {BadRequestError} from "@errors/BadRequestError";
 import {OfficeCategory} from "@dao/officeDAO";
+import turinBoundary from './data/turinBoundary.json';
+import * as turf from '@turf/turf';
 
 export function findOrThrowNotFound<T>(
   array: T[],
@@ -92,4 +94,16 @@ export function validateDate(dateStr: unknown, fieldName: string): Date {
         throw new BadRequestError(`Invalid ${fieldName} format.`);
     }
     return date;
+}
+
+export function isWithinTurin(lat: number, lon: number): boolean {
+    try {
+        const turinPolygon = turf.multiPolygon(turinBoundary.coordinates).geometry;
+        const point = turf.point([lon, lat]);
+
+        return turf.booleanPointInPolygon(point, turinPolygon);
+    } catch (error) {
+        console.error("Error checking Turin boundaries:", error);
+        return false;
+    }
 }

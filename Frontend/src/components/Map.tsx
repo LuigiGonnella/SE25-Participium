@@ -415,7 +415,7 @@ function ClusterMarkers({reports, selectedReport, setSelectedReport, setNewRepor
                     <Popup closeButton={false} >
                         <strong>Title:</strong> {cluster.properties.title}<br />
                         <strong>Status:</strong> {cluster.properties.status}<br />
-                        <i>by {cluster.properties.citizenUsername}</i>
+                        <i>by {cluster.properties.citizenUsername ?? "Anonymous"}</i>
                     </Popup>
                 </Marker>
             );
