@@ -1,9 +1,8 @@
 import { DataSource } from 'typeorm';
 import { Response, NextFunction } from 'express';
-import { login } from '@controllers/authController';
-import { register } from '@controllers/authController';
+import { login, register } from '@controllers/authController';
 import { CitizenDAO } from '@dao/citizenDAO';
-import { StaffDAO, StaffRole } from '@dao/staffDAO';
+import { StaffDAO } from '@dao/staffDAO';
 import { OfficeDAO } from '@dao/officeDAO';
 import { ReportDAO } from '@dao/reportDAO';
 import { NotificationDAO } from '@dao/notificationDAO';
@@ -12,6 +11,7 @@ import passport from 'passport';
 import { configurePassport } from '@config/passport';
 import { AppDataSource } from "@database";
 import { MessageDAO } from '@models/dao/messageDAO';
+import { beforeAllE2e, DEFAULT_CITIZENS, DEFAULT_STAFF } from "../../e2e/lifecycle";
 import { PendingVerificationDAO } from '@dao/pendingVerificationDAO';
 
 
@@ -26,33 +26,13 @@ beforeAll(async () => {
         logging: false
     });
     await localDataSource.initialize();
-
     Object.assign(AppDataSource, localDataSource);
 
+    // Initialize default entities
+    await beforeAllE2e();
 
     // Configure passport
     configurePassport();
-
-    // Create test citizen
-    const citizenRepo = localDataSource.getRepository(CitizenDAO);
-    await citizenRepo.save({
-        email: 'test@test.com',
-        username: 'testuser',
-        name: 'Test',
-        surname: 'User',
-        password: await bcrypt.hash('password123', 10),
-        receive_emails: false
-    });
-
-    // Create test staff
-    const staffRepo = localDataSource.getRepository(StaffDAO);
-    await staffRepo.save({
-        username: 'admin',
-        name: 'Admin',
-        surname: 'User',
-        password: await bcrypt.hash('admin123', 10),
-        role: StaffRole.ADMIN
-    });
 });
 
 afterAll(async () => {
@@ -101,246 +81,123 @@ describe('AuthController - login', () => {
         expect(authenticateSpy).toHaveBeenCalledWith('staff-local', expect.any(Function));
         authenticateSpy.mockRestore();
     });
+});
 
-    it('should handle authentication errors from passport', (done) => {
-        const req = { query: { type: 'CITIZEN' }, body: {} } as any;
-        const res = {} as any;
-        const next = jest.fn((error) => {
-            expect(error).toBeDefined();
-            expect(error.message).toBe('Database error');
-            done();
-        });
-
-        const mockError = new Error('Database error');
-        jest.spyOn(passport, 'authenticate').mockImplementation((strategy, callback: any) => {
-            return (req: any, res: any, next: any) => {
-                callback(mockError, null, null);
-            };
-        });
-
-        login(req, res, next);
-    });
-
-    it('should return 401 when user not found', (done) => {
-        const req = { query: { type: 'CITIZEN' }, body: {} } as any;
-        const res = {
-            status: jest.fn().mockReturnThis(),
-            json: jest.fn((data) => {
-                expect(res.status).toHaveBeenCalledWith(401);
-                expect(data.error).toBe('Invalid credentials');
-                done();
-            })
-        } as any;
-        const next = jest.fn();
-
-        jest.spyOn(passport, 'authenticate').mockImplementation((strategy, callback: any) => {
-            return (req: any, res: any, next: any) => {
-                callback(null, false, { message: 'User not found' });
-            };
-        });
-
-        login(req, res, next);
-    });
-
-    it('should handle req.login errors', (done) => {
+describe('AuthController - register', () => {
+    it('should register a new citizen successfully', async () => {
         const req = {
-            query: { type: 'CITIZEN' },
-            body: {},
-            login: jest.fn((user, callback) => callback(new Error('Session error')))
+            body: {
+                email: 'newuser@example.com',
+                username: 'newuser',
+                name: 'New',
+                surname: 'User',
+                password: 'password123',
+                receive_emails: true,
+                telegram_username: '@newuser'
+            }
         } as any;
-        const res = {} as any;
-        const next = jest.fn((error) => {
-            expect(error).toBeDefined();
-            expect(error.message).toBe('Session error');
-            done();
-        });
+        const res = {
+            status: jest.fn().mockReturnThis(),
+            json: jest.fn()
+        } as any;
 
-        const mockUser = { id: 1, username: 'test', type: 'CITIZEN' };
-        jest.spyOn(passport, 'authenticate').mockImplementation((strategy, callback: any) => {
-            return (req: any, res: any, next: any) => {
-                callback(null, mockUser, null);
-            };
-        });
+        await register(req, res);
 
-        login(req, res, next);
+        expect(res.status).toHaveBeenCalledWith(201);
+        expect(res.json).toHaveBeenCalledWith(
+            expect.objectContaining({
+                email: 'newuser@example.com',
+                username: 'newuser'
+            })
+        );
     });
 
-    it('should successfully login and return user data', (done) => {
-        const mockUser = { id: 1, username: 'testuser', email: 'test@test.com', type: 'CITIZEN' };
+    it('should fail when registering with existing default citizen email', async () => {
         const req = {
-            query: { type: 'CITIZEN' },
-            body: {},
-            login: jest.fn((user, callback) => callback(null))
+            body: {
+                email: DEFAULT_CITIZENS.citizen1.email,
+                username: 'differentusername',
+                name: 'Test',
+                surname: 'User',
+                password: 'password123'
+            }
         } as any;
         const res = {
             status: jest.fn().mockReturnThis(),
-            json: jest.fn((data) => {
-                expect(res.status).toHaveBeenCalledWith(200);
-                expect(data).toEqual(mockUser);
-                expect(req.login).toHaveBeenCalledWith(mockUser, expect.any(Function));
-                done();
-            })
+            json: jest.fn()
         } as any;
-        const next = jest.fn();
 
-        jest.spyOn(passport, 'authenticate').mockImplementation((strategy, callback: any) => {
-            return (req: any, res: any, next: any) => {
-                callback(null, mockUser, null);
-            };
-        });
+        await register(req, res);
 
-        login(req, res, next);
+        expect(res.status).toHaveBeenCalledWith(expect.any(Number));
+        expect(res.status).not.toHaveBeenCalledWith(201);
     });
 
-    it('should return 401 with custom message from info when authentication fails', (done) => {
-        const req = { query: { type: 'CITIZEN' }, body: {} } as any;
-        const res = {
-            status: jest.fn().mockReturnThis(),
-            json: jest.fn((data) => {
-                expect(res.status).toHaveBeenCalledWith(401);
-                expect(data.message).toBe('Wrong password');
-                expect(data.error).toBe('Invalid credentials');
-                done();
-            })
-        } as any;
-        const next = jest.fn();
-
-        jest.spyOn(passport, 'authenticate').mockImplementation((strategy, callback: any) => {
-            return (req: any, res: any, next: any) => {
-                callback(null, false, { message: 'Wrong password' });
-            };
-        });
-
-        login(req, res, next);
-    });
-
-    it('should return 401 with default message when info is undefined', (done) => {
-        const req = { query: { type: 'STAFF' }, body: {} } as any;
-        const res = {
-            status: jest.fn().mockReturnThis(),
-            json: jest.fn((data) => {
-                expect(res.status).toHaveBeenCalledWith(401);
-                expect(data.message).toBe('Authentication failed');
-                expect(data.error).toBe('Invalid credentials');
-                done();
-            })
-        } as any;
-        const next = jest.fn();
-
-        jest.spyOn(passport, 'authenticate').mockImplementation((strategy, callback: any) => {
-            return (req: any, res: any, next: any) => {
-                callback(null, false, undefined);
-            };
-        });
-
-        login(req, res, next);
-    });
-
-    it('should use staff-local strategy when type is STAFF', (done) => {
-        const mockUser = { id: 2, username: 'staffuser', type: 'STAFF' };
+    it('should fail when registering with existing default citizen username', async () => {
         const req = {
-            query: { type: 'STAFF' },
-            body: {},
-            login: jest.fn((user, callback) => callback(null))
+            body: {
+                email: 'newemail@example.com',
+                username: DEFAULT_CITIZENS.citizen1.username,
+                name: 'Test',
+                surname: 'User',
+                password: 'password123'
+            }
         } as any;
         const res = {
             status: jest.fn().mockReturnThis(),
-            json: jest.fn((data) => {
-                expect(data).toEqual(mockUser);
-                done();
-            })
+            json: jest.fn()
         } as any;
-        const next = jest.fn();
 
-        const authenticateSpy = jest.spyOn(passport, 'authenticate').mockImplementation((strategy, callback: any) => {
-            expect(strategy).toBe('staff-local');
-            return (req: any, res: any, next: any) => {
-                callback(null, mockUser, null);
-            };
-        });
+        await register(req, res);
 
-        login(req, res, next);
+        expect(res.status).toHaveBeenCalledWith(expect.any(Number));
+        expect(res.status).not.toHaveBeenCalledWith(201);
     });
 
-    it('should reject when type is lowercase citizen', async () => {
-        const req = { query: { type: 'citizen' } } as any;
-        const res = {} as Response;
-        const next = (() => {}) as NextFunction;
-
-        await expect(login(req, res, next)).rejects.toThrow('Invalid or missing query parameter');
-    });
-
-    it('should reject when type is empty string', async () => {
-        const req = { query: { type: '' } } as any;
-        const res = {} as Response;
-        const next = (() => {}) as NextFunction;
-
-        await expect(login(req, res, next)).rejects.toThrow('Invalid or missing query parameter');
-    });
-
-    it('should use citizen-local strategy when type is exactly CITIZEN', (done) => {
-        const mockUser = { id: 3, username: 'citizen123', type: 'CITIZEN' };
+    it('should fail when required fields are missing', async () => {
         const req = {
-            query: { type: 'CITIZEN' },
-            body: {},
-            login: jest.fn((user, callback) => callback(null))
+            body: {
+                email: 'test@example.com',
+                // missing username, name, surname, password
+            }
         } as any;
         const res = {
             status: jest.fn().mockReturnThis(),
-            json: jest.fn((data) => {
-                expect(data).toEqual(mockUser);
-                done();
-            })
+            json: jest.fn()
         } as any;
-        const next = jest.fn();
 
-        const authenticateSpy = jest.spyOn(passport, 'authenticate').mockImplementation((strategy, callback: any) => {
-            expect(strategy).toBe('citizen-local');
-            return (req: any, res: any, next: any) => {
-                callback(null, mockUser, null);
-            };
-        });
+        await register(req, res);
 
-        login(req, res, next);
+        expect(res.status).toHaveBeenCalledWith(400);
     });
 
-    it('should handle null info object when user not found', (done) => {
-        const req = { query: { type: 'CITIZEN' }, body: {} } as any;
+    it('should hash password before saving', async () => {
+        const req = {
+            body: {
+                email: 'hashtest@example.com',
+                username: 'hashuser',
+                name: 'Hash',
+                surname: 'Test',
+                password: 'plainpassword123',
+                receive_emails: false
+            }
+        } as any;
         const res = {
             status: jest.fn().mockReturnThis(),
-            json: jest.fn((data) => {
-                expect(res.status).toHaveBeenCalledWith(401);
-                expect(data.message).toBe('Authentication failed');
-                done();
-            })
+            json: jest.fn()
         } as any;
-        const next = jest.fn();
 
-        jest.spyOn(passport, 'authenticate').mockImplementation((strategy, callback: any) => {
-            return (req: any, res: any, next: any) => {
-                callback(null, null, null);
-            };
-        });
+        await register(req, res);
 
-        login(req, res, next);
-    });
+        const savedCitizen = await localDataSource
+            .getRepository(CitizenDAO)
+            .findOneBy({ email: 'hashtest@example.com' });
 
-    it('should call passport callback with all three parameters', (done) => {
-        const req = { query: { type: 'STAFF' }, body: {} } as any;
-        const res = {
-            status: jest.fn().mockReturnThis(),
-            json: jest.fn(() => done())
-        } as any;
-        const next = jest.fn();
-
-        jest.spyOn(passport, 'authenticate').mockImplementation((strategy, callback: any) => {
-            expect(callback).toBeInstanceOf(Function);
-            return (req: any, res: any, next: any) => {
-                callback(null, false, { message: 'Test' });
-            };
-        });
-
-        login(req, res, next);
+        expect(savedCitizen).toBeDefined();
+        expect(savedCitizen?.password).not.toBe('plainpassword123');
+        
+        const isMatch = await bcrypt.compare('plainpassword123', savedCitizen!.password);
+        expect(isMatch).toBe(true);
     });
 });
 

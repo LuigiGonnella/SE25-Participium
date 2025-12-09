@@ -1,13 +1,11 @@
 import { mapNotificationDAOToDTO } from "@services/mapperService";
 
-// Define a placeholder for the mock instance
 const mockRepoInstance = {
     getNotificationsForCitizen: jest.fn(),
     getNotificationsForStaff: jest.fn(),
     markAsRead: jest.fn(),
 };
 
-// Use doMock to replace the repository BEFORE the controller is imported
 jest.doMock("@repositories/notificationRepository", () => {
     return {
         NotificationRepository: jest.fn().mockImplementation(() => {
@@ -16,17 +14,12 @@ jest.doMock("@repositories/notificationRepository", () => {
     };
 });
 
-// Mock the mapper service as before
 jest.mock("@services/mapperService");
 
-// Now, import the controller. It will use the mocked repository.
 import { getNotificationsOfUser, markNotificationAsRead } from "@controllers/notificationController";
 
 beforeEach(() => {
-    // Clear mock history before each test
     jest.clearAllMocks();
-
-    // Reset default mock implementations
     mockRepoInstance.getNotificationsForCitizen.mockResolvedValue([]);
     mockRepoInstance.getNotificationsForStaff.mockResolvedValue([]);
     mockRepoInstance.markAsRead.mockResolvedValue(undefined);

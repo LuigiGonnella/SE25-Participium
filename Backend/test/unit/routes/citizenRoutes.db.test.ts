@@ -1,275 +1,178 @@
-import { Request, Response, NextFunction } from 'express';
-import { getAllCitizens, getCitizenById, getCitizenByEmail, getCitizenByUsername } from '@controllers/citizenController';
-import { NotFoundError } from '@models/errors/NotFoundError';
+import request from 'supertest';
+import express, { Express } from 'express';
+import citizenRoutes from '@routes/citizenRoutes';
+import { beforeAllE2e, DEFAULT_CITIZENS, TestDataManager } from "../../e2e/lifecycle";
+import { initializeTestDataSource, closeTestDataSource, TestDataSource } from "../../setup/test-datasource";
+import { CitizenDAO } from '@dao/citizenDAO';
 
-// Mock implementations
-jest.mock('@controllers/citizenController');
+let app: Express;
+
+beforeAll(async () => {
+    await initializeTestDataSource();
+    await beforeAllE2e();
+    
+    app = express();
+    app.use(express.json());
+    app.use('/api/v1/citizens', citizenRoutes);
+});
+
+afterAll(async () => {
+    await closeTestDataSource();
+});
+
+beforeEach(async () => {
+    // Clear only non-default citizens
+    const allCitizens = await TestDataSource.getRepository(CitizenDAO).find();
+    const defaultUsernames = Object.values(DEFAULT_CITIZENS).map(c => c.username);
+    const toDelete = allCitizens.filter(c => !defaultUsernames.includes(c.username));
+    await TestDataSource.getRepository(CitizenDAO).remove(toDelete);
+});
 
 describe('Citizen Routes Tests', () => {
-    let mockRequest: Partial<Request>;
-    let mockResponse: Partial<Response>;
-    let nextFunction: NextFunction;
+    describe('GET /api/v1/citizens', () => {
+        it('should return all default citizens', async () => {
+            const response = await request(app)
+                .get('/api/v1/citizens')
+                .expect(200);
 
-    beforeEach(() => {
-        mockRequest = {};
-        mockResponse = {
-            status: jest.fn().mockReturnThis(),
-            json: jest.fn()
-        };
-        nextFunction = jest.fn();
-        jest.clearAllMocks();
-    });
-
-    describe('GET /citizens', () => {
-        it('should return all citizens', async () => {
-            const mockCitizens = [
-                { id: 1, username: 'user1', email: 'user1@test.com', name: 'Test', surname: 'User1' },
-                { id: 2, username: 'user2', email: 'user2@test.com', name: 'Test', surname: 'User2' }
-            ];
-
-            (getAllCitizens as jest.Mock).mockResolvedValueOnce(mockCitizens);
-
-            await getAllCitizens();
-
-            expect(getAllCitizens).toHaveBeenCalled();
-        });
-
-        it('should handle errors when getting all citizens', async () => {
-            const error = new Error('Database error');
+            expect(Array.isArray(response.body)).toBe(true);
+            expect(response.body.length).toBeGreaterThanOrEqual(3);
             
-            (getAllCitizens as jest.Mock).mockRejectedValueOnce(error);
-
-            try {
-                await getAllCitizens();
-            } catch (err) {
-                expect(err).toBe(error);
-            }
-
-            expect(getAllCitizens).toHaveBeenCalled();
+            const usernames = response.body.map((c: any) => c.username);
+            expect(usernames).toContain(DEFAULT_CITIZENS.citizen1.username);
+            expect(usernames).toContain(DEFAULT_CITIZENS.citizen2.username);
+            expect(usernames).toContain(DEFAULT_CITIZENS.citizen3.username);
         });
 
-        it('should return empty array when no citizens exist', async () => {
-            (getAllCitizens as jest.Mock).mockResolvedValueOnce([]);
+        it('should not include password in response', async () => {
+            const response = await request(app)
+                .get('/api/v1/citizens')
+                .expect(200);
 
-            const result = await getAllCitizens();
-
-            expect(result).toEqual([]);
-            expect(getAllCitizens).toHaveBeenCalled();
+            response.body.forEach((citizen: any) => {
+                expect(citizen).not.toHaveProperty('password');
+                expect(citizen).not.toHaveProperty('id');
+            });
         });
     });
 
-    describe('GET /citizens/id/:id', () => {
-        it('should return citizen by id', async () => {
-            const mockCitizen = {
-                id: 1,
-                username: 'testuser',
-                email: 'test@test.com',
-                name: 'Test',
-                surname: 'User'
-            };
+    describe('GET /api/v1/citizens/username/:username', () => {
+        it('should return default citizen by username', async () => {
+            const response = await request(app)
+                .get(`/api/v1/citizens/username/${DEFAULT_CITIZENS.citizen1.username}`)
+                .expect(200);
 
-            mockRequest.params = { id: '1' };
-            (getCitizenById as jest.Mock).mockResolvedValueOnce(mockCitizen);
-
-            await getCitizenById(1);
-
-            expect(getCitizenById).toHaveBeenCalledWith(1);
+            expect(response.body).toMatchObject({
+                username: DEFAULT_CITIZENS.citizen1.username,
+                email: DEFAULT_CITIZENS.citizen1.email,
+                name: DEFAULT_CITIZENS.citizen1.name,
+                surname: DEFAULT_CITIZENS.citizen1.surname
+            });
+            expect(response.body).not.toHaveProperty('password');
         });
 
-        it('should return null when citizen not found by id', async () => {
-            mockRequest.params = { id: '999' };
-            (getCitizenById as jest.Mock).mockResolvedValueOnce(null);
+        it('should return 200 with null for non-existent username', async () => {
+            const response = await request(app)
+                .get('/api/v1/citizens/username/nonexistent')
+                .expect(200);
 
-            const result = await getCitizenById(999);
-
-            expect(result).toBeNull();
-            expect(getCitizenById).toHaveBeenCalledWith(999);
-        });
-
-        it('should handle invalid id parameter', async () => {
-            mockRequest.params = { id: 'invalid' };
-            
-            const id = parseInt('invalid');
-            expect(isNaN(id)).toBe(true);
-        });
-
-        it('should handle errors when getting citizen by id', async () => {
-            const error = new Error('Database error');
-            
-            mockRequest.params = { id: '1' };
-            (getCitizenById as jest.Mock).mockRejectedValueOnce(error);
-
-            try {
-                await getCitizenById(1);
-            } catch (err) {
-                expect(err).toBe(error);
-            }
+            expect(response.body).toBeNull();
         });
     });
 
-    describe('GET /citizens/email/:email', () => {
-        it('should return citizen by email', async () => {
-            const mockCitizen = {
-                id: 1,
-                username: 'testuser',
-                email: 'test@test.com',
-                name: 'Test',
-                surname: 'User'
-            };
+    describe('GET /api/v1/citizens/email/:email', () => {
+        it('should return default citizen by email', async () => {
+            const response = await request(app)
+                .get(`/api/v1/citizens/email/${DEFAULT_CITIZENS.citizen2.email}`)
+                .expect(200);
 
-            mockRequest.params = { email: 'test@test.com' };
-            (getCitizenByEmail as jest.Mock).mockResolvedValueOnce(mockCitizen);
-
-            await getCitizenByEmail('test@test.com');
-
-            expect(getCitizenByEmail).toHaveBeenCalledWith('test@test.com');
+            expect(response.body).toMatchObject({
+                username: DEFAULT_CITIZENS.citizen2.username,
+                email: DEFAULT_CITIZENS.citizen2.email
+            });
         });
 
-        it('should return null when citizen not found by email', async () => {
-            mockRequest.params = { email: 'notfound@test.com' };
-            (getCitizenByEmail as jest.Mock).mockResolvedValueOnce(null);
+        it('should return 200 with null for non-existent email', async () => {
+            const response = await request(app)
+                .get('/api/v1/citizens/email/nonexistent@example.com')
+                .expect(200);
 
-            const result = await getCitizenByEmail('notfound@test.com');
-
-            expect(result).toBeNull();
-            expect(getCitizenByEmail).toHaveBeenCalledWith('notfound@test.com');
+            expect(response.body).toBeNull();
         });
 
-        it('should handle errors when getting citizen by email', async () => {
-            const error = new Error('Database error');
-            
-            mockRequest.params = { email: 'test@test.com' };
-            (getCitizenByEmail as jest.Mock).mockRejectedValueOnce(error);
+        it('should return 400 for invalid email format', async () => {
+            const response = await request(app)
+                .get('/api/v1/citizens/email/invalidemail')
+                .expect(400);
 
-            try {
-                await getCitizenByEmail('test@test.com');
-            } catch (err) {
-                expect(err).toBe(error);
-            }
-        });
-
-        it('should handle special characters in email', async () => {
-            const emailWithSpecialChars = 'test+special@test.com';
-            mockRequest.params = { email: emailWithSpecialChars };
-            
-            (getCitizenByEmail as jest.Mock).mockResolvedValueOnce(null);
-
-            const result = await getCitizenByEmail(emailWithSpecialChars);
-
-            expect(getCitizenByEmail).toHaveBeenCalledWith(emailWithSpecialChars);
+            expect(response.body).toHaveProperty('error');
         });
     });
 
-    describe('GET /citizens/username/:username', () => {
-        it('should return citizen by username', async () => {
-            const mockCitizen = {
-                id: 1,
-                username: 'testuser',
-                email: 'test@test.com',
-                name: 'Test',
-                surname: 'User'
-            };
-
-            mockRequest.params = { username: 'testuser' };
-            (getCitizenByUsername as jest.Mock).mockResolvedValueOnce(mockCitizen);
-
-            await getCitizenByUsername('testuser');
-
-            expect(getCitizenByUsername).toHaveBeenCalledWith('testuser');
-        });
-
-        it('should return null when citizen not found by username', async () => {
-            mockRequest.params = { username: 'notfound' };
-            (getCitizenByUsername as jest.Mock).mockResolvedValueOnce(null);
-
-            const result = await getCitizenByUsername('notfound');
-
-            expect(result).toBeNull();
-            expect(getCitizenByUsername).toHaveBeenCalledWith('notfound');
-        });
-
-        it('should handle errors when getting citizen by username', async () => {
-            const error = new Error('Database error');
+    describe('GET /api/v1/citizens/id/:id', () => {
+        it('should return default citizen by id', async () => {
+            const citizenDAO = await TestDataManager.getCitizen('citizen3');
             
-            mockRequest.params = { username: 'testuser' };
-            (getCitizenByUsername as jest.Mock).mockRejectedValueOnce(error);
+            const response = await request(app)
+                .get(`/api/v1/citizens/id/${citizenDAO.id}`)
+                .expect(200);
 
-            try {
-                await getCitizenByUsername('testuser');
-            } catch (err) {
-                expect(err).toBe(error);
-            }
+            expect(response.body).toMatchObject({
+                username: DEFAULT_CITIZENS.citizen3.username,
+                email: DEFAULT_CITIZENS.citizen3.email
+            });
         });
 
-        it('should handle username with spaces', async () => {
-            const usernameWithSpaces = 'test user';
-            mockRequest.params = { username: usernameWithSpaces };
-            
-            (getCitizenByUsername as jest.Mock).mockResolvedValueOnce(null);
+        it('should return 200 with null for non-existent id', async () => {
+            const response = await request(app)
+                .get('/api/v1/citizens/id/99999')
+                .expect(200);
 
-            const result = await getCitizenByUsername(usernameWithSpaces);
-
-            expect(getCitizenByUsername).toHaveBeenCalledWith(usernameWithSpaces);
+            expect(response.body).toBeNull();
         });
 
-        it('should handle case-sensitive username search', async () => {
-            const username = 'TestUser';
-            mockRequest.params = { username };
-            
-            (getCitizenByUsername as jest.Mock).mockResolvedValueOnce(null);
+        it('should return 400 for invalid id format', async () => {
+            const response = await request(app)
+                .get('/api/v1/citizens/id/invalid')
+                .expect(400);
 
-            const result = await getCitizenByUsername(username);
-
-            expect(getCitizenByUsername).toHaveBeenCalledWith(username);
+            expect(response.body).toHaveProperty('error');
         });
     });
 
-    describe('PATCH /citizens/:username', () => {
-        it('should update citizen profile', async () => {
-            const mockUpdatedCitizen = {
-                telegram_username: 'newtelegram',
+    describe('PATCH /api/v1/citizens/:username', () => {
+        it('should update default citizen profile', async () => {
+            const response = await request(app)
+                .patch(`/api/v1/citizens/${DEFAULT_CITIZENS.citizen1.username}`)
+                .send({
+                    telegram_username: '@updated_telegram',
+                    receive_emails: true
+                })
+                .expect(200);
+
+            expect(response.body).toMatchObject({
+                telegram_username: '@updated_telegram',
                 receive_emails: true
-            };
-            mockRequest.params = { username: 'testuser' };
-            mockRequest.body = {
-                telegram_username: 'newtelegram',
-                receive_emails: 'true'
-            };
-            mockRequest.user = { username: 'testuser' };
-            (getCitizenByUsername as jest.Mock).mockResolvedValueOnce(mockUpdatedCitizen);
+            });
 
-            await getCitizenByUsername('testuser');
-            expect(getCitizenByUsername).toHaveBeenCalledWith('testuser');
-        });
-    });
-
-    describe('Route error handling', () => {
-        it('should call next with error when controller throws', async () => {
-            const error = new NotFoundError('Citizen not found');
-            
-            (getCitizenById as jest.Mock).mockRejectedValueOnce(error);
-
-            try {
-                await getCitizenById(1);
-            } catch (err) {
-                nextFunction(err);
-            }
-
-            expect(nextFunction).toHaveBeenCalledWith(error);
+            // Reset
+            await request(app)
+                .patch(`/api/v1/citizens/${DEFAULT_CITIZENS.citizen1.username}`)
+                .send({
+                    telegram_username: '',
+                    receive_emails: false
+                });
         });
 
-        it('should handle unexpected errors gracefully', async () => {
-            const error = new Error('Unexpected error');
-            
-            (getAllCitizens as jest.Mock).mockRejectedValueOnce(error);
+        it('should return 404 for non-existent username', async () => {
+            const response = await request(app)
+                .patch('/api/v1/citizens/nonexistent')
+                .send({
+                    telegram_username: '@test'
+                })
+                .expect(404);
 
-            try {
-                await getAllCitizens();
-            } catch (err) {
-                nextFunction(err);
-            }
-
-            expect(nextFunction).toHaveBeenCalledWith(error);
+            expect(response.body).toHaveProperty('message');
         });
     });
 });
