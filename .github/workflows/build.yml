@@ -3,6 +3,7 @@ on:
  push:
    branches:
      - "main"
+     - "dev"
  pull_request:
    types: [opened, synchronize, reopened]
 jobs:
@@ -12,11 +13,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0 
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Create Backend .env file
+        working-directory: ./Backend
+        run: |
+          echo "DB_TYPE=sqlite" > .env
+          echo "DB_DATABASE=:memory:" >> .env
+          echo "SESSION_SECRET=${{ secrets.SESSION_SECRET }}" >> .env
+          echo "RESEND_API_KEY=${{ secrets.RESEND_API_KEY }}" >> .env
       
       - name: Install Backend dependencies
         working-directory: ./Backend
-        run: npm install
+        run: npm ci
       
       - name: Backend Test and coverage
         working-directory: ./Backend
@@ -24,10 +38,10 @@ jobs:
       
       - name: Install Frontend dependencies
         working-directory: ./Frontend
-        run: npm install
+        run: npm ci
       
       - name: SonarQube Scan
-        uses: SonarSource/sonarcloud-github-action@v2
+        uses: SonarSource/sonarcloud-github-action@v3
         with:
           projectBaseDir: .
         env:
