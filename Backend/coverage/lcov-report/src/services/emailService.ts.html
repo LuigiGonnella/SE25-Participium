@@ -3,7 +3,7 @@
 <html lang="en">
 
 <head>
-    <title>Code coverage report for src/routes/officeRoutes.ts</title>
+    <title>Code coverage report for src/services/emailService.ts</title>
     <meta charset="utf-8" />
     <link rel="stylesheet" href="../../prettify.css" />
     <link rel="stylesheet" href="../../base.css" />
@@ -19,13 +19,13 @@
 <body>
 <div class='wrapper'>
     <div class='pad1'>
-        <h1><a href="../../index.html">All files</a> / <a href="index.html">src/routes</a> officeRoutes.ts</h1>
+        <h1><a href="../../index.html">All files</a> / <a href="index.html">src/services</a> emailService.ts</h1>
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">75% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>7/7</span>
+                <span class='fraction'>6/8</span>
             </div>
         
             
@@ -39,14 +39,14 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/0</span>
+                <span class='fraction'>1/1</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">75% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>7/7</span>
+                <span class='fraction'>6/8</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line high'></div>
+    <div class='status-line medium'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -92,64 +92,82 @@
 <a name='L27'></a><a href='#L27'>27</a>
 <a name='L28'></a><a href='#L28'>28</a>
 <a name='L29'></a><a href='#L29'>29</a>
-<a name='L30'></a><a href='#L30'>30</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">4x</span>
-<span class="cline-any cline-yes">4x</span>
-<span class="cline-any cline-yes">4x</span>
-<span class="cline-any cline-yes">4x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">4x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L30'></a><a href='#L30'>30</a>
+<a name='L31'></a><a href='#L31'>31</a>
+<a name='L32'></a><a href='#L32'>32</a>
+<a name='L33'></a><a href='#L33'>33</a>
+<a name='L34'></a><a href='#L34'>34</a>
+<a name='L35'></a><a href='#L35'>35</a>
+<a name='L36'></a><a href='#L36'>36</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-yes">5x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">5x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">5x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">4x</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { Router } from "express";
-import { OfficeController } from "@controllers/officeController";
-import { isAuthenticated } from "@middlewares/authMiddleware";
-import { StaffRole } from "@models/dao/staffDAO";
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { Resend } from 'resend';
+import { InternalServerError } from '@errors/InternalServerError';
 &nbsp;
-const router = Router();
+// Initialize Resend with API key
+const resend = new Resend("re_fUgMWMzy_NwMy1JGPqUMoEVvDT78LEXVe");
 &nbsp;
-/**
- * POST /api/offices
- * Only ADMIN (Organization Office staff) can create new offices
- */
-/*
-router.post(
-  "/",
-  isAuthenticated([StaffRole.ADMIN]),
-  OfficeController.createOffice
-);*/
-&nbsp;
-/**
- * (Optional) GET /api/offices
- * Allows ADMIN to view all offices
- */
-router.get(
-  "/",
-  isAuthenticated([StaffRole.ADMIN]),
-  OfficeController.getAllOffices
-);
-&nbsp;
-export default router;
+export async function sendVerificationEmail(
+    email: string,
+    name: string,
+    verificationCode: string
+): Promise&lt;void&gt; {
+    try {
+        await resend.emails.send({
+            from: 'Participium &lt;noreply@participium.org&gt;',
+            to: email,
+            subject: 'Email Verification - Participium',
+            html: `
+                &lt;div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;"&gt;
+                    &lt;h2 style="color: #333;"&gt;Welcome to Participium, ${name}!&lt;/h2&gt;
+                    &lt;p&gt;Thank you for registering. Please use the following verification code to complete your registration:&lt;/p&gt;
+                    &lt;div style="background-color: #f4f4f4; padding: 20px; text-align: center; margin: 20px 0;"&gt;
+                        &lt;h1 style="color: #0066cc; letter-spacing: 5px; margin: 0;"&gt;${verificationCode}&lt;/h1&gt;
+                    &lt;/div&gt;
+                    &lt;p&gt;This code will expire in &lt;strong&gt;30 minutes&lt;/strong&gt;.&lt;/p&gt;
+                    &lt;p&gt;If you didn't request this verification, please ignore this email.&lt;/p&gt;
+                    &lt;hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;"&gt;
+                    &lt;p style="color: #666; font-size: 12px;"&gt;This is an automated message from Participium. Please do not reply to this email.&lt;/p&gt;
+                &lt;/div&gt;
+            `,
+        });
+    } catch (error) {
+<span class="cstat-no" title="statement not covered" >        console.error('Error sending verification email:', error);</span>
+<span class="cstat-no" title="statement not covered" >        throw new InternalServerError('Failed to send verification email');</span>
+    }
+}
 &nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->

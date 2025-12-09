@@ -23,16 +23,16 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">51.85% </span>
+                <span class="strong">81.48% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>14/27</span>
+                <span class='fraction'>22/27</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">36.36% </span>
+                <span class="strong">77.27% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>8/22</span>
+                <span class='fraction'>17/22</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">50% </span>
+                <span class="strong">80.76% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>13/26</span>
+                <span class='fraction'>21/26</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line medium'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -115,48 +115,48 @@
 <a name='L50'></a><a href='#L50'>50</a>
 <a name='L51'></a><a href='#L51'>51</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-yes">13x</span>
-<span class="cline-any cline-yes">18x</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">97x</span>
+<span class="cline-any cline-yes">61x</span>
+<span class="cline-any cline-yes">9x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">16x</span>
+<span class="cline-any cline-yes">50x</span>
 <span class="cline-any cline-yes">5x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">11x</span>
-<span class="cline-any cline-yes">11x</span>
+<span class="cline-any cline-yes">45x</span>
+<span class="cline-any cline-yes">45x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">11x</span>
-<span class="cline-any cline-yes">11x</span>
-<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-yes">45x</span>
+<span class="cline-any cline-yes">15x</span>
+<span class="cline-any cline-yes">9x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">6x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">30x</span>
+<span class="cline-any cline-yes">30x</span>
+<span class="cline-any cline-yes">17x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">13x</span>
+<span class="cline-any cline-yes">13x</span>
+<span class="cline-any cline-yes">12x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -171,8 +171,8 @@ type AllowedRole = 'CITIZEN' | 'STAFF' | StaffRole;
 &nbsp;
 export const isAuthenticated = (allowedRoles?: AllowedRole[]) =&gt; {
     return (req: Request, res: Response, next: NextFunction) =&gt; {
-        <span class="missing-if-branch" title="if path not taken" >I</span>if (!req.isAuthenticated()) {
-<span class="cstat-no" title="statement not covered" >            return res.status(401).json({ message: 'Not authenticated' });</span>
+        if (!req.isAuthenticated()) {
+            return res.status(401).json({ message: 'Not authenticated' });
         }
 &nbsp;
         if (!allowedRoles || allowedRoles.length === 0) {
@@ -182,24 +182,24 @@ export const isAuthenticated = (allowedRoles?: AllowedRole[]) =&gt; {
         const user = req.user as any;
         const userType = user?.type;
 &nbsp;
-        <span class="missing-if-branch" title="else path not taken" >E</span>if (userType === 'CITIZEN') {
+        if (userType === 'CITIZEN') {
             if (allowedRoles.includes('CITIZEN')) {
                 return next();
             }
             return res.status(403).json({ message: 'Forbidden: insufficient permissions' });
         }
 &nbsp;
-<span class="cstat-no" title="statement not covered" >        if (userType === 'STAFF') {</span>
-<span class="cstat-no" title="statement not covered" >            if (allowedRoles.includes('STAFF')) {</span>
-<span class="cstat-no" title="statement not covered" >                return next();</span>
+        <span class="missing-if-branch" title="else path not taken" >E</span>if (userType === 'STAFF') {
+            if (allowedRoles.includes('STAFF')) {
+                return next();
             }
 &nbsp;
-            const staffRole = <span class="cstat-no" title="statement not covered" >user?.role;</span>
-<span class="cstat-no" title="statement not covered" >            if (staffRole &amp;&amp; allowedRoles.includes(staffRole as StaffRole)) {</span>
-<span class="cstat-no" title="statement not covered" >                return next();</span>
+            const staffRole = user?.role;
+            if (staffRole &amp;&amp; allowedRoles.includes(staffRole as StaffRole)) {
+                return next();
             }
 &nbsp;
-<span class="cstat-no" title="statement not covered" >            return res.status(403).json({ message: 'Forbidden: insufficient permissions' });</span>
+            return res.status(403).json({ message: 'Forbidden: insufficient permissions' });
         }
 &nbsp;
 <span class="cstat-no" title="statement not covered" >        res.status(403).json({ message: 'Forbidden: invalid user type' });</span>
@@ -220,7 +220,7 @@ export function <span class="fstat-no" title="function not covered" >telegramBot
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-12-09T16:36:00.825Z
+                at 2025-12-09T17:34:19.357Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

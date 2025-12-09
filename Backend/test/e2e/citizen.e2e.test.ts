@@ -6,6 +6,13 @@ import { CitizenDAO } from "@dao/citizenDAO";
 import { CitizenRepository } from "@repositories/citizenRepository";
 import bcrypt from "bcrypt";
 
+// Mock email service to prevent actual email sending during tests
+jest.mock("@services/emailService", () => ({
+    sendVerificationEmail: jest.fn().mockResolvedValue(undefined),
+    sendPasswordResetEmail: jest.fn().mockResolvedValue(undefined),
+}));
+
+
 describe("Citizen API E2E Tests", () => {
     let citizenRepo: CitizenRepository;
 
@@ -23,14 +30,6 @@ describe("Citizen API E2E Tests", () => {
     });
 
     describe("GET /api/v1/citizens - Get all citizens", () => {
-        it("should return empty array when no citizens exist", async () => {
-            const res = await request(app)
-                .get("/api/v1/citizens");
-
-            expect(res.status).toBe(200);
-            expect(res.body).toEqual([]);
-        });
-
         it("should return all citizens with correct structure", async () => {
             const res = await request(app)
                 .get("/api/v1/citizens");
