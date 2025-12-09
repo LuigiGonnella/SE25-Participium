@@ -11,7 +11,7 @@ import { useSearchParams } from "react-router";
 import API from "../API/API.mjs";
 import useSupercluster from "use-supercluster";
 
-let DefaultIcon = L.icon({
+const DefaultIcon = L.icon({
     iconUrl: "/pin.png",
     iconSize: [40, 40],
     iconAnchor: [20, 40],
@@ -213,7 +213,7 @@ export default function TurinMaskedMap({isLoggedIn, user}: MapProps) {
                  style={{pointerEvents: isLoaded ? 'auto' : 'none'}}>
                 <MapContainer
                     center={[45.0703, 7.6869]}
-                    zoom={12}
+                    zoom={14}
                     minZoom={12}
                     maxZoom={18}
                     zoomControl={true}
@@ -239,7 +239,7 @@ export default function TurinMaskedMap({isLoggedIn, user}: MapProps) {
                                 pathOptions={{
                                     stroke: false,
                                     fillColor: "#000",
-                                    fillOpacity: 0.7
+                                    fillOpacity: 0.3
                                 }}
                                 interactive={false}
                             />
@@ -249,7 +249,7 @@ export default function TurinMaskedMap({isLoggedIn, user}: MapProps) {
                                     data={turinGeoJSON}
                                     style={{
                                         color: "#2c7fb8",
-                                        weight: 2,
+                                        weight: 3,
                                         fillOpacity: 0
                                     }}
                                 />
@@ -321,19 +321,19 @@ function ClusterMarkers({reports, selectedReport, setSelectedReport, setNewRepor
     const [zoom, setZoom] = useState<number>(12);
     const map = useMap();
 
-    function updateMap() {
+    const updateMap = useCallback(() => {
         const b = map.getBounds();
         setBounds([b.getSouthWest().lng, b.getSouthWest().lat, b.getNorthEast().lng, b.getNorthWest().lat]);
         setZoom(map.getZoom());
-    }
+    }, [map]);
 
     const onMove = useCallback(() => {
         updateMap();
-    }, [map]);
+    }, [updateMap]);
 
     useEffect(() => {
         updateMap();
-    }, [map]);
+    }, [map, updateMap]);
 
     useEffect(() => {
         map.on('moveend', onMove);
@@ -367,7 +367,7 @@ function ClusterMarkers({reports, selectedReport, setSelectedReport, setNewRepor
             const lng = selectedReport.coordinates[1];
             map.setView([lat, lng], 18, { animate: true });
         }
-    }, [selectedReport]);
+    }, [map, selectedReport]);
 
     return (<>
         {clusters.map(cluster => {
