@@ -35,6 +35,6 @@ export class CitizenDAO {
     @OneToMany(() => ReportDAO, (report) => report.citizen)
     reports: ReportDAO[];
 
-    @OneToMany(() => PendingVerificationDAO, (pendingVerification) => pendingVerification.citizen)
+    @OneToMany(() => PendingVerificationDAO, (pendingVerification) => pendingVerification.citizen, { cascade: true })
     pending_verifications: PendingVerificationDAO[];
 }

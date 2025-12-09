@@ -12,6 +12,7 @@ import passport from 'passport';
 import { configurePassport } from '@config/passport';
 import { AppDataSource } from "@database";
 import { MessageDAO } from '@models/dao/messageDAO';
+import { PendingVerificationDAO } from '@dao/pendingVerificationDAO';
 
 
 let localDataSource: DataSource;
@@ -20,7 +21,7 @@ beforeAll(async () => {
     localDataSource = new DataSource({
         type: 'sqlite',
         database: ':memory:',
-        entities: [CitizenDAO, StaffDAO, OfficeDAO, ReportDAO, NotificationDAO, MessageDAO],
+        entities: [CitizenDAO, StaffDAO, OfficeDAO, ReportDAO, NotificationDAO, MessageDAO, PendingVerificationDAO],
         synchronize: true,
         logging: false
     });
@@ -440,11 +441,11 @@ describe("AuthController - register", () => {
     );
 
     const citizenRepo = localDataSource.getRepository(CitizenDAO);
-    const saved = await citizenRepo.findOneBy({ email: newCitizen.email });
+    const saved = await citizenRepo.findOneBy({ username: newCitizen.username });
 
     expect(saved).not.toBeNull();
     expect(saved?.username).toBe(newCitizen.username);
-    expect(saved?.email).toBe(newCitizen.email);
+    expect(saved?.email).toBeNull(); // Email is null until verified
     expect(saved?.password).not.toBe(newCitizen.password);
   });
 

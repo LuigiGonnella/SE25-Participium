@@ -32,6 +32,7 @@ const config: Config = {
           ]
         ]
       : ["default"],
+  setupFiles: ["<rootDir>/test/setup.ts"],
   setupFilesAfterEnv: ["<rootDir>/test/setup/test-datasource.ts"],
   // use 'as any' to suppress regex key parsing
   moduleNameMapper: {

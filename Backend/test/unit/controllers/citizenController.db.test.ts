@@ -51,6 +51,11 @@ describe("CitizenController - test suite", () => {
             fakeDAO.profilePicture,
             fakeDAO.telegram_username,
         );
+        // Simulate email verification
+        const c = await TestDataSource.getRepository(CitizenDAO).findOneBy({ username: fakeDAO.username });
+        c!.email = fakeDAO.email;
+        await TestDataSource.getRepository(CitizenDAO).save(c!);
+        
         const citizens = await getAllCitizens();
         expect(citizens).toEqual([expectedDTO]);
     });
@@ -66,6 +71,11 @@ describe("CitizenController - test suite", () => {
             fakeDAO.profilePicture,
             fakeDAO.telegram_username,
         );
+        // Simulate email verification
+        const c = await TestDataSource.getRepository(CitizenDAO).findOneBy({ username: fakeDAO.username });
+        c!.email = fakeDAO.email;
+        await TestDataSource.getRepository(CitizenDAO).save(c!);
+        
         const citizen = await getCitizenByEmail(fakeDAO.email);
         expect(citizen).toEqual(expectedDTO);
     });
@@ -81,6 +91,11 @@ describe("CitizenController - test suite", () => {
             fakeDAO.profilePicture,
             fakeDAO.telegram_username,
         );
+        // Simulate email verification
+        const c = await TestDataSource.getRepository(CitizenDAO).findOneBy({ username: fakeDAO.username });
+        c!.email = fakeDAO.email;
+        await TestDataSource.getRepository(CitizenDAO).save(c!);
+        
         const citizen = await getCitizenByUsername(fakeDAO.username);
         expect(citizen).toEqual(expectedDTO);
     });
@@ -96,9 +111,14 @@ describe("CitizenController - test suite", () => {
             fakeDAO.profilePicture,
             fakeDAO.telegram_username,
         );
+        // Simulate email verification
+        const c = await TestDataSource.getRepository(CitizenDAO).findOneBy({ username: fakeDAO.username });
+        c!.email = fakeDAO.email;
+        await TestDataSource.getRepository(CitizenDAO).save(c!);
+        
         const savedInDB = await TestDataSource
             .getRepository(CitizenDAO)
-            .findOneBy({ email: fakeDAO.email });
+            .findOneBy({ username: fakeDAO.username });
         const citizen = await getCitizenById(savedInDB!.id);
         expect(citizen).toEqual(expectedDTO);
     });
@@ -113,6 +133,11 @@ describe("CitizenController - test suite", () => {
             fakeDAO.profilePicture,
             fakeDAO.telegram_username,
         );
+        // Simulate email verification
+        const c = await TestDataSource.getRepository(CitizenDAO).findOneBy({ username: fakeDAO.username });
+        c!.email = fakeDAO.email;
+        await TestDataSource.getRepository(CitizenDAO).save(c!);
+        
         await updateCitizenProfile(fakeDAO.username, { telegram_username: "new_telegram", receive_emails: true  });
         const updatedCitizen = await getCitizenByUsername(fakeDAO.username);
         expect(updatedCitizen).toEqual({

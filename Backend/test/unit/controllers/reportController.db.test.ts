@@ -327,14 +327,14 @@ describe("ReportController - Messages", () => {
         it("allows assigned staff to add a message", async () => {
             await officeRepo.createOffice(fakeStaff.officeName, "Desc", OfficeCategory.RUFO);
             const citizen = await citizenRepo.createCitizen(fakeCitizen.email, fakeCitizen.username, fakeCitizen.name, fakeCitizen.surname, fakeCitizen.password, fakeCitizen.receive_emails, fakeCitizen.profilePicture, fakeCitizen.telegram_username);
-            const staff = await staffRepo.createStaff(fakeStaff.username, fakeStaff.name, fakeStaff.surname, fakeStaff.password, fakeStaff.role, fakeStaff.officeName);
+            const staff = await staffRepo.createStaff(fakeStaff.username, fakeStaff.name, fakeStaff.surname, fakeStaff.password, fakeStaff.role, [fakeStaff.officeName]);
             const report = await createReport(fakeBody, citizen.username, fakeFiles);
 
             report.assignedStaff = staff;
             await TestDataSource.getRepository(ReportDAO).save(report);
 
             const message = "This is a reply from the assigned staff.";
-            await addMessageToReport(report.id, staff.username, "STAFF", message);
+            await addMessageToReport(report.id, staff.username, "STAFF", message, false);
 
             const messages = await reportRepo.getAllMessages(report.id);
             expect(messages).toHaveLength(1);
@@ -344,6 +344,7 @@ describe("ReportController - Messages", () => {
 
         it("throws BadRequestError if a citizen tries to comment on another's report", async () => {
             const citizen = await citizenRepo.createCitizen(fakeCitizen.email, fakeCitizen.username, fakeCitizen.name, fakeCitizen.surname, fakeCitizen.password, fakeCitizen.receive_emails, fakeCitizen.profilePicture, fakeCitizen.telegram_username);
+            await citizenRepo.createCitizen("another@test.com", "another_citizen", "Another", "Citizen", "password", false, "", "");
             const report = await createReport(fakeBody, citizen.username, fakeFiles);
 
             await expect(
@@ -354,7 +355,7 @@ describe("ReportController - Messages", () => {
         it("throws BadRequestError if unassigned staff tries to comment", async () => {
             await officeRepo.createOffice(fakeStaff.officeName, "Desc", OfficeCategory.RUFO);
             const citizen = await citizenRepo.createCitizen(fakeCitizen.email, fakeCitizen.username, fakeCitizen.name, fakeCitizen.surname, fakeCitizen.password, fakeCitizen.receive_emails, fakeCitizen.profilePicture, fakeCitizen.telegram_username);
-            await staffRepo.createStaff(fakeStaff.username, fakeStaff.name, fakeStaff.surname, fakeStaff.password, fakeStaff.role, fakeStaff.officeName);
+            await staffRepo.createStaff(fakeStaff.username, fakeStaff.name, fakeStaff.surname, fakeStaff.password, fakeStaff.role, [fakeStaff.officeName]);
             const report = await createReport(fakeBody, citizen.username, fakeFiles);
 
             await expect(
@@ -375,16 +376,16 @@ describe("ReportController - Messages", () => {
         it("returns all messages for a given report", async () => {
             await officeRepo.createOffice(fakeStaff.officeName, "Desc", OfficeCategory.RUFO);
             const citizen = await citizenRepo.createCitizen(fakeCitizen.email, fakeCitizen.username, fakeCitizen.name, fakeCitizen.surname, fakeCitizen.password, fakeCitizen.receive_emails, fakeCitizen.profilePicture, fakeCitizen.telegram_username);
-            const staff = await staffRepo.createStaff(fakeStaff.username, fakeStaff.name, fakeStaff.surname, fakeStaff.password, fakeStaff.role, fakeStaff.officeName);
+            const staff = await staffRepo.createStaff(fakeStaff.username, fakeStaff.name, fakeStaff.surname, fakeStaff.password, fakeStaff.role, [fakeStaff.officeName]);
             const report = await createReport(fakeBody, citizen.username, fakeFiles);
 
             await addMessageToReport(report.id, citizen.username, "CITIZEN", "First message");
 
             report.assignedStaff = staff;
             await TestDataSource.getRepository(ReportDAO).save(report);
-            await addMessageToReport(report.id, staff.username, "STAFF", "Staff reply");
+            await addMessageToReport(report.id, staff.username, "STAFF", "Staff reply", false);
 
-            const messages = await getAllMessages(report.id);
+            const messages = await getAllMessages(report.id, "CITIZEN");
 
             expect(messages).toHaveLength(2);
             expect(messages[0].message).toBe("First message");
@@ -395,12 +396,12 @@ describe("ReportController - Messages", () => {
             const citizen = await citizenRepo.createCitizen(fakeCitizen.email, fakeCitizen.username, fakeCitizen.name, fakeCitizen.surname, fakeCitizen.password, fakeCitizen.receive_emails, fakeCitizen.profilePicture, fakeCitizen.telegram_username);
             const report = await createReport(fakeBody, citizen.username, fakeFiles);
 
-            const messages = await getAllMessages(report.id);
+            const messages = await getAllMessages(report.id, "CITIZEN");
             expect(messages).toEqual([]);
         });
 
         it("throws NotFoundError when fetching messages for a non-existent report", async () => {
-            await expect(getAllMessages(999)).rejects.toThrow(NotFoundError);
+            await expect(getAllMessages(999, "CITIZEN")).rejects.toThrow(NotFoundError);
         });
     });
 });

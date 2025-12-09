@@ -119,7 +119,8 @@ describe("OfficeRepository - test suite", () => {
 
     });
 
-    it("should update an existing office", async () => {
+    // Methods updateOffice and deleteOffice were removed from repository
+    it.skip("should update an existing office", async () => {
         const office = await officeRepo.createOffice(
             office1.name,
             office1.description,
@@ -128,16 +129,17 @@ describe("OfficeRepository - test suite", () => {
 
         const office_id = officeRepo.getOfficeByName(office1.name);
 
-        const updatedOffice = await officeRepo.updateOffice(
-            (await office_id)!.id,
-            "Updated Office Name",
-            "Updated Description",
-            OfficeCategory.WSO
-        );
+        // const updatedOffice = await officeRepo.updateOffice(
+        //     (await office_id)!.id,
+        //     "Updated Office Name",
+        //     "Updated Description",
+        //     OfficeCategory.WSO
+        // );
 
     });
 
-    it("should delete an existing office", async () => {
+    // Method deleteOffice was removed from repository
+    it.skip("should delete an existing office", async () => {
         const office = await officeRepo.createOffice(
             office1.name,
             office1.description,
@@ -146,7 +148,7 @@ describe("OfficeRepository - test suite", () => {
 
         const office_id = officeRepo.getOfficeByName(office1.name);
 
-        await officeRepo.deleteOffice((await office_id)!.id);
+        // await officeRepo.deleteOffice((await office_id)!.id);
 
         const deletedOffice = await officeRepo.getOfficeById((await office_id)!.id);
         expect(deletedOffice).toBeNull();
@@ -171,18 +173,20 @@ describe("OfficeRepository - test suite", () => {
         ]));
     });
 
-    it("should not update a non-existent office", async () => {
-        await expect(
-            officeRepo.updateOffice(
-                666,
-                "Updated Office Name",
-                "Updated Description",
-                OfficeCategory.WSO
-            )
-        ).rejects.toThrow(AppError);
+    // Method updateOffice was removed from repository
+    it.skip("should not update a non-existent office", async () => {
+        // await expect(
+        //     officeRepo.updateOffice(
+        //         666,
+        //         "Updated Office Name",
+        //         "Updated Description",
+        //         OfficeCategory.WSO
+        //     )
+        // ).rejects.toThrow(AppError);
     });
 
-    it("should not update an office with an existing name", async () => {
+    // Method updateOffice was removed from repository
+    it.skip("should not update an office with an existing name", async () => {
         await officeRepo.createOffice(
             office1.name,
             office1.description,
@@ -194,17 +198,18 @@ describe("OfficeRepository - test suite", () => {
             office2.category
         );
 
-        await expect(
-            officeRepo.updateOffice(
-                (await officeRepo.getOfficeByName(office1.name))!.id,
-                office2.name,
-                "Updated Description",
-                OfficeCategory.WSO
-            )
-        ).rejects.toThrow(ConflictError);
+        // await expect(
+        //     officeRepo.updateOffice(
+        //         (await officeRepo.getOfficeByName(office1.name))!.id,
+        //         office2.name,
+        //         "Updated Description",
+        //         OfficeCategory.WSO
+        //     )
+        // ).rejects.toThrow(ConflictError);
     });
 
-    it("should not update an office with an existing name", async () => {
+    // Method updateOffice was removed from repository
+    it.skip("should not update an office with an existing name", async () => {
         await officeRepo.createOffice(
             office1.name,
             office1.description,
@@ -216,23 +221,25 @@ describe("OfficeRepository - test suite", () => {
             office2.category
         );
 
-        await expect(
-            officeRepo.updateOffice(
-                (await officeRepo.getOfficeByName(office1.name))!.id,
-                office1.name,
-                "Updated Description",
-                OfficeCategory.WSO
-            )
-        ).rejects.toThrow(ConflictError);
+        // await expect(
+        //     officeRepo.updateOffice(
+        //         (await officeRepo.getOfficeByName(office1.name))!.id,
+        //         office1.name,
+        //         "Updated Description",
+        //         OfficeCategory.WSO
+        //     )
+        // ).rejects.toThrow(ConflictError);
     });
 
-    it("should not delete a non-existent office", async () => {
-        await expect(
-            officeRepo.deleteOffice(666)
-        ).rejects.toThrow(AppError);
+    // Method deleteOffice was removed from repository
+    it.skip("should not delete a non-existent office", async () => {
+        // await expect(
+        //     officeRepo.deleteOffice(666)
+        // ).rejects.toThrow(AppError);
     });
 
-    it("should not delete an office with active staff", async () => {
+    // Method deleteOffice was removed from repository
+    it.skip("should not delete an office with active staff", async () => {
         const office = await officeRepo.createOffice(
             office1.name,
             office1.description,
@@ -246,13 +253,13 @@ describe("OfficeRepository - test suite", () => {
             surname: staff1.surname,
             password: staff1.password,
             role: staff1.role,
-            office: office
+            offices: [office]
         });
         await staffRepo.save(staffMember);
 
-        await expect(
-            officeRepo.deleteOffice(office.id)
-        ).rejects.toThrow(AppError);
+        // await expect(
+        //     officeRepo.deleteOffice(office.id)
+        // ).rejects.toThrow(AppError);
     });
 
 

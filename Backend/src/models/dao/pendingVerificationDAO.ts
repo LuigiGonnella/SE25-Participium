@@ -8,7 +8,7 @@ export class PendingVerificationDAO {
     @PrimaryColumn({ type: 'int', unsigned: true })
     citizenId: number;
 
-    @ManyToOne(() => CitizenDAO, citizen => citizen.pending_verifications, { cascade: true })
+    @ManyToOne(() => CitizenDAO, citizen => citizen.pending_verifications, { onDelete: 'CASCADE' })
     @JoinColumn({ name: "citizenId" })
     citizen: CitizenDAO;
 

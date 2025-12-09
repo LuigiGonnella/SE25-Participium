@@ -12,6 +12,7 @@ jest.mock("@middlewares/authMiddleware", () => ({
             next();
         };
     }),
+    telegramBotAuth: jest.fn((req: any, res: any, next: any) => next()),
 }));
 
 jest.mock("@controllers/reportController", () => ({
@@ -150,7 +151,7 @@ describe("Report Routes", () => {
 
             expect(res.status).toBe(200);
             expect(res.body).toEqual(mockReports);
-            expect(getReports).toHaveBeenCalledWith({});
+            expect(getReports).toHaveBeenCalledWith("johnny", {});
         });
 
         it("filters reports by citizen_username", async () => {
@@ -159,7 +160,7 @@ describe("Report Routes", () => {
             const res = await request(app).get("/reports?citizen_username=testuser");
 
             expect(res.status).toBe(200);
-            expect(getReports).toHaveBeenCalledWith({ citizen_username: "testuser" });
+            expect(getReports).toHaveBeenCalledWith("johnny", { citizen_username: "testuser" });
         });
 
         it("filters reports by status", async () => {
@@ -365,7 +366,7 @@ describe("Report Routes", () => {
                 .send({ message: "Hello" });
 
             expect(res.status).toBe(201);
-            expect(addMessageToReport).toHaveBeenCalledWith(1, "johnny", expect.any(String), "Hello");
+            expect(addMessageToReport).toHaveBeenCalledWith(1, "johnny", "CITIZEN", "Hello", undefined);
         });
 
         it("rejects invalid reportId", async () => {
@@ -418,7 +419,7 @@ describe("Report Routes", () => {
             const res = await request(app).get("/reports/1/messages");
 
             expect(res.status).toBe(200);
-            expect(getAllMessages).toHaveBeenCalledWith(1);
+            expect(getAllMessages).toHaveBeenCalledWith(1, "CITIZEN");
             expect(res.body).toEqual(fakeMessages);
         });
 

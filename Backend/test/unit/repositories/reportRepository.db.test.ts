@@ -219,9 +219,14 @@ describe("ReportRepository - getReports", () => {
             fakeCitizen.profilePicture,
             fakeCitizen.telegram_username
         );
+        // Simulate email verification
+        const c = await TestDataSource.getRepository(CitizenDAO).findOneBy({ username: citizen.username });
+        c!.email = fakeCitizen.email;
+        await TestDataSource.getRepository(CitizenDAO).save(c!);
+        const verifiedCitizen = await TestDataSource.getRepository(CitizenDAO).findOneBy({ username: citizen.username });
 
-        await reportRepo.create(citizen, "Report 1", "Desc 1", OfficeCategory.WSO, 45, 7, false, "/1.jpg");
-        await reportRepo.create(citizen, "Report 2", "Desc 2", OfficeCategory.WO, 45, 7, false, "/2.jpg");
+        await reportRepo.create(verifiedCitizen!, "Report 1", "Desc 1", OfficeCategory.RSTLO, 45, 7, false, "/1.jpg");
+        await reportRepo.create(verifiedCitizen!, "Report 2", "Desc 2", OfficeCategory.RSTLO, 45, 7, false, "/2.jpg");
 
         const reports = await reportRepo.getReports(fakeStaff);
         expect(reports).toHaveLength(2);
@@ -230,9 +235,16 @@ describe("ReportRepository - getReports", () => {
     it("filters reports by citizen username", async () => {
         const citizen1 = await citizenRepo.createCitizen("c1@test.com", "citizen1", "C1", "One", "pass", false, "", "");
         const citizen2 = await citizenRepo.createCitizen("c2@test.com", "citizen2", "C2", "Two", "pass", false, "", "");
+        // Simulate email verification
+        const c1 = await TestDataSource.getRepository(CitizenDAO).findOneBy({ username: "citizen1" });
+        c1!.email = "c1@test.com";
+        await TestDataSource.getRepository(CitizenDAO).save(c1!);
+        const c2 = await TestDataSource.getRepository(CitizenDAO).findOneBy({ username: "citizen2" });
+        c2!.email = "c2@test.com";
+        await TestDataSource.getRepository(CitizenDAO).save(c2!);
 
-        await reportRepo.create(citizen1, "Report C1", "Desc", OfficeCategory.WSO, 45, 7, false, "/1.jpg");
-        await reportRepo.create(citizen2, "Report C2", "Desc", OfficeCategory.WO, 45, 7, false, "/2.jpg");
+        await reportRepo.create(c1!, "Report C1", "Desc", OfficeCategory.RSTLO, 45, 7, false, "/1.jpg");
+        await reportRepo.create(c2!, "Report C2", "Desc", OfficeCategory.RSTLO, 45, 7, false, "/2.jpg");
 
         const reports = await reportRepo.getReports(fakeStaff, { citizen_username: "citizen1" });
         expect(reports).toHaveLength(1);
@@ -250,8 +262,12 @@ describe("ReportRepository - getReports", () => {
             fakeCitizen.profilePicture,
             fakeCitizen.telegram_username
         );
+        // Simulate email verification
+        const c = await TestDataSource.getRepository(CitizenDAO).findOneBy({ username: citizen.username });
+        c!.email = fakeCitizen.email;
+        await TestDataSource.getRepository(CitizenDAO).save(c!);
 
-        const report = await reportRepo.create(citizen, "Report", "Desc", OfficeCategory.WSO, 45, 7, false, "/1.jpg");
+        const report = await reportRepo.create(c!, "Report", "Desc", OfficeCategory.RSTLO, 45, 7, false, "/1.jpg");
         await TestDataSource.getRepository(ReportDAO).update({ id: report.id }, { status: Status.ASSIGNED });
 
         const reports = await reportRepo.getReports(fakeStaff,{ status: Status.ASSIGNED });
@@ -270,13 +286,16 @@ describe("ReportRepository - getReports", () => {
             fakeCitizen.profilePicture,
             fakeCitizen.telegram_username
         );
+        // Simulate email verification
+        const c = await TestDataSource.getRepository(CitizenDAO).findOneBy({ username: citizen.username });
+        c!.email = fakeCitizen.email;
+        await TestDataSource.getRepository(CitizenDAO).save(c!);
 
-        await reportRepo.create(citizen, "Water", "Desc", OfficeCategory.WSO, 45, 7, false, "/1.jpg");
-        await reportRepo.create(citizen, "Garbage", "Desc", OfficeCategory.WO, 45, 7, false, "/2.jpg");
+        await reportRepo.create(c!, "Road Sign", "Desc", OfficeCategory.RSTLO, 45, 7, false, "/1.jpg");
 
-        const reports = await reportRepo.getReports(fakeStaff, { category: OfficeCategory.WSO });
+        const reports = await reportRepo.getReports(fakeStaff, { category: OfficeCategory.RSTLO });
         expect(reports).toHaveLength(1);
-        expect(reports[0].category).toBe(OfficeCategory.WSO);
+        expect(reports[0].category).toBe(OfficeCategory.RSTLO);
     });
 
     it("filters reports by title", async () => {
@@ -290,9 +309,13 @@ describe("ReportRepository - getReports", () => {
             fakeCitizen.profilePicture,
             fakeCitizen.telegram_username
         );
+        // Simulate email verification
+        const c = await TestDataSource.getRepository(CitizenDAO).findOneBy({ username: citizen.username });
+        c!.email = fakeCitizen.email;
+        await TestDataSource.getRepository(CitizenDAO).save(c!);
 
-        await reportRepo.create(citizen, "Specific Title", "Desc", OfficeCategory.WSO, 45, 7, false, "/1.jpg");
-        await reportRepo.create(citizen, "Other", "Desc", OfficeCategory.WO, 45, 7, false, "/2.jpg");
+        await reportRepo.create(c!, "Specific Title", "Desc", OfficeCategory.RSTLO, 45, 7, false, "/1.jpg");
+        await reportRepo.create(c!, "Other", "Desc", OfficeCategory.RSTLO, 45, 7, false, "/2.jpg");
 
         const reports = await reportRepo.getReports(fakeStaff, { title: "Specific Title" });
         expect(reports).toHaveLength(1);
@@ -423,6 +446,10 @@ describe("ReportRepository - updateReportAsTOSM", () => {
             fakeCitizen.profilePicture,
             fakeCitizen.telegram_username
         );
+        // Simulate email verification
+        const c = await TestDataSource.getRepository(CitizenDAO).findOneBy({ username: citizen.username });
+        c!.email = fakeCitizen.email;
+        await TestDataSource.getRepository(CitizenDAO).save(c!);
 
         const office = await officeRepo.createOffice(
             fakeStaff.offices[0].name,
@@ -439,8 +466,8 @@ describe("ReportRepository - updateReportAsTOSM", () => {
             [fakeStaff.offices[0].name]
         );
 
-        const report = await reportRepo.create(citizen, "Report", "Desc", OfficeCategory.RSTLO, 45, 7, false, "/1.jpg");
-        await TestDataSource.getRepository(ReportDAO).update({ id: report.id }, { status: Status.ASSIGNED });
+        const report = await reportRepo.create(c!, "Report", "Desc", OfficeCategory.RSTLO, 45, 7, false, "/1.jpg");
+        await TestDataSource.getRepository(ReportDAO).update({ id: report.id }, { status: Status.ASSIGNED, assignedStaff: staff });
 
         const updated = await reportRepo.updateReportAsTOSM(report.id, Status.IN_PROGRESS, staff.username);
         expect(updated.status).toBe(Status.IN_PROGRESS);

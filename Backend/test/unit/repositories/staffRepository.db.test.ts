@@ -60,17 +60,17 @@ describe("StaffRepository - test suite", () => {
             staff1.surname,
             staff1.password,
             staff1.role,
-            office.name
+            [office.name]
         );
         const savedInDB = await TestDataSource
             .getRepository(StaffDAO)
-            .findOne({ where: { username: staff1.username }, relations: ["office"] });
+            .findOne({ where: { username: staff1.username }, relations: ["offices"] });
         
         expect(savedInDB).toBeDefined();
         expect(savedInDB?.username).toBe(staff1.username);
-        expect(savedInDB?.office).toBeDefined();
-        expect(savedInDB?.office.id).toBe(office.id);
-        expect(savedInDB?.office.name).toBe(office1.name);
+        expect(savedInDB?.offices).toBeDefined();
+        expect(savedInDB?.offices[0].id).toBe(office.id);
+        expect(savedInDB?.offices[0].name).toBe(office1.name);
     });
 
     it("should get all staffs", async () => {
@@ -87,7 +87,7 @@ describe("StaffRepository - test suite", () => {
             staff1.surname,
             staff1.password,
             staff1.role,
-            office1Saved.name
+            [office1Saved.name]
         );
         await staffRepo.createStaff(
             staff2.username,
@@ -95,7 +95,7 @@ describe("StaffRepository - test suite", () => {
             staff2.surname,
             staff2.password,
             staff2.role,
-            office2Saved.name
+            [office2Saved.name]
         );
         
         const staffs = await staffRepo.getAllStaffs();
@@ -127,7 +127,7 @@ describe("StaffRepository - test suite", () => {
             staff1.surname,
             staff1.password,
             staff1.role,
-            office.name
+            [office.name]
         );
         
         const staff = await staffRepo.getStaffByUsername(staff1.username);
@@ -149,7 +149,7 @@ describe("StaffRepository - test suite", () => {
             staff1.surname,
             staff1.password,
             staff1.role,
-            office.name
+            [office.name]
         );
         const savedInDB = await TestDataSource
             .getRepository(StaffDAO)
@@ -204,7 +204,7 @@ describe("StaffRepository - test suite", () => {
 
     it("should throw error when creating staff with missing required fields", async () => {
         await expect(
-            staffRepo.createStaff("", staff1.name, staff1.surname, staff1.password, staff1.role, office1.name)
+            staffRepo.createStaff("", staff1.name, staff1.surname, staff1.password, staff1.role, [office1.name])
         ).rejects.toThrow("Invalid input data: username, name, surname, and password are required");
     });
 
@@ -219,7 +219,7 @@ describe("StaffRepository - test suite", () => {
             staff1.surname,
             staff1.password,
             staff1.role,
-            office.name
+            [office.name]
         );
         
         await expect(
@@ -229,7 +229,7 @@ describe("StaffRepository - test suite", () => {
                 "Name",
                 "differentpass",
                 StaffRole.ADMIN,
-                office.name
+                [office.name]
             )
         ).rejects.toThrow(`Staff already exists with username ${staff1.username}`);
     });
@@ -242,8 +242,8 @@ describe("StaffRepository - test suite", () => {
                 staff1.surname,
                 staff1.password,
                 staff1.role,
-                "NonExistentOffice"
+                ["NonExistentOffice"]
             )
-        ).rejects.toThrow("Office with name NonExistentOffice not found");
+        ).rejects.toThrow("Offices not found: NonExistentOffice");
     });
 });

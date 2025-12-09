@@ -118,7 +118,7 @@ describe("Reports API E2E Tests", () => {
                 "MPRO",
                 mproPassword,
                 StaffRole.MPRO,
-                testOffice.name
+                [testOffice.name]
             );
 
         // Create TOSM staff
@@ -130,7 +130,7 @@ describe("Reports API E2E Tests", () => {
                 "TOSM",
                 tosmPassword,
                 StaffRole.TOSM,
-                testOffice.name
+                [testOffice.name]
             );
 
         // Login as MPRO

@@ -41,7 +41,7 @@ beforeEach(async () => {
 
 describe("CitizenRepository - test suite", () => {
     it("should create a new citizen", async () => {
-        await citizenRepo.createCitizen(
+        const created = await citizenRepo.createCitizen(
             citizen1.email,
             citizen1.username,
             citizen1.name,
@@ -51,14 +51,19 @@ describe("CitizenRepository - test suite", () => {
             citizen1.profilePicture,
             citizen1.telegram_username,
         );
+        
+        // Simulate email verification by setting email
+        created.email = citizen1.email;
+        await TestDataSource.getRepository(CitizenDAO).save(created);
+        
         const savedInDB = await TestDataSource
             .getRepository(CitizenDAO)
-            .findOneBy({ email: citizen1.email });
+            .findOneBy({ username: citizen1.username });
         expect(savedInDB).toEqual(expect.objectContaining(citizen1));
     });
 
     it("should get all citizens", async () => {
-        await citizenRepo.createCitizen(
+        const c1 = await citizenRepo.createCitizen(
             citizen1.email,
             citizen1.username,
             citizen1.name,
@@ -68,7 +73,10 @@ describe("CitizenRepository - test suite", () => {
             citizen1.profilePicture,
             citizen1.telegram_username,
         );
-        await citizenRepo.createCitizen(
+        c1.email = citizen1.email;
+        await TestDataSource.getRepository(CitizenDAO).save(c1);
+        
+        const c2 = await citizenRepo.createCitizen(
             citizen2.email,
             citizen2.username,
             citizen2.name,
@@ -78,6 +86,9 @@ describe("CitizenRepository - test suite", () => {
             citizen2.profilePicture,
             citizen2.telegram_username,
         );
+        c2.email = citizen2.email;
+        await TestDataSource.getRepository(CitizenDAO).save(c2);
+        
         const citizens = await citizenRepo.getAllCitizens();
         expect(citizens).toHaveLength(2);
         expect(citizens).toEqual(
@@ -89,7 +100,7 @@ describe("CitizenRepository - test suite", () => {
     });
 
     it("should get citizen by email", async () => {
-        await citizenRepo.createCitizen(
+        const c1 = await citizenRepo.createCitizen(
             citizen1.email,
             citizen1.username,
             citizen1.name,
@@ -99,12 +110,15 @@ describe("CitizenRepository - test suite", () => {
             citizen1.profilePicture,
             citizen1.telegram_username,
         );
+        c1.email = citizen1.email;
+        await TestDataSource.getRepository(CitizenDAO).save(c1);
+        
         const citizen = await citizenRepo.getCitizenByEmail(citizen1.email);
         expect(citizen).toEqual(expect.objectContaining(citizen1));
     });
 
     it("should get citizen by username", async () => {
-        await citizenRepo.createCitizen(
+        const c2 = await citizenRepo.createCitizen(
             citizen2.email,
             citizen2.username,
             citizen2.name,
@@ -114,12 +128,15 @@ describe("CitizenRepository - test suite", () => {
             citizen2.profilePicture,
             citizen2.telegram_username,
         );
+        c2.email = citizen2.email;
+        await TestDataSource.getRepository(CitizenDAO).save(c2);
+        
         const citizen = await citizenRepo.getCitizenByUsername(citizen2.username);
         expect(citizen).toEqual(expect.objectContaining(citizen2));
     });
 
     it("should get citizen by ID", async () => {
-        await citizenRepo.createCitizen(
+        const c1 = await citizenRepo.createCitizen(
             citizen1.email,
             citizen1.username,
             citizen1.name,
@@ -129,14 +146,17 @@ describe("CitizenRepository - test suite", () => {
             citizen1.profilePicture,
             citizen1.telegram_username,
         );
+        c1.email = citizen1.email;
+        await TestDataSource.getRepository(CitizenDAO).save(c1);
+        
         const savedInDB = await TestDataSource
                     .getRepository(CitizenDAO)
-                    .findOneBy({ email: citizen1.email });
+                    .findOneBy({ username: citizen1.username });
         const citizen = await citizenRepo.getCitizenById(savedInDB!.id);
         expect(citizen).toEqual(expect.objectContaining(citizen1));
     });
     it("should update citizen's profile", async () => {
-        await citizenRepo.createCitizen(
+        const c2 = await citizenRepo.createCitizen(
             citizen2.email,
             citizen2.username,
             citizen2.name,
@@ -146,9 +166,12 @@ describe("CitizenRepository - test suite", () => {
             citizen2.profilePicture,
             citizen2.telegram_username,
         );
+        c2.email = citizen2.email;
+        await TestDataSource.getRepository(CitizenDAO).save(c2);
+        
         const savedInDB = await TestDataSource
                     .getRepository(CitizenDAO)
-                    .findOneBy({ email: citizen2.email });
+                    .findOneBy({ username: citizen2.username });
         const updatedData = {
            receive_emails: false,
            profilePicture: "newProfilePic.png",
