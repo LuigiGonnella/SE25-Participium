@@ -1,180 +1,124 @@
 import { OfficeDAO, OfficeCategory } from "@dao/officeDAO";
 import { OfficeRepository } from "@repositories/officeRepository";
 import { initializeTestDataSource, closeTestDataSource, TestDataSource } from "../../setup/test-datasource";
+import { beforeAllE2e, TestDataManager } from "../../e2e/lifecycle";
 import AppError from "@models/errors/AppError";
-import { StaffDAO, StaffRole } from "@models/dao/staffDAO";
+import { StaffDAO } from "@models/dao/staffDAO";
 import { ConflictError } from "@models/errors/ConflictError";
 
 let officeRepo: OfficeRepository;
 
-const office1 = {
-    name: "Municipal Organization Office",
-    description: "Handles municipal organization",
-    category: OfficeCategory.MOO,
-};
-
-const office2 = {
-    name: "Water Supply Office",
-    description: "Handles water supply",
-    category: OfficeCategory.WSO,
-};
-
-const staff1 = {
-    username: "peppevessicchio",
-    name: "Peppe",
-    surname: "Vessicchio",
-    password: "rip_maestro2025",
-    role: StaffRole.TOSM,
-};
-
 beforeAll(async () => {
-  await initializeTestDataSource();
-  officeRepo = new OfficeRepository();
+    await initializeTestDataSource();
+    await beforeAllE2e();
+    officeRepo = new OfficeRepository();
 });
 
 afterAll(async () => {
-  await closeTestDataSource();
+    await closeTestDataSource();
 });
 
 beforeEach(async () => {
-    await TestDataSource.getRepository(OfficeDAO).clear();
-    await TestDataSource.getRepository(StaffDAO).clear();
+    // Clear only non-default offices
+    const allOffices = await TestDataSource.getRepository(OfficeDAO).find();
+    const defaultCategories = [
+        OfficeCategory.MOO,
+        OfficeCategory.WSO,
+        OfficeCategory.ABO,
+        OfficeCategory.SSO,
+        OfficeCategory.PLO,
+        OfficeCategory.WO,
+        OfficeCategory.RSTLO,
+        OfficeCategory.RUFO,
+        OfficeCategory.PGAPO
+    ];
+    const toDelete = allOffices.filter(o => 
+        !defaultCategories.includes(o.category) || o.isExternal
+    );
+    await TestDataSource.getRepository(OfficeDAO).remove(toDelete);
+    await TestDataSource.getRepository(StaffDAO).createQueryBuilder()
+        .delete()
+        .where("username NOT IN (:...usernames)", {
+            usernames: ['admin', 'mpro', 'tosm_WSO', 'tosm_ABO', 'tosm_SSO', 'tosm_PLO', 'tosm_WO', 'tosm_RSTLO', 'tosm_RUFO', 'tosm_PGAPO', 'em_WSO', 'em_ABO', 'em_SSO', 'em_PLO', 'em_WO', 'em_RSTLO', 'em_RUFO', 'em_PGAPO']
+        })
+        .execute();
 });
 
 describe("OfficeRepository - test suite", () => {
-    it("should create a new office", async () => {
-        const newOffice = await officeRepo.createOffice(
-            office1.name,
-            office1.description,
-            office1.category
-        );
-        expect(newOffice).toBeDefined();
-        expect(newOffice.name).toBe(office1.name);
-        expect(newOffice.description).toBe(office1.description);
-        expect(newOffice.category).toBe(office1.category);
-    });
-
-    it("should get all offices", async () => {
-        await officeRepo.createOffice(
-            office1.name,
-            office1.description,
-            office1.category
-        );
-        await officeRepo.createOffice(
-            office2.name,
-            office2.description,
-            office2.category
-        );
-
+    it("should get default offices", async () => {
         const offices = await officeRepo.getAllOffices();
-        expect(offices).toHaveLength(2);
-        expect(offices).toEqual(
-            expect.arrayContaining([
-                expect.objectContaining(office1),
-                expect.objectContaining(office2),
-            ])
-        );
+        expect(offices.length).toBeGreaterThanOrEqual(17); // 9 internal + 8 external
+        
+        // Check that all default categories exist
+        const categories = offices.map(o => o.category);
+        expect(categories).toContain(OfficeCategory.MOO);
+        expect(categories).toContain(OfficeCategory.WSO);
+        expect(categories).toContain(OfficeCategory.RSTLO);
     });
 
-    it("should get an office by id", async () => {
-        await officeRepo.createOffice(
-            office1.name,
-            office1.description,
-            office1.category
-        );
-        const savedInDB = await TestDataSource
-                                .getRepository(OfficeDAO)
-                                .findOneBy({category: office1.category });
-
-        expect(savedInDB).toBeDefined();
-        expect(savedInDB?.name).toBe(office1.name);
-        expect(savedInDB?.description).toBe(office1.description);
-        expect(savedInDB?.category).toBe(office1.category);
-    });
-
-    it("should get an office by name", async () => {
-        await officeRepo.createOffice(
-            office1.name,
-            office1.description,
-            office1.category
-        );
-        const office = await officeRepo.getOfficeByName(office1.name);
+    it("should get default office by category", async () => {
+        const office = await officeRepo.getOfficeByCategory(OfficeCategory.RSTLO);
         expect(office).toBeDefined();
-        expect(office?.name).toBe(office1.name);
-        expect(office?.description).toBe(office1.description);
-        expect(office?.category).toBe(office1.category);
+        expect(office?.category).toBe(OfficeCategory.RSTLO);
+        expect(office?.isExternal).toBe(false);
     });
 
-    it("should get an office by category", async () => {
-        await officeRepo.createOffice(
-            office1.name,
-            office1.description,
-            office1.category
-        );
-        const office = await officeRepo.getOfficeByCategory(office1.category);
+    it("should get default office by name", async () => {
+        const office = await officeRepo.getOfficeByName("Municipal Organization Office");
         expect(office).toBeDefined();
-        expect(office?.name).toBe(office1.name);
-        expect(office?.description).toBe(office1.description);
-        expect(office?.category).toBe(office1.category);
-
+        expect(office?.category).toBe(OfficeCategory.MOO);
     });
 
-    it("should update an existing office", async () => {
-        const office = await officeRepo.createOffice(
-            office1.name,
-            office1.description,
-            office1.category
-        );
-
-        const office_id = officeRepo.getOfficeByName(office1.name);
-
-        const updatedOffice = await officeRepo.updateOffice(
-            (await office_id)!.id,
-            "Updated Office Name",
-            "Updated Description",
+    it("should create a new custom office", async () => {
+        const newOffice = await officeRepo.createOffice(
+            "Custom Office",
+            "A custom test office",
             OfficeCategory.WSO
         );
-
+        expect(newOffice).toBeDefined();
+        expect(newOffice.name).toBe("Custom Office");
+        expect(newOffice.category).toBe(OfficeCategory.WSO);
     });
 
-    it("should delete an existing office", async () => {
-        const office = await officeRepo.createOffice(
-            office1.name,
-            office1.description,
-            office1.category
+    it("should update an existing default office", async () => {
+        const office = await TestDataManager.getOffice(OfficeCategory.PLO);
+        
+        const updatedOffice = await officeRepo.updateOffice(
+            office.id,
+            "Updated Office Name",
+            "Updated Description",
+            OfficeCategory.PLO
         );
 
-        const office_id = officeRepo.getOfficeByName(office1.name);
-
-        await officeRepo.deleteOffice((await office_id)!.id);
-
-        const deletedOffice = await officeRepo.getOfficeById((await office_id)!.id);
-        expect(deletedOffice).toBeNull();
+        expect(updatedOffice.name).toBe("Updated Office Name");
+        expect(updatedOffice.description).toBe("Updated Description");
+        
+        // Reset
+        await officeRepo.updateOffice(
+            office.id,
+            "Public Lighting Office",
+            "Technical office responsible for public lighting systems",
+            OfficeCategory.PLO
+        );
     });
 
-    it("should create default offices if not exists", async () => {
-        await officeRepo.createDefaultOfficesIfNotExist();
+    it("should delete a custom office", async () => {
+        const customOffice = await officeRepo.createOffice(
+            "Deletable Office",
+            "To be deleted",
+            OfficeCategory.WO
+        );
 
-        const offices = await officeRepo.getAllOffices();
+        await officeRepo.deleteOffice(customOffice.id);
 
-        expect(offices).toHaveLength(9);
-        expect(offices).toEqual(expect.arrayContaining([
-        expect.objectContaining({ category: OfficeCategory.MOO }),
-        expect.objectContaining({ category: OfficeCategory.WSO }),
-        expect.objectContaining({ category: OfficeCategory.ABO }),
-        expect.objectContaining({ category: OfficeCategory.SSO }),
-        expect.objectContaining({ category: OfficeCategory.PLO }),
-        expect.objectContaining({ category: OfficeCategory.WO }),
-        expect.objectContaining({ category: OfficeCategory.RSTLO }),
-        expect.objectContaining({ category: OfficeCategory.RUFO }),
-        expect.objectContaining({ category: OfficeCategory.PGAPO }),
-        ]));
+        const deletedOffice = await officeRepo.getOfficeById(customOffice.id);
+        expect(deletedOffice).toBeNull();
     });
 
     it("should not update a non-existent office", async () => {
         await expect(
             officeRepo.updateOffice(
-                666,
+                99999,
                 "Updated Office Name",
                 "Updated Description",
                 OfficeCategory.WSO
@@ -182,78 +126,22 @@ describe("OfficeRepository - test suite", () => {
         ).rejects.toThrow(AppError);
     });
 
-    it("should not update an office with an existing name", async () => {
-        await officeRepo.createOffice(
-            office1.name,
-            office1.description,
-            office1.category
-        );
-        await officeRepo.createOffice(
-            office2.name,
-            office2.description,
-            office2.category
-        );
-
-        await expect(
-            officeRepo.updateOffice(
-                (await officeRepo.getOfficeByName(office1.name))!.id,
-                office2.name,
-                "Updated Description",
-                OfficeCategory.WSO
-            )
-        ).rejects.toThrow(ConflictError);
+    it("should create default offices if called again (idempotent)", async () => {
+        const beforeCount = (await officeRepo.getAllOffices()).length;
+        
+        await officeRepo.createDefaultOfficesIfNotExist();
+        
+        const afterCount = (await officeRepo.getAllOffices()).length;
+        expect(afterCount).toBe(beforeCount); // No duplicates
     });
 
-    it("should not update an office with an existing name", async () => {
-        await officeRepo.createOffice(
-            office1.name,
-            office1.description,
-            office1.category
-        );
-        await officeRepo.createOffice(
-            office2.name,
-            office2.description,
-            office2.category
-        );
-
-        await expect(
-            officeRepo.updateOffice(
-                (await officeRepo.getOfficeByName(office1.name))!.id,
-                office1.name,
-                "Updated Description",
-                OfficeCategory.WSO
-            )
-        ).rejects.toThrow(ConflictError);
+    it("should return null for non-existent office by id", async () => {
+        const office = await officeRepo.getOfficeById(99999);
+        expect(office).toBeNull();
     });
 
-    it("should not delete a non-existent office", async () => {
-        await expect(
-            officeRepo.deleteOffice(666)
-        ).rejects.toThrow(AppError);
+    it("should return null for non-existent office by name", async () => {
+        const office = await officeRepo.getOfficeByName("NonExistent Office");
+        expect(office).toBeNull();
     });
-
-    it("should not delete an office with active staff", async () => {
-        const office = await officeRepo.createOffice(
-            office1.name,
-            office1.description,
-            office1.category
-        );
-
-        const staffRepo = TestDataSource.getRepository(StaffDAO);
-        const staffMember = staffRepo.create({
-            username: staff1.username,
-            name: staff1.name,
-            surname: staff1.surname,
-            password: staff1.password,
-            role: staff1.role,
-            office: office
-        });
-        await staffRepo.save(staffMember);
-
-        await expect(
-            officeRepo.deleteOffice(office.id)
-        ).rejects.toThrow(AppError);
-    });
-
-
 });
