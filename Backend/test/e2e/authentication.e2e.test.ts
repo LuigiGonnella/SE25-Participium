@@ -33,7 +33,7 @@ describe("Authentication API E2E Tests", () => {
                 });
 
             expect(res.status).toBe(201);
-            expect(res.body).toHaveProperty('email', 'newuser@example.com');
+            expect(res.body).not.toHaveProperty('email');
             expect(res.body).toHaveProperty('username', 'newuser');
             expect(res.body).toHaveProperty('name', 'New');
             expect(res.body).toHaveProperty('surname', 'User');
@@ -43,10 +43,11 @@ describe("Authentication API E2E Tests", () => {
             // Verify in database
             const savedCitizen = await TestDataSource
                 .getRepository(CitizenDAO)
-                .findOneBy({ email: "newuser@example.com" });
+                .findOneBy({ username: "newuser" });
             
             expect(savedCitizen).toBeTruthy();
-            expect(savedCitizen?.email).toBe("newuser@example.com");
+            expect(savedCitizen?.email).toBeNull();
+            expect(savedCitizen?.username).toBe("newuser");
             expect(savedCitizen?.password).not.toBe("password123"); // must be hashed
             
             // Verify password was hashed
