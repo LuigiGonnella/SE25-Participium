@@ -10,4 +10,4 @@ The workflow goes like this:
 3. Do refactoring and handle technical debt
 4. Start testing (and eventually fixing bugs)
 
-This routine helps us keep each sprint organized and prevents technical debt from piling up. It also gives us a clear order of work: build first, clean up, then test. Overall, it keeps development moving while still taking care of code quality.
+This routine helps us keep each sprint organized and prevents technical debt from piling up. It also gives us a clear order of work: build first, clean up, then test. Overall, it keeps development moving while still taking care of code quality. 
