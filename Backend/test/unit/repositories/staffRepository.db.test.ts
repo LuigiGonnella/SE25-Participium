@@ -60,7 +60,7 @@ describe("StaffRepository - test suite", () => {
             staff1.surname,
             staff1.password,
             staff1.role,
-            office.name
+            [office.name]
         );
         const savedInDB = await TestDataSource
             .getRepository(StaffDAO)
@@ -68,9 +68,9 @@ describe("StaffRepository - test suite", () => {
         
         expect(savedInDB).toBeDefined();
         expect(savedInDB?.username).toBe(staff1.username);
-        expect(savedInDB?.office).toBeDefined();
-        expect(savedInDB?.office.id).toBe(office.id);
-        expect(savedInDB?.office.name).toBe(office1.name);
+        expect(savedInDB?.offices).toBeDefined();
+        expect(savedInDB?.offices[0].id).toBe(office.id);
+        expect(savedInDB?.offices[0].name).toBe(office1.name);
     });
 
     it("should get all staffs", async () => {

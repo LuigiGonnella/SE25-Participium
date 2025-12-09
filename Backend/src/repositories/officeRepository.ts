@@ -151,6 +151,7 @@ export class OfficeRepository {
     /* TODO: check if this function down are correct */
 
     // create new office
+    /*
     async createOffice(
         name: string,
         description: string,
@@ -181,7 +182,7 @@ export class OfficeRepository {
             description,
             category
         });
-    }
+    }*/
 
     // update office
     /* async updateOffice(
