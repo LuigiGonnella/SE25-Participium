@@ -6,9 +6,10 @@ import API, { STATIC_URL } from "../API/API.mts";
 
 interface CitizenProfileProps {
     user: Citizen;
+    refresh: () => void;
 }
 
-export default function CitizenProfile({ user }: Readonly<CitizenProfileProps>) {
+export default function CitizenProfile({ user, refresh }: Readonly<CitizenProfileProps>) {
     const [telegramUsername, setTelegramUsername] = useState(user.telegram_username ? "@" + user.telegram_username : "");
     const [receiveEmails, setReceiveEmails] = useState(user.receive_emails);
     const [profilePic, setProfilePic] = useState<string | null>(null);
@@ -90,7 +91,7 @@ export default function CitizenProfile({ user }: Readonly<CitizenProfileProps>) 
 
     const finishVerification = async () => {
         setShowVerifyModal(false);
-
+        refresh();
     };
 
     return (

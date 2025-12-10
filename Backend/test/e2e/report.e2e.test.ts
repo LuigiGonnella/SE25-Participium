@@ -15,6 +15,7 @@ import { OfficeCategory } from "@dao/officeDAO";
 import { ReportRepository } from "@repositories/reportRepository";
 import { NotificationDAO } from "@models/dao/notificationDAO";
 import path from "path";
+import { CitizenDAO } from "@models/dao/citizenDAO";
 
 const getStatusKey = (status: Status): string => {
     const key = Object.keys(Status).find(
@@ -625,7 +626,7 @@ describe("Reports API E2E Tests", () => {
         beforeEach(async () => {
             // Get TOSM staff member
             const tosmStaff = await TestDataManager.getStaff('tosm_RSTLO');
-            
+
             // Set reports to ASSIGNED status and assign to TOSM for tests
             await TestDataSource.getRepository(ReportDAO).update(
                 { id: testReport1.id },
@@ -841,8 +842,8 @@ describe("Reports API E2E Tests", () => {
         const res = await request(app)
             .patch(`/api/v1/reports/${testReport2.id}/assignExternal`)
             .set("Cookie", tosmCookie)
-            .send({ 
-                staffEM: DEFAULT_STAFF.em_RUFO.username 
+            .send({
+                staffEM: DEFAULT_STAFF.em_RUFO.username
             })
             .expect(400);
 
@@ -867,7 +868,7 @@ describe("Reports API E2E Tests", () => {
                 .patch(`/api/v1/reports/${testReport1.id}/assignSelf`)
                 .set('Cookie', tosmCookie)
                 .expect(200);
-        
+
             // assign report to EM
             const emUsername = DEFAULT_STAFF.em_RSTLO.username;
             await request(app)
@@ -1049,7 +1050,7 @@ describe("Reports API E2E Tests", () => {
                     isPrivate: false
                 })
                 .expect(201);
-                
+
         });
 
         it("should not allow TOSM to add a message to a report not assigned to them", async () => {
@@ -1116,7 +1117,7 @@ describe("Reports API E2E Tests", () => {
                 })
                 .expect(401);
         });
-        
+
         it("should add a private message from TOSM to EM", async () => {
             await request(app)
                 .patch(`/api/v1/reports/${testReport1.id}/assignSelf`)
@@ -1195,7 +1196,7 @@ describe("Reports API E2E Tests", () => {
                 .patch(`/api/v1/reports/${testReport1.id}/assignExternal`)
                 .set('Cookie', tosmCookie)
                 .send({ staffEM: DEFAULT_STAFF.em_RSTLO.username });
-            
+
             const res = await request(app)
                 .post(`/api/v1/reports/${testReport1.id}/messages`)
                 .set('Cookie', tosmCookie)
@@ -1249,8 +1250,8 @@ describe("Reports API E2E Tests", () => {
             expect(fetchedMessage2).toBeDefined();
             expect(fetchedMessage2.isPrivate).toBe(true);
         });
-        
-        it("should not allow citizen to get private messages", async () => {  
+
+        it("should not allow citizen to get private messages", async () => {
             await request(app)
                 .patch(`/api/v1/reports/${testReport1.id}/assignSelf`)
                 .set('Cookie', tosmCookie);
@@ -1296,11 +1297,321 @@ describe("Reports API E2E Tests", () => {
         });
 
 
-        it("should not allow to get messages if not authenticated", async () => {  
+        it("should not allow to get messages if not authenticated", async () => {
             const res = await request(app)
                 .get(`/api/v1/reports/${testReport1.id}/messages`)
                 .expect(401);
         });
-        
+
+    });
+
+    describe("POST /api/v1/reports/telegram - Telegram Bot Report Creation", () => {
+        const TELEGRAM_BEARER = process.env.TELEGRAM_BOT_BEARER || 'O[A|dV(vPl#pl*W|y4\\0oa=)E!YL+tX==\\.@PkGXTvd#fT[AkV=t4zK}![|Oe!@m';
+
+        beforeEach(async () => {
+            // Update citizen1 to have telegram username
+            await TestDataSource.getRepository(CitizenDAO).update(
+                { username: DEFAULT_CITIZENS.citizen1.username },
+                { telegram_username: '@telegram_user1' }
+            );
+        });
+
+        it("should create a report successfully via Telegram bot", async () => {
+            const res = await request(app)
+                .post("/api/v1/reports/telegram")
+                .set("Authorization", `Bearer ${TELEGRAM_BEARER}`)
+                .field("telegram_username", "@telegram_user1")
+                .field("title", "Street Issue via Telegram")
+                .field("description", "Reported from Telegram bot")
+                .field("category", "Public Lighting")
+                .field("latitude", "45.0677")
+                .field("longitude", "7.6823")
+                .field("anonymous", "false")
+                .attach("photos", sampleImage)
+                .expect(201);
+
+            expect(res.body).toBeDefined();
+            expect(res.body.title).toBe("Street Issue via Telegram");
+            expect(res.body.description).toBe("Reported from Telegram bot");
+            expect(res.body.category).toBe(OfficeCategory.PLO);
+            expect(res.body.photos).toBeDefined();
+            expect(res.body.photos[0]).toContain("/uploads/reports/");
+            expect(res.body.status).toBe(Status.PENDING);
+        });
+
+        it("should create report with multiple photos via Telegram", async () => {
+            const res = await request(app)
+                .post("/api/v1/reports/telegram")
+                .set("Authorization", `Bearer ${TELEGRAM_BEARER}`)
+                .field("telegram_username", "@telegram_user1")
+                .field("title", "Multiple Photos Report")
+                .field("description", "Report with 3 photos")
+                .field("category", "Road Signs and Traffic Lights")
+                .field("latitude", "45.08")
+                .field("longitude", "7.69")
+                .field("anonymous", "false")
+                .attach("photos", sampleImage)
+                .attach("photos", sampleImage)
+                .attach("photos", sampleImage)
+                .expect(201);
+
+            expect(res.body.photos).toBeDefined();
+            expect(res.body.photos.length).toBe(3);
+        });
+
+        it("should return 403 when bearer token is invalid", async () => {
+            const res = await request(app)
+                .post("/api/v1/reports/telegram")
+                .set("Authorization", "Bearer invalid_token_here")
+                .field("telegram_username", "@telegram_user1")
+                .field("title", "Invalid Token Report")
+                .field("description", "Wrong bearer token")
+                .field("category", "Public Lighting")
+                .field("latitude", "45.0677")
+                .field("longitude", "7.6823")
+                .field("anonymous", "false")
+                .expect(403);
+
+            expect(res.body).toHaveProperty('error');
+            expect(res.body.error).toBe('Forbidden');
+        });
+
+        it("should return 404 when telegram_username does not exist", async () => {
+            const res = await request(app)
+                .post("/api/v1/reports/telegram")
+                .set("Authorization", `Bearer ${TELEGRAM_BEARER}`)
+                .field("telegram_username", "@nonexistent_user")
+                .field("title", "Report from Unknown User")
+                .field("description", "This user doesn't exist")
+                .field("category", "Public Lighting")
+                .field("latitude", "45.0677")
+                .field("longitude", "7.6823")
+                .field("anonymous", "false")
+                .attach("photos", sampleImage)
+                .expect(404);
+
+            expect(res.body).toHaveProperty('message');
+            expect(res.body.message).toContain('Citizen not found');
+        });
+
+        it("should return 400 when telegram_username is missing", async () => {
+            const res = await request(app)
+                .post("/api/v1/reports/telegram")
+                .set("Authorization", `Bearer ${TELEGRAM_BEARER}`)
+                .field("title", "Report without Telegram Username")
+                .field("description", "Missing telegram_username")
+                .field("category", "Public Lighting")
+                .field("latitude", "45.0677")
+                .field("longitude", "7.6823")
+                .field("anonymous", "false")
+                .attach("photos", sampleImage)
+                .expect(400);
+
+            expect(res.body).toHaveProperty('message');
+        });
+
+        it("should return 400 when title is missing", async () => {
+            const res = await request(app)
+                .post("/api/v1/reports/telegram")
+                .set("Authorization", `Bearer ${TELEGRAM_BEARER}`)
+                .field("telegram_username", "@telegram_user1")
+                .field("title", "")
+                .field("description", "Missing title")
+                .field("category", "Public Lighting")
+                .field("latitude", "45.0677")
+                .field("longitude", "7.6823")
+                .field("anonymous", "false")
+                .attach("photos", sampleImage)
+                .expect(400);
+
+            expect(res.body).toHaveProperty('message');
+            expect(res.body.message).toContain("Missing required fields");
+        });
+
+        it("should return 400 when description is missing", async () => {
+            const res = await request(app)
+                .post("/api/v1/reports/telegram")
+                .set("Authorization", `Bearer ${TELEGRAM_BEARER}`)
+                .field("telegram_username", "@telegram_user1")
+                .field("title", "Report without Description")
+                .field("description", "")
+                .field("category", "Public Lighting")
+                .field("latitude", "45.0677")
+                .field("longitude", "7.6823")
+                .field("anonymous", "false")
+                .attach("photos", sampleImage)
+                .expect(400);
+
+            expect(res.body).toHaveProperty('message');
+            expect(res.body.message).toContain("Missing required fields");
+        });
+
+        it("should return 400 when latitude is missing", async () => {
+            const res = await request(app)
+                .post("/api/v1/reports/telegram")
+                .set("Authorization", `Bearer ${TELEGRAM_BEARER}`)
+                .field("telegram_username", "@telegram_user1")
+                .field("title", "No Latitude Report")
+                .field("description", "Missing latitude")
+                .field("category", "Public Lighting")
+                .field("longitude", "7.6823")
+                .field("anonymous", "false")
+                .attach("photos", sampleImage)
+                .expect(400);
+
+            expect(res.body).toHaveProperty('message');
+        });
+
+        it("should return 400 when longitude is missing", async () => {
+            const res = await request(app)
+                .post("/api/v1/reports/telegram")
+                .set("Authorization", `Bearer ${TELEGRAM_BEARER}`)
+                .field("telegram_username", "@telegram_user1")
+                .field("title", "No Longitude Report")
+                .field("description", "Missing longitude")
+                .field("category", "Public Lighting")
+                .field("latitude", "45.0677")
+                .field("anonymous", "false")
+                .attach("photos", sampleImage)
+                .expect(400);
+
+            expect(res.body).toHaveProperty('message');
+        });
+
+        it("should return 400 when no photos are uploaded", async () => {
+            const res = await request(app)
+                .post("/api/v1/reports/telegram")
+                .set("Authorization", `Bearer ${TELEGRAM_BEARER}`)
+                .field("telegram_username", "@telegram_user1")
+                .field("title", "No Photos Report")
+                .field("description", "Missing photos")
+                .field("category", "Public Lighting")
+                .field("latitude", "45.0677")
+                .field("longitude", "7.6823")
+                .field("anonymous", "false")
+                .expect(400);
+
+            expect(res.body).toHaveProperty('message');
+            expect(res.body.message).toContain("At least one photo is required");
+        });
+
+        it("should handle special characters in telegram_username", async () => {
+            // Update citizen to have special chars in telegram username
+            const citizen2 = await TestDataManager.getCitizen('citizen2');
+            await TestDataSource.getRepository(CitizenDAO).update(
+                { username: citizen2.username },
+                { telegram_username: '@user_with_123' }
+            );
+
+            const res = await request(app)
+                .post("/api/v1/reports/telegram")
+                .set("Authorization", `Bearer ${TELEGRAM_BEARER}`)
+                .field("telegram_username", "@user_with_123")
+                .field("title", "Special Chars Test")
+                .field("description", "Testing special characters")
+                .field("category", "Public Lighting")
+                .field("latitude", "45.0677")
+                .field("longitude", "7.6823")
+                .field("anonymous", "false")
+                .attach("photos", sampleImage)
+                .expect(201);
+
+            expect(res.body.title).toBe("Special Chars Test");
+        });
+
+        it("should link report to correct citizen based on telegram_username", async () => {
+            // Create citizen3 with different telegram username
+            const citizen3 = await TestDataManager.getCitizen('citizen3');
+            await TestDataSource.getRepository(CitizenDAO).update(
+                { username: citizen3.username },
+                { telegram_username: '@citizen3_telegram' }
+            );
+
+            const res = await request(app)
+                .post("/api/v1/reports/telegram")
+                .set("Authorization", `Bearer ${TELEGRAM_BEARER}`)
+                .field("telegram_username", "@citizen3_telegram")
+                .field("title", "Citizen3 Report")
+                .field("description", "Report from citizen3")
+                .field("category", "Public Lighting")
+                .field("latitude", "45.0677")
+                .field("longitude", "7.6823")
+                .field("anonymous", "false")
+                .attach("photos", sampleImage)
+                .expect(201);
+
+            expect(res.body.citizenUsername).toBe(citizen3.username);
+        });
+
+        it("should set status to PENDING by default", async () => {
+            const res = await request(app)
+                .post("/api/v1/reports/telegram")
+                .set("Authorization", `Bearer ${TELEGRAM_BEARER}`)
+                .field("telegram_username", "@telegram_user1")
+                .field("title", "Status Test")
+                .field("description", "Checking default status")
+                .field("category", "Public Lighting")
+                .field("latitude", "45.0677")
+                .field("longitude", "7.6823")
+                .field("anonymous", "false")
+                .attach("photos", sampleImage)
+                .expect(201);
+
+            expect(res.body.status).toBe(Status.PENDING);
+        });
+
+        it("should accept maximum of 3 photos", async () => {
+            const res = await request(app)
+                .post("/api/v1/reports/telegram")
+                .set("Authorization", `Bearer ${TELEGRAM_BEARER}`)
+                .field("telegram_username", "@telegram_user1")
+                .field("title", "Max Photos Test")
+                .field("description", "Testing 3 photos limit")
+                .field("category", "Public Lighting")
+                .field("latitude", "45.0677")
+                .field("longitude", "7.6823")
+                .field("anonymous", "false")
+                .attach("photos", sampleImage)
+                .attach("photos", sampleImage)
+                .attach("photos", sampleImage)
+                .expect(201);
+
+            expect(res.body.photos.length).toBe(3);
+        });
+
+        it("should handle report with 1 photo", async () => {
+            const res = await request(app)
+                .post("/api/v1/reports/telegram")
+                .set("Authorization", `Bearer ${TELEGRAM_BEARER}`)
+                .field("telegram_username", "@telegram_user1")
+                .field("title", "Single Photo Test")
+                .field("description", "Only one photo")
+                .field("category", "Public Lighting")
+                .field("latitude", "45.0677")
+                .field("longitude", "7.6823")
+                .field("anonymous", "false")
+                .attach("photos", sampleImage)
+                .expect(201);
+
+            expect(res.body.photos.length).toBe(1);
+        });
+
+        it("should handle report with 2 photos", async () => {
+            const res = await request(app)
+                .post("/api/v1/reports/telegram")
+                .set("Authorization", `Bearer ${TELEGRAM_BEARER}`)
+                .field("telegram_username", "@telegram_user1")
+                .field("title", "Two Photos Test")
+                .field("description", "Two photos")
+                .field("category", "Public Lighting")
+                .field("latitude", "45.0677")
+                .field("longitude", "7.6823")
+                .field("anonymous", "false")
+                .attach("photos", sampleImage)
+                .attach("photos", sampleImage)
+                .expect(201);
+
+            expect(res.body.photos.length).toBe(2);
+        });
     });
 });

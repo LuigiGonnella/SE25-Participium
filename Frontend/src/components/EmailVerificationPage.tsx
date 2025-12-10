@@ -3,17 +3,23 @@ import { useNavigate } from 'react-router-dom';
 import API from '../API/API.mts';
 import { Alert, Button, Card, CardBody, CardTitle, Container, Input, Row, Col } from 'design-react-kit';
 
-function EmailVerificationPage() {
+interface EmailVerificationPageProps {
+    refresh: () => void;
+}
+
+function EmailVerificationPage({refresh}: EmailVerificationPageProps) {
     const [code, setCode] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [resendResult, setResendResult] = useState<string | null>(null);
     const navigate = useNavigate();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
         setLoading(true);
+        setResendResult(null);
 
         if (code?.trim().length !== 6) {
             setError('Please enter a valid 6-digit verification code');
@@ -24,14 +30,29 @@ function EmailVerificationPage() {
         try {
             await API.verifyEmail(code.trim());
             setSuccess(true);
+            refresh();
             setTimeout(() => {
                 navigate('/login');
             }, 2000);
         } catch (err: any) {
-            setError(err.message || 'Verification failed. Please check your code and try again.');
+            setError(err.details || 'Verification failed. Please check your code and try again.');
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleResend = async () => {
+        setError(null);
+        setLoading(true);
+        setResendResult(null);
+        try {
+            await API.resendVerificationEmail();
+            setResendResult('Verification email has been resent. Please check your inbox.');
+        } catch (err: any) {
+            setError(err.details || 'Failed to resend verification email. Please try again later.');
+        } finally {
+            setLoading(false);
+        }   
     };
 
     return (
@@ -43,7 +64,7 @@ function EmailVerificationPage() {
                             <CardTitle tag="h2" className="text-center mb-4 mt-4">
                                 Email Verification
                             </CardTitle>
-                            
+
                             {success ? (
                                 <Alert color="success" className="mb-4">
                                     <strong>Success!</strong> Your email has been verified. Redirecting to login...
@@ -58,6 +79,12 @@ function EmailVerificationPage() {
                                     {error && (
                                         <Alert color="danger" className="mb-4">
                                             {error}
+                                        </Alert>
+                                    )}
+
+                                    {resendResult && (
+                                        <Alert color="info" className="mb-4">
+                                            {resendResult}
                                         </Alert>
                                     )}
 
@@ -92,6 +119,9 @@ function EmailVerificationPage() {
                                         <p className="text-muted small">
                                             Didn't receive the code? Check your spam folder or contact support.
                                         </p>
+                                        <a href="#!" onClick={handleResend} style={{ textDecoration: 'underline' }}>
+                                            Resend Verification Email
+                                        </a>
                                     </div>
                                 </>
                             )}
