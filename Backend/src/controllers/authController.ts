@@ -13,6 +13,8 @@ import {BadRequestError} from "@errors/BadRequestError";
 import {PendingVerificationRepository} from "@repositories/pendingVerificationRepository";
 import {Citizen} from "@dto/Citizen";
 import { sendVerificationEmail } from "@services/emailService";
+import { CitizenDAO } from "@models/dao/citizenDAO";
+import { create } from "domain";
 
 // storage configuration
 const storage = multer.diskStorage({
@@ -56,7 +58,6 @@ export async function register(
     telegram_username?: string
 ) {
     const citizenRepo = new CitizenRepository();
-    const pendingVerificationRepo = new PendingVerificationRepository();
     const hashedPassword = await bcrypt.hash(password, 10);
     
     // image path
@@ -76,18 +77,36 @@ export async function register(
         telegram_username
     );
 
+    await createEmailVerification(citizenDAO.username, email);
+
+    return mapCitizenDAOToDTO(citizenDAO);
+
+}
+
+export async function createEmailVerification(username: string, email?: string): Promise<void> {
+    const pvRepo = new PendingVerificationRepository();
+    const user = await new CitizenRepository().getCitizenByUsername(username);
+    if(!user)
+        throw new NotFoundError(`Citizen with username ${username} not found`);
+
+    if(!email) {
+        const existingVerifications = await pvRepo.getPendingVerification(user.id, "email");
+        if(existingVerifications.expiresAt > new Date()) {
+            // Code still valid
+            throw new BadRequestError('A pending email verification already exists. Please check your email for the verification code.');
+        }
+        email = existingVerifications.valueToVerify; 
+    }
+    
     // Create pending verification for email
-    const pendingVerification = await pendingVerificationRepo.createPendingVerification(
-        citizenDAO,
+    const pendingVerification = await pvRepo.createPendingVerification(
+        user,
         email,
         "email"
     );
 
     // Send verification email
-    await sendVerificationEmail(email, name, pendingVerification.verificationCode);
-
-    return mapCitizenDAOToDTO(citizenDAO);
-
+    await sendVerificationEmail(email, user.name, pendingVerification.verificationCode);
 }
 
 export async function registerMunicipalityUser(

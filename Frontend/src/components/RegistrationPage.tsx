@@ -634,7 +634,7 @@ function MunicipalityRegistrationForm({ handleStaffRegistration }: RegistrationF
                                             );
 
                                             return (
-                                                <Row key={index} className="align-items-center">
+                                                <Row key={`${selected}-${index}`} className="align-items-center">
                                                     <Col xs={10}>
                                                         <Form.Group className="mb-3" controlId={`formOffice${index}`}>
                                                             <Form.Label>

@@ -1,7 +1,7 @@
 import { session, Telegraf } from "telegraf";
 import { ParticipiumContext, OfficeCategory } from "./models";
 import * as dotenv from "dotenv";
-import {verifyUserMiddleware, submitReport, verifyUser, checkUserVerification} from "./API";
+import {verifyUserMiddleware, submitReport, verifyUser, checkUserVerification, isWithinTurin} from "./API";
 
 dotenv.config();
 
@@ -278,6 +278,13 @@ bot.on("location", verifyUserMiddleware, async (ctx) => {
 
     ctx.session.latitude = ctx.message.location.latitude;
     ctx.session.longitude = ctx.message.location.longitude;
+
+    if (!isWithinTurin(ctx.session.latitude, ctx.session.longitude)) {
+        return replyMarkdown(
+            ctx,
+            "❗ The location you provided is outside the city limits of Turin. Please send a valid location within Turin."
+        );
+    }
 
     return goToStep(ctx, "title");
 });

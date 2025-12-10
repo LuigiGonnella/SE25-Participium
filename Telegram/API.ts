@@ -1,4 +1,6 @@
 import {defaultSession, ParticipiumContext} from "./models";
+import * as turf from '@turf/turf';
+import turinBoundary from './data/turinBoundary.json';
 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8080/api/v1';
 
@@ -154,4 +156,16 @@ export async function downloadTelegramFile(fileId: string): Promise<Blob> {
     const blob = await fileDownload.blob();
 
     return new Blob([blob], { type: 'image/jpg' });
+}
+
+export function isWithinTurin(lat: number, lon: number): boolean {
+    try {
+        const turinPolygon = turf.multiPolygon(turinBoundary.coordinates).geometry;
+        const point = turf.point([lon, lat]);
+
+        return turf.booleanPointInPolygon(point, turinPolygon);
+    } catch (error) {
+        console.error("Error checking Turin boundaries:", error);
+        return false;
+    }
 }

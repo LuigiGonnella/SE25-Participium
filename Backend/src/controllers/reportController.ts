@@ -9,7 +9,7 @@ import path from "path";
 import {mapMessageToDTO, mapReportDAOToDTO} from "@services/mapperService";
 import {Report} from "@models/dto/Report";
 import {OfficeCategory} from "@models/dao/officeDAO";
-import {findOrThrowNotFound} from "@utils";
+import {findOrThrowNotFound, isWithinTurin} from "@utils";
 import {StaffRole} from "@dao/staffDAO";
 import {Message} from "@models/dto/Message";
 import {StaffRepository} from "@repositories/staffRepository";
@@ -82,7 +82,9 @@ export async function createReport(body: any, citizen: string, photos: Express.M
     const lat = parseFloat(latitude);
     const lon = parseFloat(longitude);
 
-    //TODO: must be inside Turin perimeter
+    if (!isWithinTurin(lat, lon)) {
+        throw new BadRequestError("Report location must be within Turin city boundaries");
+    }
 
     return await repo.create(
         citizenDAO,
@@ -142,6 +144,43 @@ export async function updateReportAsEM(reportId: number, updatedStatus: Status, 
     return mapReportDAOToDTO(updatedReportDAO);
 }
 
+async function handleStaffMessage(reportDAO: ReportDAO, username: string, message: string, isPrivate?: boolean): Promise<ReportDAO> {
+    const user = await staffRepo.getStaffByUsername(username);
+    if (!user) {
+        throw new NotFoundError(`Staff with username ${username} not found`);
+    }
+
+    if (user.role === StaffRole.TOSM) {
+        if (!reportDAO.assignedStaff || reportDAO.assignedStaff.username !== user.username) {
+            throw new BadRequestError(`This report is not assigned to you`);
+        }
+        if (isPrivate === undefined) {
+            throw new BadRequestError(`isPrivate field must be specified for TOSM`);
+        }
+        return await repo.addMessageToReport(reportDAO, message, user, isPrivate);
+    }
+
+    if (user.role === StaffRole.EM) {
+        if (!reportDAO.assignedEM || reportDAO.assignedEM.username !== user.username) {
+            throw new BadRequestError(`This report is not assigned to you`);
+        }
+        return await repo.addMessageToReport(reportDAO, message, user, true);
+    }
+
+    throw new BadRequestError(`Only TOSM and EM staff can add messages to reports`);
+}
+
+async function handleCitizenMessage(reportDAO: ReportDAO, username: string, message: string): Promise<ReportDAO> {
+    const user = await citizenRepo.getCitizenByUsername(username);
+    if (!user) {
+        throw new NotFoundError(`Citizen with username ${username} not found`);
+    }
+    if (reportDAO.citizen.username !== user.username) {
+        throw new BadRequestError(`Citizen ${username} is not the owner of report ${reportDAO.id}`);
+    }
+    return await repo.addMessageToReport(reportDAO, message);
+}
+
 export async function addMessageToReport(reportId: number, username: string, userType: 'CITIZEN' | 'STAFF', message: string, isPrivate?: boolean): Promise<Report> {
     const reportDAO = findOrThrowNotFound(
         [await repo.getReportById(reportId)],
@@ -149,35 +188,9 @@ export async function addMessageToReport(reportId: number, username: string, use
         `Report with id ${reportId} not found`
     );
 
-    let updatedReportDAO: ReportDAO;
-
-    if (userType === 'STAFF') {
-        const user = await staffRepo.getStaffByUsername(username);
-        if (!user) {
-            throw new NotFoundError(`Staff with username ${username} not found`);
-        }
-        if (user.role === StaffRole.TOSM) {
-            if (!reportDAO.assignedStaff || reportDAO.assignedStaff.username !== user.username)
-                throw new BadRequestError(`This report is not assigned to you`);
-            if (isPrivate === undefined)
-                throw new BadRequestError(`isPrivate field must be specified for TOSM`);
-            updatedReportDAO = await repo.addMessageToReport(reportDAO, message, user, isPrivate);
-        } else if (user.role === StaffRole.EM) {
-            if (!reportDAO.assignedEM || reportDAO.assignedEM.username !== user.username)
-                throw new BadRequestError(`This report is not assigned to you`);
-            updatedReportDAO = await repo.addMessageToReport(reportDAO, message, user, true);
-        } else {
-            throw new BadRequestError(`Only TOSM and EM staff can add messages to reports`);
-        }
-    } else {
-        const user = await citizenRepo.getCitizenByUsername(username);
-        if (!user) {
-            throw new NotFoundError(`Citizen with username ${username} not found`);
-        }
-        if (reportDAO.citizen.username !== user.username)
-            throw new BadRequestError(`Citizen ${username} is not the owner of report ${reportId}`);
-        updatedReportDAO = await repo.addMessageToReport(reportDAO, message);
-    }
+    const updatedReportDAO = userType === 'STAFF'
+        ? await handleStaffMessage(reportDAO, username, message, isPrivate)
+        : await handleCitizenMessage(reportDAO, username, message);
 
     return mapReportDAOToDTO(updatedReportDAO);
 }

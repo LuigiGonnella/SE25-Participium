@@ -236,6 +236,10 @@ router.get('/:reportId/messages', isAuthenticated(['CITIZEN', 'STAFF']), async (
 router.post('/telegram', telegramBotAuth, uploadReportPictures.array("photos", 3), async (req, res, next) => {
     try {
         const photos = req.files as Express.Multer.File[];
+        if(!req.body.telegram_username) {
+            next(new BadRequestError("telegram_username is required"));
+            return;
+        }
         const citizen = (await getCitizenByTelegramUsername(req.body.telegram_username)).username;
         res.status(201).json(mapReportDAOToDTO(await createReport(req.body, citizen, photos)));
     } catch (err) {

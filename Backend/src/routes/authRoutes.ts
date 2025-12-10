@@ -5,13 +5,16 @@ import {
     login,
     verifyTelegramUser,
     createTelegramVerification,
-    verifyEmailUser
+    verifyEmailUser,
+    createEmailVerification
 } from '@controllers/authController';
 import {Citizen, CitizenToJSON} from '@models/dto/Citizen';
 import {Router} from "express";
 import {isAuthenticated, telegramBotAuth} from '@middlewares/authMiddleware';
 import { StaffToJSON } from '@models/dto/Staff';
 import { StaffRole } from '@models/dao/staffDAO';
+import { create } from 'domain';
+import { getCitizenByUsername } from '@controllers/citizenController';
 
 const router = Router();
 
@@ -130,6 +133,16 @@ router.post('/verify-email', async (req, res, next) => {
     } catch (error) {
         next(error);
     }
+});
+
+router.post('/resend-verification-email', isAuthenticated(['CITIZEN']), async (req, res, next) => {
+    try {
+        const user = req.user as Citizen;
+        await createEmailVerification(user.username);
+        res.status(200).json({ message: 'Verification email resent successfully' });
+    } catch (error) {
+        next(error);
+    }   
 });
 
 export default router;
