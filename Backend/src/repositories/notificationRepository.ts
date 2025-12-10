@@ -73,6 +73,10 @@ export class NotificationRepository {
     }
 
     async markAsRead(notificationId: number): Promise<void> {
+        const notification = await this.repo.findOne({ where: { id: notificationId } });
+        if (!notification) {
+            throw new NotFoundError(`Notification with id ${notificationId} not found`);
+        }
         await this.repo.update({ id: notificationId }, { isRead: true });
     }
 }

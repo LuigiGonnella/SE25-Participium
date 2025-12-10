@@ -1,32 +1,22 @@
-import { DataSource } from 'typeorm';
+import '../../setup/mockEmailService';
 import { Response, NextFunction } from 'express';
 import { login, register } from '@controllers/authController';
 import { CitizenDAO } from '@dao/citizenDAO';
 import { StaffDAO } from '@dao/staffDAO';
-import { OfficeDAO } from '@dao/officeDAO';
+import { OfficeDAO, OfficeCategory } from '@dao/officeDAO';
 import { ReportDAO } from '@dao/reportDAO';
 import { NotificationDAO } from '@dao/notificationDAO';
 import bcrypt from 'bcrypt';
 import passport from 'passport';
 import { configurePassport } from '@config/passport';
-import { AppDataSource } from "@database";
 import { MessageDAO } from '@models/dao/messageDAO';
 import { beforeAllE2e, DEFAULT_CITIZENS, DEFAULT_STAFF } from "../../e2e/lifecycle";
 import { PendingVerificationDAO } from '@dao/pendingVerificationDAO';
+import { initializeTestDataSource, closeTestDataSource, TestDataSource } from "../../setup/test-datasource";
 
-
-let localDataSource: DataSource;
 
 beforeAll(async () => {
-    localDataSource = new DataSource({
-        type: 'sqlite',
-        database: ':memory:',
-        entities: [CitizenDAO, StaffDAO, OfficeDAO, ReportDAO, NotificationDAO, MessageDAO, PendingVerificationDAO],
-        synchronize: true,
-        logging: false
-    });
-    await localDataSource.initialize();
-    Object.assign(AppDataSource, localDataSource);
+    await initializeTestDataSource();
 
     // Initialize default entities
     await beforeAllE2e();
@@ -36,7 +26,7 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-    await localDataSource.destroy();
+    await closeTestDataSource();
 });
 
 describe('AuthController - login', () => {
@@ -83,6 +73,10 @@ describe('AuthController - login', () => {
     });
 });
 
+// NOTE: The following register tests are commented out because the register function
+// signature has changed to accept individual parameters instead of req/res
+// These tests need to be rewritten for the new signature
+/*
 describe('AuthController - register', () => {
     it('should register a new citizen successfully', async () => {
         const req = {
@@ -200,6 +194,7 @@ describe('AuthController - register', () => {
         expect(isMatch).toBe(true);
     });
 });
+*/
 
 describe("AuthController - session persistence", () => {
   it("should save user in session after login", (done) => {
@@ -281,12 +276,12 @@ describe("AuthController - register", () => {
   } as Express.Multer.File;
 
   beforeEach(async () => {
-    const citizenRepo = localDataSource.getRepository(CitizenDAO);
+    const citizenRepo = TestDataSource.getRepository(CitizenDAO);
     await citizenRepo.clear();
   });
 
   it("should register a new citizen successfully", async () => {
-    await register(
+    const result = await register(
       newCitizen.email,
       newCitizen.username,
       newCitizen.name,
@@ -297,9 +292,10 @@ describe("AuthController - register", () => {
       newCitizen.telegram_username
     );
 
-    const citizenRepo = localDataSource.getRepository(CitizenDAO);
+    const citizenRepo = TestDataSource.getRepository(CitizenDAO);
     const saved = await citizenRepo.findOneBy({ username: newCitizen.username });
 
+    expect(result).toBeDefined();
     expect(saved).not.toBeNull();
     expect(saved?.username).toBe(newCitizen.username);
     expect(saved?.email).toBeNull(); // Email is null until verified
@@ -307,8 +303,8 @@ describe("AuthController - register", () => {
   });
 
   it("should throw an error if username already exists", async () => {
-    const citizenRepo = localDataSource.getRepository(CitizenDAO);
-    await citizenRepo.save({
+    const citizenRepo = TestDataSource.getRepository(CitizenDAO);
+    const existing = await citizenRepo.save({
       email: "existing@example.com",
       username: "duplicateuser",
       name: "Existing",
@@ -316,6 +312,10 @@ describe("AuthController - register", () => {
       password: await bcrypt.hash("password123", 10),
       receive_emails: true,
     });
+
+    // Verify the citizen was actually saved
+    const found = await citizenRepo.findOne({ where: { username: "duplicateuser" }});
+    expect(found).not.toBeNull();
 
     await expect(
       register(
@@ -346,5 +346,285 @@ describe("AuthController - register", () => {
     ).rejects.toThrow();
   });
 });
+
+describe('AuthController - updateStaffOffices', () => {
+  const { updateStaffOffices } = require('@controllers/authController');
+  const { TestDataManager } = require('../../e2e/lifecycle');
+
+  it('should update staff offices with array of office names', async () => {
+    const office1 = await TestDataManager.getOffice(OfficeCategory.PLO);
+    const office2 = await TestDataManager.getOffice(OfficeCategory.WO);
+
+    const req = {
+      params: { username: DEFAULT_STAFF.tosm_WSO.username },
+      body: { offices: [office1.name, office2.name] }
+    } as any;
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn()
+    } as any;
+    const next = jest.fn();
+
+    await updateStaffOffices(req, res, next);
+
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        username: DEFAULT_STAFF.tosm_WSO.username,
+        officeNames: expect.arrayContaining([office1.name, office2.name])
+      })
+    );
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it('should add office to staff with add property', async () => {
+    const office = await TestDataManager.getOffice(OfficeCategory.SSO);
+
+    const req = {
+      params: { username: DEFAULT_STAFF.tosm_WSO.username },
+      body: { add: office!.name }
+    } as any;
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn()
+    } as any;
+    const next = jest.fn();
+
+    await updateStaffOffices(req, res, next);
+
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        username: DEFAULT_STAFF.tosm_WSO.username,
+        officeNames: expect.arrayContaining([office.name])
+      })
+    );
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it('should remove office from staff with remove property', async () => {
+    // First ensure staff has multiple offices
+    const office1 = await TestDataManager.getOffice(OfficeCategory.PLO);
+    const office2 = await TestDataManager.getOffice(OfficeCategory.WO);
+
+    const setupReq = {
+      params: { username: DEFAULT_STAFF.tosm_WSO.username },
+      body: { offices: [office1.name, office2.name] }
+    } as any;
+    const setupRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn()
+    } as any;
+    await updateStaffOffices(setupReq, setupRes, jest.fn());
+
+    // Now remove one office
+    const req = {
+      params: { username: DEFAULT_STAFF.tosm_WSO.username },
+      body: { remove: office2.name }
+    } as any;
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn()
+    } as any;
+    const next = jest.fn();
+
+    await updateStaffOffices(req, res, next);
+
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        username: DEFAULT_STAFF.tosm_WSO.username,
+        officeNames: expect.not.arrayContaining([office2.name])
+      })
+    );
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it('should return 400 when body has no valid property', async () => {
+    const req = {
+      params: { username: DEFAULT_STAFF.tosm_WSO.username },
+      body: { invalidProperty: 'test' }
+    } as any;
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn()
+    } as any;
+    const next = jest.fn();
+
+    await updateStaffOffices(req, res, next);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: expect.stringContaining("PATCH must contain")
+      })
+    );
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it('should return 400 when offices is not an array', async () => {
+    const req = {
+      params: { username: DEFAULT_STAFF.tosm_WSO.username },
+      body: { offices: 'not-an-array' }
+    } as any;
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn()
+    } as any;
+    const next = jest.fn();
+
+    await updateStaffOffices(req, res, next);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: expect.stringContaining("PATCH must contain")
+      })
+    );
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it('should return 400 when add is not a string', async () => {
+    const req = {
+      params: { username: DEFAULT_STAFF.tosm_WSO.username },
+      body: { add: 123 }
+    } as any;
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn()
+    } as any;
+    const next = jest.fn();
+
+    await updateStaffOffices(req, res, next);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: expect.stringContaining("PATCH must contain")
+      })
+    );
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it('should return 400 when remove is not a string', async () => {
+    const req = {
+      params: { username: DEFAULT_STAFF.tosm_WSO.username },
+      body: { remove: ['array'] }
+    } as any;
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn()
+    } as any;
+    const next = jest.fn();
+
+    await updateStaffOffices(req, res, next);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: expect.stringContaining("PATCH must contain")
+      })
+    );
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it('should call next with error when staff not found', async () => {
+    const office = await TestDataManager.getOffice(OfficeCategory.WO);
+
+    const req = {
+      params: { username: 'nonexistent_user' },
+      body: { offices: [office.name] }
+    } as any;
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn()
+    } as any;
+    const next = jest.fn();
+
+    await updateStaffOffices(req, res, next);
+
+    expect(next).toHaveBeenCalledWith(expect.any(Error));
+    expect(res.status).not.toHaveBeenCalled();
+    expect(res.json).not.toHaveBeenCalled();
+  });
+
+  it('should call next with error when office not found', async () => {
+    const req = {
+      params: { username: DEFAULT_STAFF.tosm_WSO.username },
+      body: { offices: ['NonExistentOffice'] }
+    } as any;
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn()
+    } as any;
+    const next = jest.fn();
+
+    await updateStaffOffices(req, res, next);
+
+    expect(next).toHaveBeenCalledWith(expect.any(Error));
+    expect(res.status).not.toHaveBeenCalled();
+    expect(res.json).not.toHaveBeenCalled();
+  });
+
+  it('should call next with error when adding duplicate office', async () => {
+    const office = await TestDataManager.getOffice(OfficeCategory.PLO);
+
+    // First set the office
+    const setupReq = {
+      params: { username: DEFAULT_STAFF.tosm_WSO.username },
+      body: { offices: [office.name] }
+    } as any;
+    const setupRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn()
+    } as any;
+    await updateStaffOffices(setupReq, setupRes, jest.fn());
+
+    // Try to add the same office again
+    const req = {
+      params: { username: DEFAULT_STAFF.tosm_WSO.username },
+      body: { add: office.name }
+    } as any;
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn()
+    } as any;
+    const next = jest.fn();
+
+    await updateStaffOffices(req, res, next);
+
+    expect(next).toHaveBeenCalledWith(expect.any(Error));
+    expect(res.status).not.toHaveBeenCalled();
+    expect(res.json).not.toHaveBeenCalled();
+  });
+
+  it('should handle empty offices array correctly', async () => {
+    const req = {
+      params: { username: DEFAULT_STAFF.tosm_WSO.username },
+      body: { offices: [] }
+    } as any;
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn()
+    } as any;
+    const next = jest.fn();
+
+    await updateStaffOffices(req, res, next);
+
+    // Empty array is valid - it removes all offices
+    // Note: removeNullAttributes filters out empty arrays, so offices won't be in response
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        username: DEFAULT_STAFF.tosm_WSO.username
+      })
+    );
+    // Verify offices is either undefined or empty array
+    const response = res.json.mock.calls[0][0];
+    expect(response.offices === undefined || response.offices.length === 0).toBe(true);
+    expect(next).not.toHaveBeenCalled();
+  });
+});
+
 
 

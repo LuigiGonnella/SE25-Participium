@@ -1,9 +1,14 @@
 import request from 'supertest';
 import express, { Express } from 'express';
 import citizenRoutes from '@routes/citizenRoutes';
+import authRoutes from '@routes/authRoutes';
+import session from 'express-session';
+import passport from 'passport';
+import { configurePassport } from '@config/passport';
 import { beforeAllE2e, DEFAULT_CITIZENS, TestDataManager } from "../../e2e/lifecycle";
 import { initializeTestDataSource, closeTestDataSource, TestDataSource } from "../../setup/test-datasource";
 import { CitizenDAO } from '@dao/citizenDAO';
+import { errorHandler } from '@middlewares/errorMiddleware';
 
 let app: Express;
 
@@ -13,7 +18,23 @@ beforeAll(async () => {
     
     app = express();
     app.use(express.json());
+    
+    // Session and passport setup for authentication
+    app.use(session({
+        secret: 'test-secret',
+        resave: false,
+        saveUninitialized: false,
+        cookie: { secure: false }
+    }));
+    app.use(passport.initialize());
+    app.use(passport.session());
+    
+    // Configure passport strategies
+    configurePassport();
+    
+    app.use('/api/v1/auth', authRoutes);
     app.use('/api/v1/citizens', citizenRoutes);
+    app.use(errorHandler);
 });
 
 afterAll(async () => {
@@ -58,7 +79,12 @@ describe('Citizen Routes Tests', () => {
 
     describe('GET /api/v1/citizens/username/:username', () => {
         it('should return default citizen by username', async () => {
-            const response = await request(app)
+            const agent = request.agent(app);
+            await agent.post('/api/v1/auth/login?type=STAFF')
+                .send({ username: 'mpro', password: 'mpro123' })
+                .expect(200);
+
+            const response = await agent
                 .get(`/api/v1/citizens/username/${DEFAULT_CITIZENS.citizen1.username}`)
                 .expect(200);
 
@@ -72,7 +98,12 @@ describe('Citizen Routes Tests', () => {
         });
 
         it('should return 200 with null for non-existent username', async () => {
-            const response = await request(app)
+            const agent = request.agent(app);
+            await agent.post('/api/v1/auth/login?type=STAFF')
+                .send({ username: 'mpro', password: 'mpro123' })
+                .expect(200);
+
+            const response = await agent
                 .get('/api/v1/citizens/username/nonexistent')
                 .expect(200);
 
@@ -142,7 +173,12 @@ describe('Citizen Routes Tests', () => {
 
     describe('PATCH /api/v1/citizens/:username', () => {
         it('should update default citizen profile', async () => {
-            const response = await request(app)
+            const agent = request.agent(app);
+            await agent.post('/api/v1/auth/login?type=CITIZEN')
+                .send({ username: DEFAULT_CITIZENS.citizen1.username, password: 'cit123' })
+                .expect(200);
+
+            const response = await agent
                 .patch(`/api/v1/citizens/${DEFAULT_CITIZENS.citizen1.username}`)
                 .send({
                     telegram_username: '@updated_telegram',
@@ -156,7 +192,7 @@ describe('Citizen Routes Tests', () => {
             });
 
             // Reset
-            await request(app)
+            await agent
                 .patch(`/api/v1/citizens/${DEFAULT_CITIZENS.citizen1.username}`)
                 .send({
                     telegram_username: '',
@@ -164,15 +200,20 @@ describe('Citizen Routes Tests', () => {
                 });
         });
 
-        it('should return 404 for non-existent username', async () => {
-            const response = await request(app)
+        it('should return 403 when trying to update another user', async () => {
+            const agent = request.agent(app);
+            await agent.post('/api/v1/auth/login?type=CITIZEN')
+                .send({ username: DEFAULT_CITIZENS.citizen1.username, password: 'cit123' })
+                .expect(200);
+
+            const response = await agent
                 .patch('/api/v1/citizens/nonexistent')
                 .send({
                     telegram_username: '@test'
                 })
-                .expect(404);
+                .expect(403);
 
-            expect(response.body).toHaveProperty('message');
+            expect(response.body).toHaveProperty('error');
         });
     });
 });

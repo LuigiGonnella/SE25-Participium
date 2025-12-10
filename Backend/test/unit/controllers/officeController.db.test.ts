@@ -40,7 +40,7 @@ beforeEach(async () => {
 
 describe("OfficeController - test suite", () => {
     it("tests getAllOffices - returns default offices", async () => {
-        const req = {} as Request;
+        const req = { query: {} } as Request;
 
         const res = {
             status: jest.fn().mockReturnThis(),
@@ -56,7 +56,7 @@ describe("OfficeController - test suite", () => {
     });
 
     it("tests getAllOffices - includes all default categories", async () => {
-        const req = {} as Request;
+        const req = { query: {} } as Request;
 
         const res = {
             status: jest.fn().mockReturnThis(),

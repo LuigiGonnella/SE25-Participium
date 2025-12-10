@@ -39,7 +39,7 @@ describe("Office E2E Tests", () => {
 
             expect(response.body).toBeDefined();
             expect(Array.isArray(response.body)).toBe(true);
-            expect(response.body.length).toBe(9);
+            expect(response.body.length).toBe(17);
         });
         
     });

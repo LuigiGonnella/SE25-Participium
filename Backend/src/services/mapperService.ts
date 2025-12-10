@@ -100,7 +100,7 @@ export function mapNotificationDAOToDTO(dao: NotificationDAO): Notification {
         title: dao.title,
         message: dao.message,
         isRead: dao.isRead,
-        reportId: dao.report.id,
+        reportId: dao.report?.id,
         citizenUsername: dao.citizen?.username,
         staffUsername: dao.staff?.username
     };

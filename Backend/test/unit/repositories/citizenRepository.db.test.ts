@@ -50,8 +50,12 @@ describe("CitizenRepository - test suite", () => {
         
         const savedInDB = await TestDataSource
             .getRepository(CitizenDAO)
-            .findOneBy({ email: newCitizen.email });
-        expect(savedInDB).toEqual(expect.objectContaining(newCitizen));
+            .findOneBy({ username: newCitizen.username });
+        expect(savedInDB).toBeDefined();
+        expect(savedInDB?.username).toBe(newCitizen.username);
+        expect(savedInDB?.email).toBeNull(); // Email is null until verified
+        expect(savedInDB?.name).toBe(newCitizen.name);
+        expect(savedInDB?.surname).toBe(newCitizen.surname);
     });
 
     it("should get all citizens (including defaults)", async () => {

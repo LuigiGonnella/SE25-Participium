@@ -100,7 +100,7 @@ describe("Authentication API E2E Tests", () => {
 
             const savedCitizen = await TestDataSource
                 .getRepository(CitizenDAO)
-                .findOneBy({ email: "hashtest@example.com" });
+                .findOneBy({ username: "hashuser" });
 
             expect(savedCitizen).toBeTruthy();
             expect(savedCitizen?.password).not.toBe(plainPassword);
@@ -122,7 +122,7 @@ describe("Authentication API E2E Tests", () => {
                 });
 
             expect(res.status).toBe(201);
-            expect(res.body.email).toBe("minimal@example.com");
+            expect(res.body.username).toBe("minimaluser");
         });
 
         it("should return 400 when email is missing", async () => {

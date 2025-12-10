@@ -1,6 +1,10 @@
 import request from 'supertest';
 import express, { Express } from 'express';
 import reportRoutes from '@routes/reportRoutes';
+import authRoutes from '@routes/authRoutes';
+import session from 'express-session';
+import passport from 'passport';
+import { configurePassport } from '@config/passport';
 import { beforeAllE2e, DEFAULT_CITIZENS, DEFAULT_STAFF, TestDataManager } from "../../e2e/lifecycle";
 import { initializeTestDataSource, closeTestDataSource, TestDataSource } from "../../setup/test-datasource";
 import { ReportDAO, Status } from '@dao/reportDAO';
@@ -8,6 +12,7 @@ import { NotificationDAO } from '@dao/notificationDAO';
 import { MessageDAO } from '@dao/messageDAO';
 import { ReportRepository } from '@repositories/reportRepository';
 import { OfficeCategory } from '@dao/officeDAO';
+import { errorHandler } from '@middlewares/errorMiddleware';
 
 let app: Express;
 let reportRepo: ReportRepository;
@@ -21,14 +26,22 @@ beforeAll(async () => {
     app = express();
     app.use(express.json());
     
-    // Mock authentication middleware
-    app.use((req: any, res, next) => {
-        req.user = { username: DEFAULT_CITIZENS.citizen1.username, type: 'CITIZEN' };
-        req.isAuthenticated = () => true;
-        next();
-    });
+    // Session and passport setup for authentication
+    app.use(session({
+        secret: 'test-secret',
+        resave: false,
+        saveUninitialized: false,
+        cookie: { secure: false }
+    }));
+    app.use(passport.initialize());
+    app.use(passport.session());
     
+    // Configure passport strategies
+    configurePassport();
+    
+    app.use('/api/v1/auth', authRoutes);
     app.use('/api/v1/reports', reportRoutes);
+    app.use(errorHandler);
 });
 
 afterAll(async () => {
@@ -68,7 +81,13 @@ describe('Report Routes Tests', () => {
                 "/img2.jpg"
             );
 
-            const response = await request(app)
+            const mproStaff = await TestDataManager.getStaff('mpro');
+            const agent = request.agent(app);
+            await agent.post('/api/v1/auth/login?type=STAFF')
+                .send({ username: 'mpro', password: 'mpro123' })
+                .expect(200);
+
+            const response = await agent
                 .get('/api/v1/reports')
                 .expect(200);
 
@@ -77,7 +96,12 @@ describe('Report Routes Tests', () => {
         });
 
         it('should return empty array when no reports exist', async () => {
-            const response = await request(app)
+            const agent = request.agent(app);
+            await agent.post('/api/v1/auth/login?type=STAFF')
+                .send({ username: 'mpro', password: 'mpro123' })
+                .expect(200);
+                
+            const response = await agent
                 .get('/api/v1/reports')
                 .expect(200);
 
@@ -109,7 +133,12 @@ describe('Report Routes Tests', () => {
                 "/img.jpg"
             );
 
-            const response = await request(app)
+            const agent = request.agent(app);
+            await agent.post('/api/v1/auth/login?type=STAFF')
+                .send({ username: 'mpro', password: 'mpro123' })
+                .expect(200);
+
+            const response = await agent
                 .get('/api/v1/reports?category=RSTLO')
                 .expect(200);
 
@@ -132,7 +161,12 @@ describe('Report Routes Tests', () => {
                 "/img.jpg"
             );
 
-            const response = await request(app)
+            const agent = request.agent(app);
+            await agent.post('/api/v1/auth/login?type=STAFF')
+                .send({ username: 'mpro', password: 'mpro123' })
+                .expect(200);
+
+            const response = await agent
                 .get(`/api/v1/reports/${report.id}`)
                 .expect(200);
 
@@ -141,7 +175,12 @@ describe('Report Routes Tests', () => {
         });
 
         it('should return 404 for non-existent report', async () => {
-            const response = await request(app)
+            const agent = request.agent(app);
+            await agent.post('/api/v1/auth/login?type=STAFF')
+                .send({ username: 'mpro', password: 'mpro123' })
+                .expect(200);
+
+            const response = await agent
                 .get('/api/v1/reports/99999')
                 .expect(404);
 
@@ -172,7 +211,12 @@ describe('Report Routes Tests', () => {
                 "/img.jpg"
             );
 
-            const response = await request(app)
+            const agent = request.agent(app);
+            await agent.post('/api/v1/auth/login?type=STAFF')
+                .send({ username: 'mpro', password: 'mpro123' })
+                .expect(200);
+
+            const response = await agent
                 .patch(`/api/v1/reports/${report.id}/manage`)
                 .send({ status: 'ASSIGNED' })
                 .expect(200);
@@ -195,19 +239,32 @@ describe('Report Routes Tests', () => {
                 "/img.jpg"
             );
 
-            const response = await request(app)
+            const agent = request.agent(app);
+            await agent.post('/api/v1/auth/login?type=CITIZEN')
+                .send({ username: DEFAULT_CITIZENS.citizen1.username, password: 'cit123' })
+                .expect(200);
+
+            const response = await agent
                 .post(`/api/v1/reports/${report.id}/messages`)
-                .send({ text: 'Test message' })
+                .send({ message: 'Test message' })
                 .expect(201);
 
-            expect(response.body.text).toBe('Test message');
-            expect(response.body.sender).toBe(DEFAULT_CITIZENS.citizen1.username);
+            expect(response.body.messages).toBeDefined();
+            expect(response.body.messages.length).toBeGreaterThan(0);
+            const addedMessage = response.body.messages[response.body.messages.length - 1];
+            expect(addedMessage.message).toBe('Test message');
+            expect(addedMessage.staffUsername).toBeUndefined(); // Citizen message should not have staffUsername
         });
 
         it('should return 404 for non-existent report', async () => {
-            const response = await request(app)
+            const agent = request.agent(app);
+            await agent.post('/api/v1/auth/login?type=CITIZEN')
+                .send({ username: DEFAULT_CITIZENS.citizen1.username, password: 'cit123' })
+                .expect(200);
+
+            const response = await agent
                 .post('/api/v1/reports/99999/messages')
-                .send({ text: 'Test message' })
+                .send({ message: 'Test message' })
                 .expect(404);
 
             expect(response.body).toHaveProperty('message');
@@ -229,15 +286,20 @@ describe('Report Routes Tests', () => {
             );
 
             // Add messages using the controller/service
-            await request(app)
-                .post(`/api/v1/reports/${report.id}/messages`)
-                .send({ text: 'Message 1' });
+            const agent = request.agent(app);
+            await agent.post('/api/v1/auth/login?type=CITIZEN')
+                .send({ username: DEFAULT_CITIZENS.citizen1.username, password: 'cit123' })
+                .expect(200);
 
-            await request(app)
+            await agent
                 .post(`/api/v1/reports/${report.id}/messages`)
-                .send({ text: 'Message 2' });
+                .send({ message: 'Message 1' });
 
-            const response = await request(app)
+            await agent
+                .post(`/api/v1/reports/${report.id}/messages`)
+                .send({ message: 'Message 2' });
+
+            const response = await agent
                 .get(`/api/v1/reports/${report.id}/messages`)
                 .expect(200);
 
