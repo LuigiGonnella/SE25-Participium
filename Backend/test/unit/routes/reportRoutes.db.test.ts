@@ -336,6 +336,90 @@ describe('Report Routes Tests', () => {
 
             expect(response.body).toHaveProperty('message');
         });
+
+        it('should create a new message from TOSM', async () => {
+            const citizen = await TestDataManager.getCitizen('citizen1');
+            const report = await reportRepo.create(
+                citizen,
+                "Test Report",
+                "Description",
+                OfficeCategory.RSTLO,
+                45.0,
+                7.0,
+                false,
+                "/img.jpg"
+            );
+
+            const agentMPRO = request.agent(app);
+            const agentTOSM = request.agent(app);
+
+            //MPRO assigns report
+            await agentMPRO.post('/api/v1/auth/login?type=STAFF')
+                .send({ username: DEFAULT_STAFF.mpro.username, password: DEFAULT_STAFF.mpro.password })
+
+            await agentMPRO.patch(`/api/v1/reports/${report.id}/manage`)
+                .send({ status: 'ASSIGNED' })
+
+            //TOSM self-assigns
+            await agentTOSM.post('/api/v1/auth/login?type=STAFF')
+                .send({ username: DEFAULT_STAFF.tosm_RSTLO.username, password: DEFAULT_STAFF.tosm_RSTLO.password })
+
+            await agentTOSM.patch(`/api/v1/reports/${report.id}/assignSelf`)
+                .send({ status: 'IN_PROGRESS' })
+
+            //TOSM adds a message
+            await agentTOSM.post(`/api/v1/reports/${report.id}/messages`)
+                .send({ message: 'Test message from TOSM', isPrivate: true })
+                .expect(201);    
+        });
+
+        it('should create a new message from EM', async () => {
+            const citizen = await TestDataManager.getCitizen('citizen1');
+            const report = await reportRepo.create(
+                citizen,
+                "Test Report",
+                "Description",
+                OfficeCategory.RSTLO,
+                45.0,
+                7.0,
+                false,
+                "/img.jpg"
+            );
+
+            const agentMPRO = request.agent(app);
+            const agentTOSM = request.agent(app);
+            const agentEM = request.agent(app);
+
+            //MPRO assigns report
+            await agentMPRO.post('/api/v1/auth/login?type=STAFF')
+                .send({ username: DEFAULT_STAFF.mpro.username, password: DEFAULT_STAFF.mpro.password })
+
+            await agentMPRO.patch(`/api/v1/reports/${report.id}/manage`)
+                .send({ status: 'ASSIGNED' })
+
+            //TOSM self-assigns
+            await agentTOSM.post('/api/v1/auth/login?type=STAFF')
+                .send({ username: DEFAULT_STAFF.tosm_RSTLO.username, password: DEFAULT_STAFF.tosm_RSTLO.password })
+                .expect(200);
+
+            await agentTOSM.patch(`/api/v1/reports/${report.id}/assignSelf`)
+                .send({ status: 'IN_PROGRESS' });
+
+            //TOSM assigns to EM
+            await agentTOSM.patch(`/api/v1/reports/${report.id}/assignExternal`)
+                .send({ staffEM: DEFAULT_STAFF.em_RSTLO.username })
+                .expect(200);
+
+            //EM logs in
+            await agentEM.post('/api/v1/auth/login?type=STAFF')
+                .send({ username: DEFAULT_STAFF.em_RSTLO.username, password: DEFAULT_STAFF.em_RSTLO.password })
+
+            //EM adds a message
+            await agentEM.post(`/api/v1/reports/${report.id}/messages`)
+                .send({ message: 'Test message from EM', isPrivate: true })
+                .expect(201);    
+        });
+    
     });
 
     describe('GET /api/v1/reports/:id/messages', () => {
@@ -373,4 +457,5 @@ describe('Report Routes Tests', () => {
             expect(response.body.length).toBe(2);
         });
     });
+
 });

@@ -24,11 +24,13 @@ export class ReportRepository {
     private readonly repo: Repository<ReportDAO>;
     private readonly staffRepo: Repository<StaffDAO>;
     private readonly notificationRepo: NotificationRepository;
+    private readonly messageRepo: Repository<MessageDAO>;
 
     constructor() {
         this.repo = AppDataSource.getRepository(ReportDAO);
         this.staffRepo = AppDataSource.getRepository(StaffDAO);
         this.notificationRepo = new NotificationRepository();
+        this.messageRepo = AppDataSource.getRepository(MessageDAO);
     }
 
     async create(
@@ -361,9 +363,7 @@ export class ReportRepository {
         }
     }
 
-    async addMessageToReport(report: ReportDAO, message: string, assignedStaff?: StaffDAO, isPrivate: boolean = false): Promise<ReportDAO> {
-        const messageRepo = AppDataSource.getRepository(MessageDAO);
-        
+    async addMessageToReport(report: ReportDAO, message: string, assignedStaff?: StaffDAO, isPrivate: boolean = false): Promise<ReportDAO> {      
         const messageDAO = new MessageDAO();
         messageDAO.message = message;
         messageDAO.staff = assignedStaff;
@@ -371,7 +371,7 @@ export class ReportRepository {
         messageDAO.isPrivate = isPrivate;
 
         // Save message directly to avoid circular reference issues
-        await messageRepo.save(messageDAO);
+        await this.messageRepo.save(messageDAO);
 
         // Create notification for citizen if message is from staff
         if (assignedStaff && report.citizen && !isPrivate) {
@@ -390,9 +390,7 @@ export class ReportRepository {
     }
 
     async getAllMessages(reportId: number): Promise<MessageDAO[]> {
-        const messageRepo = AppDataSource.getRepository(MessageDAO);
-
-        return await messageRepo.find({
+        return await this.messageRepo.find({
             where: {report: {id: reportId}},
             relations: ['staff'],
             order: {timestamp: 'DESC'}
@@ -400,9 +398,7 @@ export class ReportRepository {
     }
 
     async getAllPublicMessages(reportId: number): Promise<MessageDAO[]> {
-        const messageRepo = AppDataSource.getRepository(MessageDAO);
-
-        return await messageRepo.find({
+        return await this.messageRepo.find({
             where: {report: {id: reportId}, isPrivate: false},
             relations: ['staff'],
             order: {timestamp: 'DESC'}

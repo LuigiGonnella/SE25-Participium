@@ -1199,4 +1199,150 @@ describe("ReportRepository - assignEMToReport (Story 24)", () => {
         ).rejects.toThrow(BadRequestError);
     });
 
+    it("should add a public message to the report by TOSM", async () => {
+        const tosm = await TestDataManager.getStaff('tosm_RSTLO');
+        const citizen = await TestDataManager.getCitizen('citizen1');
+
+        const report = await reportRepo.create(
+            citizen,
+            "Report for TOSM Message",
+            "Description",
+            OfficeCategory.RSTLO,
+            45.0,
+            7.0,
+            false,
+            "/img.jpg"
+        );
+
+        await reportRepo.updateReportAsMPRO(report.id, Status.ASSIGNED);
+        await reportRepo.selfAssignReport(report.id, tosm.username);
+        const message = "This is a public message from TOSM.";
+
+        const updatedReport = await reportRepo.addMessageToReport(report, message, tosm, false);
+        const addedMessage = updatedReport.messages
+                                .find(msg => msg.message === message);
+
+        expect(addedMessage).toBeDefined();
+        expect(addedMessage?.isPrivate).toBe(false);
+        expect(addedMessage?.staff?.username).toBe(tosm.username);
+        expect(addedMessage?.message).toBe(message);
+    });
+
+
+    it("should add a private message to the report by TOSM", async () => {
+        const tosm = await TestDataManager.getStaff('tosm_RSTLO');
+        const citizen = await TestDataManager.getCitizen('citizen1');
+
+        const report = await reportRepo.create(
+            citizen,
+            "Report for TOSM Message",
+            "Description",
+            OfficeCategory.RSTLO,
+            45.0,
+            7.0,
+            false,
+            "/img.jpg"
+        );
+
+        await reportRepo.updateReportAsMPRO(report.id, Status.ASSIGNED);
+        await reportRepo.selfAssignReport(report.id, tosm.username);
+        const message = "This is a private message from TOSM.";
+
+        const updatedReport = await reportRepo.addMessageToReport(report, message, tosm, true);
+        const addedMessage = updatedReport.messages
+                                .find(msg => msg.message === message);
+
+        expect(addedMessage).toBeDefined();
+        expect(addedMessage?.isPrivate).toBe(true);
+        expect(addedMessage?.staff?.username).toBe(tosm.username);
+        expect(addedMessage?.message).toBe(message);
+    });
+
+    it("should add a private message to the report by EM", async () => {
+        const em = await TestDataManager.getStaff('em_RSTLO');
+        const citizen = await TestDataManager.getCitizen('citizen1');
+
+        const report = await reportRepo.create(
+            citizen,
+            "Report for EM Message",
+            "Description",
+            OfficeCategory.RSTLO,
+            45.0,
+            7.0,
+            false,
+            "/img.jpg"
+        );
+
+        await reportRepo.updateReportAsMPRO(report.id, Status.ASSIGNED);
+        await reportRepo.selfAssignReport(report.id, tosm.username);
+        await reportRepo.assignEMToReport(report.id, em.username, tosm.username);
+        const message = "This is a private message from EM.";
+
+        const updatedReport = await reportRepo.addMessageToReport(report, message, em, true);
+        const addedMessage = updatedReport.messages
+                                .find(msg => msg.message === message);
+
+        expect(addedMessage).toBeDefined();
+        expect(addedMessage?.isPrivate).toBe(true);
+        expect(addedMessage?.staff?.username).toBe(em.username);
+        expect(addedMessage?.message).toBe(message);
+    });
+
+    it("should get all messages for TOSM", async () => {
+        const citizen = await TestDataManager.getCitizen('citizen1');
+        const repo1 = await reportRepo.create(
+            citizen,
+            "Report for TOSM Message Retrieval",
+            "Description",
+            OfficeCategory.RSTLO,
+            45.0,
+            7.0,
+            false,
+            "/img.jpg"
+        );
+
+        const message1 = "Public message from TOSM.";
+        const message2 = "Private message from TOSM.";
+        await reportRepo.updateReportAsMPRO(repo1.id, Status.ASSIGNED);
+        await reportRepo.selfAssignReport(repo1.id, tosm.username);
+
+        await reportRepo.addMessageToReport(repo1, message1, tosm, false);
+        await reportRepo.addMessageToReport(repo1, message2, tosm, true);
+
+        const messages = await reportRepo.getAllMessages(repo1.id)
+        expect(messages.length).toBe(2);
+        const publicMessage = messages.find(msg => msg.message === message1);
+        const privateMessage = messages.find(msg => msg.message === message2);
+        expect(publicMessage).toBeDefined();
+        expect(privateMessage).toBeDefined();
+    });
+
+        it("should get all public messages for TOSM", async () => {
+        const citizen = await TestDataManager.getCitizen('citizen1');
+        const repo1 = await reportRepo.create(
+            citizen,
+            "Report for TOSM Message Retrieval",
+            "Description",
+            OfficeCategory.RSTLO,
+            45.0,
+            7.0,
+            false,
+            "/img.jpg"
+        );
+
+        const message1 = "Public message from TOSM.";
+        const message2 = "Private message from TOSM.";
+        await reportRepo.updateReportAsMPRO(repo1.id, Status.ASSIGNED);
+        await reportRepo.selfAssignReport(repo1.id, tosm.username);
+
+        await reportRepo.addMessageToReport(repo1, message1, tosm, false);
+        await reportRepo.addMessageToReport(repo1, message2, tosm, true);
+
+        const messages = await reportRepo.getAllPublicMessages(repo1.id);
+        expect(messages.length).toBe(1);
+        const publicMessage = messages.find(msg => msg.message === message1);
+        const privateMessage = messages.find(msg => msg.message === message2);
+        expect(publicMessage).toBeDefined();
+    });
+
 });

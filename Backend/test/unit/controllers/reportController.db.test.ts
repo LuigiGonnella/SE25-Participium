@@ -1,4 +1,4 @@
-import { createReport, addMessageToReport, getAllMessages } from "@controllers/reportController";
+import { createReport, addMessageToReport, getAllMessages, selfAssignReport, updateReportAsMPRO, assignReportToEM } from "@controllers/reportController";
 import { CitizenRepository } from "@repositories/citizenRepository";
 import { ReportRepository } from "@repositories/reportRepository";
 import { ReportDAO, Status } from "@dao/reportDAO";
@@ -269,4 +269,203 @@ describe("ReportController - getAllMessages", () => {
             getAllMessages(99999, "CITIZEN")  
         ).rejects.toThrow(NotFoundError);
     });
+
+    it("should add a public message to report from TOSM", async () => {
+        const citizen = await TestDataManager.getCitizen('citizen1');
+        const report = await reportRepo.create(
+            citizen,
+            "Report for TOSM Message Retrieval",
+            "Description",
+            OfficeCategory.RSTLO,
+            45.0,
+            7.0,
+            false,
+            "/img.jpg"
+            );
+
+        const message1 = "Public message from TOSM.";
+        
+        await updateReportAsMPRO(report.id, Status.ASSIGNED);
+        await selfAssignReport(report.id, DEFAULT_STAFF.tosm_RSTLO.username);
+
+        const updatedReport = await addMessageToReport(
+            report.id,
+            DEFAULT_STAFF.tosm_RSTLO.username,
+            "STAFF",
+            message1,
+            false
+        );
+
+        expect(updatedReport).toBeDefined();
+        expect(updatedReport.title).toBe("Report for TOSM Message Retrieval");
+        expect(updatedReport.messages).toHaveLength(1);
+        expect(updatedReport.messages![0].message).toBe(message1);
+    });
+
+    it("should add a private message to report from TOSM", async () => {
+        const citizen = await TestDataManager.getCitizen('citizen1');
+        const report = await reportRepo.create(
+            citizen,
+            "Report for TOSM Message Retrieval",
+            "Description",
+            OfficeCategory.RSTLO,
+            45.0,
+            7.0,
+            false,
+            "/img.jpg"
+            );
+
+        const message1 = "Private message from TOSM.";
+
+        await updateReportAsMPRO(report.id, Status.ASSIGNED);
+        await selfAssignReport(report.id, DEFAULT_STAFF.tosm_RSTLO.username);
+
+        const updatedReport = await addMessageToReport(
+            report.id,
+            DEFAULT_STAFF.tosm_RSTLO.username,
+            "STAFF",
+            message1,
+            true
+        );
+
+        expect(updatedReport).toBeDefined();
+        expect(updatedReport.title).toBe("Report for TOSM Message Retrieval");
+        expect(updatedReport.messages).toHaveLength(1);
+        expect(updatedReport.messages![0].message).toBe(message1);
+    });
+
+    it("should add a message to report from EM", async () => {
+        const citizen = await TestDataManager.getCitizen('citizen1');
+        const report = await reportRepo.create(
+            citizen,
+            "Report for EM Message Retrieval",
+            "Description",
+            OfficeCategory.RSTLO,
+            45.0,
+            7.0,
+            false,
+            "/img.jpg"
+            );
+
+        const message1 = "Private message from EM.";
+
+        await updateReportAsMPRO(report.id, Status.ASSIGNED);
+        await selfAssignReport(report.id, DEFAULT_STAFF.tosm_RSTLO.username);
+        await assignReportToEM(report.id, DEFAULT_STAFF.em_RSTLO.username, DEFAULT_STAFF.tosm_RSTLO.username);
+
+        const updatedReport = await addMessageToReport(
+            report.id,
+            DEFAULT_STAFF.em_RSTLO.username,
+            "STAFF",
+            message1,
+            true
+        );
+
+        expect(updatedReport).toBeDefined();
+        expect(updatedReport.title).toBe("Report for EM Message Retrieval");
+        expect(updatedReport.messages).toHaveLength(1);
+        expect(updatedReport.messages![0].message).toBe(message1);
+    });
+
+    it("should throw BadRequestError when TOSM tries to add message to unassigned report", async () => {
+        const citizen = await TestDataManager.getCitizen('citizen1');
+        const report = await reportRepo.create(
+            citizen,
+            "Report for TOSM Unassigned Message Test",
+            "Description",
+            OfficeCategory.RSTLO,
+            45.0,
+            7.0,
+            false,
+            "/img.jpg"
+        );
+        const message1 = "Message from unassigned TOSM.";
+
+        await expect(
+            addMessageToReport(
+                report.id,
+                DEFAULT_STAFF.em_RSTLO.username,
+                "STAFF",
+                message1,
+                true
+            )
+        ).rejects.toThrow(BadRequestError);
+
+    });
+
+    it("should throw BadRequestError when EM is not assigned to the report", async () => {
+        const citizen = await TestDataManager.getCitizen('citizen1');
+        const report = await reportRepo.create(
+            citizen,
+            "Report for EM Unassigned Message Test",
+            "Description",
+            OfficeCategory.RSTLO,
+            45.0,
+            7.0,
+            false,
+            "/img.jpg"
+        );
+
+        await updateReportAsMPRO(report.id, Status.ASSIGNED);
+        await selfAssignReport(report.id, DEFAULT_STAFF.tosm_RSTLO.username);
+
+        const message1 = "Message from unassigned EM.";
+        await expect(
+            addMessageToReport(
+                report.id,
+                DEFAULT_STAFF.em_RSTLO.username,
+                "STAFF",
+                message1,
+                true
+            )
+        ).rejects.toThrow(BadRequestError);
+    });
+
+    it("should get all messages", async () => {
+        const citizen = await TestDataManager.getCitizen('citizen1');
+        const report = await reportRepo.create(
+            citizen,
+            "Report for EM Message Retrieval",
+            "Description",
+            OfficeCategory.RSTLO,
+            45.0,
+            7.0,
+            false,
+            "/img.jpg"
+            );
+
+        const message1 = "Public message from TOSM.";
+        const message2 = "Private message from TOSM.";
+
+        await updateReportAsMPRO(report.id, Status.ASSIGNED);
+        await selfAssignReport(report.id, DEFAULT_STAFF.tosm_RSTLO.username);
+
+        await addMessageToReport(
+            report.id,
+            DEFAULT_STAFF.tosm_RSTLO.username,
+            "STAFF",
+            message1,
+            false
+        );
+
+        await addMessageToReport(
+            report.id,
+            DEFAULT_STAFF.tosm_RSTLO.username,
+            "STAFF",
+            message2,
+            false
+        );
+
+        const messages = await getAllMessages(report.id, "STAFF");
+
+        expect(messages).toHaveLength(2);
+    });
+
+    it("should throw NotFoundError when getting messages for non-existent report", async () => {    
+        await expect(
+            getAllMessages(99999, "STAFF")
+        ).rejects.toThrow(NotFoundError);
+    });
+        
+
 });
