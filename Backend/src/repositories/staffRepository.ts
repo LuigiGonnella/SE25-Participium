@@ -7,8 +7,8 @@ import {OfficeCategory, OfficeDAO} from "@dao/officeDAO";
 import {BadRequestError} from "@errors/BadRequestError";
 
 export class StaffRepository {
-    private repo: Repository<StaffDAO>;
-    private officeRepo: Repository<OfficeDAO>;
+    private readonly repo: Repository<StaffDAO>;
+    private readonly officeRepo: Repository<OfficeDAO>;
 
     constructor() {
         this.repo = AppDataSource.getRepository(StaffDAO);
@@ -109,10 +109,10 @@ export class StaffRepository {
         // TOSM and EM for each office
         for (const office of await this.officeRepo.find({ where: { category: Not(OfficeCategory.MOO) }} )) {
             const key = Object.keys(OfficeCategory).find(c => OfficeCategory[c as keyof typeof OfficeCategory] === office.category);
-            if (!office.isExternal) {
-                await this.createDefaultTOSMForOffice(office, key);
-            } else {
+            if (office.isExternal) {
                 await this.createDefaultEMForOffice(office, key);
+            } else {
+                await this.createDefaultTOSMForOffice(office, key);
             }
         }
     }
@@ -123,8 +123,8 @@ export class StaffRepository {
             return await this.repo.find(
                 {
                     where: {
-                        ...(isExternal !== undefined ? { role: StaffRole.EM } : {}),
-                        ...(category !== undefined ? { offices: { category } } : {})
+                        ...(isExternal === undefined ? {} : {role: StaffRole.EM}),
+                        ...(category === undefined ? {} : {offices: {category}})
                     },
                     relations: ["offices"]
                 }
@@ -186,8 +186,8 @@ export class StaffRepository {
         });
     
         if (offices.length !== officeNames.length) {
-            const found = offices.map(o => o.name);
-            const missing = officeNames.filter(n => !found.includes(n));
+            const found = new Set(offices.map(o => o.name));
+            const missing = officeNames.filter(n => !found.has(n));
             throw new BadRequestError(`Offices not found: ${missing.join(", ")}`);
         }
         
@@ -218,8 +218,8 @@ export class StaffRepository {
         });
 
         if (offices.length !== officeNames.length) {
-            const foundNames = offices.map(o => o.name);
-            const missing = officeNames.filter(n => !foundNames.includes(n));
+            const foundNames = new Set(offices.map(o => o.name));
+            const missing = officeNames.filter(n => !foundNames.has(n));
             throw new BadRequestError(`Offices not found: ${missing.join(", ")}`);
         }
 

@@ -24,7 +24,7 @@ export function throwConflictIfFound<T>(
   predicate: (item: T) => boolean,
   errorMessage: string
 ): void {
-  if (array.find(predicate)) {
+  if (array.some(predicate)) {
     throw new ConflictError(errorMessage);
   }
 }
@@ -78,6 +78,16 @@ export function validateOfficeCategory(category: string): OfficeCategory {
         throw new BadRequestError("Invalid office category.");
     }
     return OfficeCategory[categoryValue as keyof typeof OfficeCategory];
+}
+
+export function validateIsExternal(isExternalParam: string | undefined): boolean | undefined {
+    if (isExternalParam === "true") {
+        return true;
+    } else if (isExternalParam === "false") {
+        return false;
+    } else {
+        return undefined;
+    }
 }
 
 export function validateReportId(reportId: unknown): number {

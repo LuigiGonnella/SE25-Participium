@@ -21,9 +21,9 @@ export interface ReportFilters {
 }
 
 export class ReportRepository {
-    private repo: Repository<ReportDAO>;
-    private staffRepo: Repository<StaffDAO>;
-    private notificationRepo: NotificationRepository;
+    private readonly repo: Repository<ReportDAO>;
+    private readonly staffRepo: Repository<StaffDAO>;
+    private readonly notificationRepo: NotificationRepository;
 
     constructor() {
         this.repo = AppDataSource.getRepository(ReportDAO);
@@ -215,7 +215,7 @@ export class ReportRepository {
             `Report with id '${reportId}' not found`
         );
 
-        if(!reportToUpdate.assignedStaff || reportToUpdate.assignedStaff.username !== staffUsername)
+        if(reportToUpdate.assignedStaff?.username !== staffUsername)
             throw new BadRequestError(`This report is not assigned to you.`);
 
         if(reportToUpdate.status !== Status.ASSIGNED)
@@ -249,7 +249,7 @@ export class ReportRepository {
 
         if (reportToUpdate.assignedEM)
             throw new BadRequestError(`Report is assigned to EM '${reportToUpdate.assignedEM.username}'`);
-        if(!reportToUpdate.assignedStaff || reportToUpdate.assignedStaff.username !== staffUsername)
+        if(reportToUpdate.assignedStaff?.username !== staffUsername)
             throw new BadRequestError(`This report is not assigned to you.`);
 
         const updateData: any = {
@@ -281,7 +281,7 @@ export class ReportRepository {
 
         if(!reportToUpdate.assignedStaff)
             throw new BadRequestError(`Report is not assigned to a TOSM yet.`);
-        if(!reportToUpdate.assignedEM || reportToUpdate.assignedEM.username !== staffUsername)
+        if(reportToUpdate.assignedEM?.username !== staffUsername)
             throw new BadRequestError(`This report is not assigned to you.`);
 
         const updateData: any = {

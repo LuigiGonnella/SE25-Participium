@@ -1,12 +1,13 @@
 import { Request, Response } from "express";
 import { OfficeRepository } from "@repositories/officeRepository";
+import {validateIsExternal} from "@utils";
 
 export class OfficeController {
 
   static async getAllOffices(req: Request, res: Response) {
     try {
       const isExternalParam = req.query.isExternal?.toString().toLowerCase();
-      const isExternal = isExternalParam === "true" ? true : (isExternalParam === "false" ? false : undefined);
+      const isExternal = validateIsExternal(isExternalParam);
       const officeRepo = new OfficeRepository();
       const offices = await officeRepo.getAllOffices(isExternal);
       return res.status(200).json(offices);

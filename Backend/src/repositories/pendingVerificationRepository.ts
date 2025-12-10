@@ -8,8 +8,8 @@ import { getDigitalCode } from 'node-verification-code';
 import {ConflictError} from "@errors/ConflictError";
 
 export class PendingVerificationRepository {
-    private repo: Repository<PendingVerificationDAO>;
-    private citizenRepo: Repository<CitizenDAO>;
+    private readonly repo: Repository<PendingVerificationDAO>;
+    private readonly citizenRepo: Repository<CitizenDAO>;
 
     constructor() {
         this.repo = AppDataSource.getRepository(PendingVerificationDAO);

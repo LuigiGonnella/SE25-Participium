@@ -1,8 +1,8 @@
 import { CitizenRepository } from "@repositories/citizenRepository";
 import bcrypt from 'bcrypt';
 import multer from 'multer';
-import path from 'path';
-import fs from 'fs';
+import path from 'node:path';
+import fs from 'node:fs';
 import {mapCitizenDAOToDTO, mapStaffDAOToDTO} from "@services/mapperService";
 import { StaffRole } from '@models/dao/staffDAO';
 import { StaffRepository } from "@repositories/staffRepository";
@@ -191,7 +191,7 @@ export async function createTelegramVerification(user: Citizen, username: string
 }
 
 export async function verifyTelegramUser(username: string, code: string): Promise<void> {
-    if (!username || !username.trim()) {
+    if (!username?.trim()) {
         throw new BadRequestError('Invalid or missing telegram username');
     }
     const pvRepo = new PendingVerificationRepository();
@@ -199,7 +199,7 @@ export async function verifyTelegramUser(username: string, code: string): Promis
 }
 
 export async function verifyEmailUser(code: string): Promise<void> {
-    if (!code || !code.trim()) {
+    if (!code?.trim()) {
         throw new BadRequestError('Invalid or missing verification code');
     }
     const pvRepo = new PendingVerificationRepository();
