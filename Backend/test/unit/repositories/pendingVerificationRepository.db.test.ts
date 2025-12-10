@@ -179,7 +179,7 @@ describe("PendingVerificationRepository (DB)", () => {
         expiresAt: new Date(Date.now() + 10 * 60 * 1000),
       });
 
-      await repo.verifyPendingVerification(citizen.username, code, "telegram");
+      await repo.verifyPendingVerification("@verified_user", code, "telegram");
 
       const updatedCitizen = await citizenRepo.findOneBy({ id: citizen.id });
       const remainingPvs = await pvRepo.find({ where: { citizenId: citizen.id, type: "telegram" } });
