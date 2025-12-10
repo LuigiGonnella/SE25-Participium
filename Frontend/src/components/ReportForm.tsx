@@ -245,6 +245,8 @@ const ReportForm = ({ coordinates, street, toggleReportView }: ReportFormProps) 
                             <Col md={7}>
                                 <Form.Group className="mb-3">
                                     <Form.Label>Coordinates&nbsp;{coordinates && <span>({convertToDMS(coordinates.lat, true)} - {convertToDMS(coordinates.lng,false)})</span>}</Form.Label>
+                                    <div className="position-relative justify-content-center" style={{cursor: 'not-allowed'}}>
+                                        <i title="Auto-generated" className="bi bi-lock-fill position-absolute end-0 me-2 mt-2"/>
                                         <Form.Control
                                             readOnly
                                             type="text"
@@ -252,7 +254,9 @@ const ReportForm = ({ coordinates, street, toggleReportView }: ReportFormProps) 
                                             value={street}
                                             placeholder="Street Name"
                                             required
+                                            disabled
                                         />
+                                    </div>
                                     {validated && (!formData.latitude || !formData.longitude || isNaN(parseFloat(formData.latitude)) || isNaN(parseFloat(formData.longitude))) &&
                                         <Form.Control.Feedback type="invalid" className="d-block">
                                         Please select a point on the map.
