@@ -15,7 +15,7 @@ function EmailVerificationPage() {
         setError(null);
         setLoading(true);
 
-        if (!code || code.trim().length !== 6) {
+        if (code?.trim().length !== 6) {
             setError('Please enter a valid 6-digit verification code');
             setLoading(false);
             return;

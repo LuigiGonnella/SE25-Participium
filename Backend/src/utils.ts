@@ -4,6 +4,8 @@ import {StaffRole} from "@dao/staffDAO";
 import {Status} from "@dao/reportDAO";
 import {BadRequestError} from "@errors/BadRequestError";
 import {OfficeCategory} from "@dao/officeDAO";
+import turinBoundary from './data/turinBoundary.json';
+import * as turf from '@turf/turf';
 
 export function findOrThrowNotFound<T>(
   array: T[],
@@ -80,7 +82,7 @@ export function validateOfficeCategory(category: string): OfficeCategory {
 
 export function validateReportId(reportId: unknown): number {
     const id = Number(reportId);
-    if (isNaN(id) || !Number.isInteger(id) || id <= 0) {
+    if (Number.isNaN(id) || !Number.isInteger(id) || id <= 0) {
         throw new BadRequestError("Invalid reportId.");
     }
     return id;
@@ -88,8 +90,20 @@ export function validateReportId(reportId: unknown): number {
 
 export function validateDate(dateStr: unknown, fieldName: string): Date {
     const date = new Date(String(dateStr));
-    if (isNaN(date.getTime())) {
+    if (Number.isNaN(date.getTime())) {
         throw new BadRequestError(`Invalid ${fieldName} format.`);
     }
     return date;
+}
+
+export function isWithinTurin(lat: number, lon: number): boolean {
+    try {
+        const turinPolygon = turf.multiPolygon(turinBoundary.coordinates).geometry;
+        const point = turf.point([lon, lat]);
+
+        return turf.booleanPointInPolygon(point, turinPolygon);
+    } catch (error) {
+        console.error("Error checking Turin boundaries:", error);
+        return false;
+    }
 }
