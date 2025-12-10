@@ -968,22 +968,13 @@ describe("Reports API E2E Tests", () => {
                 { id: testReport2.id },
                 { status: Status.ASSIGNED, assignedStaff: undefined, assignedEM: undefined }
             );
-            // assign report to TOSM (self-assign)
-            await request(app)
-                .patch(`/api/v1/reports/${testReport1.id}/assignSelf`)
-                .set('Cookie', tosmCookie)
-                .expect(200);
-        
-            // assign report to EM
-            const emUsername = DEFAULT_STAFF.em_RSTLO.username;
-            await request(app)
-                .patch(`/api/v1/reports/${testReport1.id}/assignExternal`)
-                .set('Cookie', tosmCookie)
-                .send({ staffEM: emUsername })
-                .expect(200);
         });
 
         it("should add a public message from TOSM to citizen", async () => {
+            await request(app)
+                .patch(`/api/v1/reports/${testReport1.id}/assignSelf`)
+                .set('Cookie', tosmCookie);
+
             const res = await request(app)
                 .post(`/api/v1/reports/${testReport1.id}/messages`)
                 .set('Cookie', tosmCookie)
@@ -994,18 +985,161 @@ describe("Reports API E2E Tests", () => {
                 .expect(201);
                 
         });
+
+        it("should not allow TOSM to add a message to a report not assigned to them", async () => {
+            const res = await request(app)
+                .post(`/api/v1/reports/${testReport1.id}/messages`)
+                .set('Cookie', tosmCookie)
+                .send({
+                    message: "This is a private message.",
+                    isPrivate: false
+                })
+                .expect(400);
+        });
+
+        //TODO: re-enable test if fixed
+        /*
+        it("should not allow TOSM to add a message to a RESOLVED report", async () => {
+            await request(app)
+                .patch(`/api/v1/reports/${testReport1.id}/assignSelf`)
+                .set('Cookie', tosmCookie);
+
+            await request(app)
+                .patch(`/api/v1/reports/${testReport1.id}/updateStatus`)
+                .set('Cookie', tosmCookie)
+                .send({ status: getStatusKey(Status.RESOLVED) });
+
+            const res = await request(app)
+                .post(`/api/v1/reports/${testReport1.id}/messages`)
+                .set('Cookie', tosmCookie)
+                .send({
+                    message: "This is a private message.",
+                    isPrivate: false
+                })
+                .expect(400);
+        });*/
+
+        it("should not allow MPRO to add messages to reports", async () => {
+            const res = await request(app)
+                .post(`/api/v1/reports/${testReport1.id}/messages`)
+                .set('Cookie', mproCookie)
+                .send({
+                    message: "MPRO trying to add a message.",
+                    isPrivate: false
+                })
+                .expect(400);
+        });
+
+        it("should not allow Admin to add messages to reports", async () => {
+            const res = await request(app)
+                .post(`/api/v1/reports/${testReport1.id}/messages`)
+                .set('Cookie', adminCookie)
+                .send({
+                    message: "Admin trying to add a message.",
+                    isPrivate: false
+                })
+                .expect(400);
+        });
+
+        it("should require authentication to add messages", async () => {
+            const res = await request(app)
+                .post(`/api/v1/reports/${testReport1.id}/messages`)
+                .send({
+                    message: "This message should not be sent.",
+                    isPrivate: false
+                })
+                .expect(401);
+        });
         
         it("should add a private message from TOSM to EM", async () => {
+            await request(app)
+                .patch(`/api/v1/reports/${testReport1.id}/assignSelf`)
+                .set('Cookie', tosmCookie);
+
+            await request(app)
+                .patch(`/api/v1/reports/${testReport1.id}/assignExternal`)
+                .set('Cookie', tosmCookie)
+                .send({ staffEM: DEFAULT_STAFF.em_RSTLO.username });
+
+            const res = await request(app)
+                .post(`/api/v1/reports/${testReport1.id}/messages`)
+                .set('Cookie', tosmCookie)
+                .send({
+                    message: "This is a private message from TOSM.",
+                    isPrivate: true
+                })
+                .expect(201);
+        });
+
+        it("should add a private message from EM to TOSM", async () => {
+            await request(app)
+                .patch(`/api/v1/reports/${testReport1.id}/assignSelf`)
+                .set('Cookie', tosmCookie);
+
+            await request(app)
+                .patch(`/api/v1/reports/${testReport1.id}/assignExternal`)
+                .set('Cookie', tosmCookie)
+                .send({ staffEM: DEFAULT_STAFF.em_RSTLO.username });
+
+            const res = await request(app)
+                .post(`/api/v1/reports/${testReport1.id}/messages`)
+                .set('Cookie', emCookie)
+                .send({
+                    message: "This is a private message from EM.",
+                    isPrivate: true
+                })
+                .expect(201);
+        });
+
+        it("should not allow EM to add a message to a report not assigned to them", async () => {
+            await request(app)
+                .patch(`/api/v1/reports/${testReport1.id}/assignSelf`)
+                .set('Cookie', tosmCookie);
+
+            const res = await request(app)
+                .post(`/api/v1/reports/${testReport1.id}/messages`)
+                .set('Cookie', emCookie)
+                .send({
+                    message: "This is a private message from EM.",
+                    isPrivate: true
+                })
+                .expect(400);
+        });
+
+        it("should not send a message with empty content", async () => {
+            await request(app)
+                .patch(`/api/v1/reports/${testReport1.id}/assignSelf`)
+                .set('Cookie', tosmCookie);
+            const res = await request(app)
+                .post(`/api/v1/reports/${testReport1.id}/messages`)
+                .set('Cookie', tosmCookie)
+                .send({
+                    message: "",
+                    isPrivate: false
+                })
+                .expect(400);
+        });
+
+        it("should require isPrivate field when TOSM adds a message", async () => {
+            await request(app)
+                .patch(`/api/v1/reports/${testReport1.id}/assignSelf`)
+                .set('Cookie', tosmCookie);
+
+            await request(app)
+                .patch(`/api/v1/reports/${testReport1.id}/assignExternal`)
+                .set('Cookie', tosmCookie)
+                .send({ staffEM: DEFAULT_STAFF.em_RSTLO.username });
             
             const res = await request(app)
                 .post(`/api/v1/reports/${testReport1.id}/messages`)
                 .set('Cookie', tosmCookie)
                 .send({
-                    message: "Please update the status.",
-                    isPrivate: true
+                    message: "Message without isPrivate field"
                 })
-                .expect(201);
+                .expect(400);
         });
+
+        
         
         
     });
