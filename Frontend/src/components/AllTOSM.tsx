@@ -192,12 +192,12 @@ function AdminTOSMPage() {
                             variant="secondary"
                             disabled={
                                 officeNames.length === 0 ||
-                                officeNames[officeNames.length - 1] === ""
+                                officeNames.at(-1) === ""
                             }
                             onClick={() => {
                                 if (
                                     officeNames.length === 0 ||
-                                    officeNames[officeNames.length - 1] === ""
+                                    officeNames.at(-1) === ""
                                 ) return;
 
                                 setOfficeNames(prev => [...prev, ""]);

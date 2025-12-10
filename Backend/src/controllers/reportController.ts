@@ -4,8 +4,8 @@ import {NotFoundError} from "@errors/NotFoundError";
 import {BadRequestError} from "@errors/BadRequestError";
 import {ReportDAO, Status} from "@dao/reportDAO";
 import multer from "multer";
-import fs from "fs";
-import path from "path";
+import fs from "node:fs";
+import path from "node:path";
 import {mapMessageToDTO, mapReportDAOToDTO} from "@services/mapperService";
 import {Report} from "@models/dto/Report";
 import {OfficeCategory} from "@models/dao/officeDAO";
@@ -79,8 +79,8 @@ export async function createReport(body: any, citizen: string, photos: Express.M
     const photo3 = photos[2] ? `/uploads/reports/${photos[2].filename}` : undefined;
 
     const isAnonymous = anonymous === 'true' || anonymous === true;
-    const lat = parseFloat(latitude);
-    const lon = parseFloat(longitude);
+    const lat = Number.parseFloat(latitude);
+    const lon = Number.parseFloat(longitude);
 
     if (!isWithinTurin(lat, lon)) {
         throw new BadRequestError("Report location must be within Turin city boundaries");

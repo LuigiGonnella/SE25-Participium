@@ -8,7 +8,7 @@ interface CitizenProfileProps {
     user: Citizen;
 }
 
-export default function CitizenProfile({ user }: CitizenProfileProps) {
+export default function CitizenProfile({ user }: Readonly<CitizenProfileProps>) {
     const [telegramUsername, setTelegramUsername] = useState(user.telegram_username ? "@" + user.telegram_username : "");
     const [receiveEmails, setReceiveEmails] = useState(user.receive_emails);
     const [profilePic, setProfilePic] = useState<string | null>(null);

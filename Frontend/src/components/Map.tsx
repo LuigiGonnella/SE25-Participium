@@ -108,7 +108,7 @@ function MapClickHandler({ holes, setCoordinates, newReportMode, selectedReport}
     return null;
 }
 
-export default function TurinMaskedMap({isLoggedIn, user}: MapProps) {
+export default function TurinMaskedMap({isLoggedIn, user}: Readonly<MapProps>) {
     const [searchParams, setSearchParams] = useSearchParams();
     const [isLoaded, setIsLoaded] = useState<boolean>(false);
     const [newReportMode, setNewReportMode] = useState<boolean>(false);
@@ -176,7 +176,7 @@ export default function TurinMaskedMap({isLoggedIn, user}: MapProps) {
     useEffect(() => {
         const reportIdParam = searchParams.get('reportId');
         if (reportIdParam && reports.length > 0) {
-            const reportId = parseInt(reportIdParam);
+            const reportId = Number.parseInt(reportIdParam);
             const report = reports.find(r => r.id === reportId);
             if (report) {
                 setSelectedReport(report);
@@ -271,8 +271,7 @@ export default function TurinMaskedMap({isLoggedIn, user}: MapProps) {
                         style={{zIndex: 1000}}
                         onClick={() => { setNewReportMode(true); setSelectedReport(undefined); }}
                     >
-                        <i className="bi bi-plus-lg">&nbsp;</i>
-                        New Report
+                        <i className="bi bi-plus-lg">&nbsp;</i>New Report
                     </Button>
                 )}
             </Col>
@@ -315,7 +314,7 @@ interface ClusterMarkersProps {
     setNewReportMode: (mode: boolean) => void;
 }
 
-function ClusterMarkers({reports, selectedReport, setSelectedReport, setNewReportMode}: ClusterMarkersProps) {
+function ClusterMarkers({reports, selectedReport, setSelectedReport, setNewReportMode}: Readonly<ClusterMarkersProps>) {
 
     const [bounds, setBounds] = useState<[number, number, number, number] | undefined>(undefined);
     const [zoom, setZoom] = useState<number>(12);

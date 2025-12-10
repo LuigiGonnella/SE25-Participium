@@ -6,7 +6,7 @@ interface StaffProfileProps {
     user: Staff;
 }
 
-export default function StaffProfile({ user }: StaffProfileProps) {
+export default function StaffProfile({ user }: Readonly<StaffProfileProps>) {
 
     return (
         <div className="container py-4">

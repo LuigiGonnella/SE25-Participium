@@ -1,9 +1,8 @@
 import { Card, Container } from "react-bootstrap";
 import type { Report, Message } from "../models/Models";
 import { useEffect, useState } from "react";
-import { STATIC_URL } from "../API/API.mts";
-import API from "../API/API.mts";
-import {getReportStatusColor} from "../utils/reportUtils.ts";
+import API, {STATIC_URL} from "../API/API.mts";
+import {convertToDMS, getReportStatusColor} from "../utils/reportUtils.ts";
 
 interface ReportDetailsPanelProps {
     report: Report;
@@ -29,21 +28,7 @@ async function getStreetName(selectedCoordinates: number[]): Promise<string> {
     return "Unnamed street";
 }
 
-const convertToDMS = (decimal: number, isLatitude: boolean): string => {
-    const absolute = Math.abs(decimal);
-    const degrees = Math.floor(absolute);
-    const minutesDecimal = (absolute - degrees) * 60;
-    const minutes = Math.floor(minutesDecimal);
-    const seconds = Math.round((minutesDecimal - minutes) * 60 * 10) / 10;
-
-    const direction = isLatitude
-        ? (decimal >= 0 ? 'N' : 'S')
-        : (decimal >= 0 ? 'E' : 'W');
-
-    return `${degrees}°${minutes.toString().padStart(2, '0')}'${seconds.toFixed(1)}" ${direction}`;
-};
-
-export default function ReportDetailsPanel({ report, onClose }: ReportDetailsPanelProps) {
+export default function ReportDetailsPanel({ report, onClose }: Readonly<ReportDetailsPanelProps>) {
 
     const [streetName, setStreetName] = useState<string>("");
     const [messages, setMessages] = useState<Message[]>([]);
@@ -76,8 +61,7 @@ export default function ReportDetailsPanel({ report, onClose }: ReportDetailsPan
             <Card className="h-100 d-flex flex-column">
 
                 <Card.Header as="h3">
-                    Report Details 
-                    <i role="button" onClick={onClose} className="bi bi-x float-end"></i>
+                    Report Details<i role="button" onClick={onClose} className="bi bi-x float-end"></i>
                 </Card.Header>
 
                 <Card.Body className="flex-grow-1 overflow-auto">
@@ -113,7 +97,7 @@ export default function ReportDetailsPanel({ report, onClose }: ReportDetailsPan
                                         alt={"img_"+index}
                                         src={STATIC_URL + photo}
                                         style={{ width: "100px", height: "100px", objectFit: "cover", borderRadius: "4px" }}
-                                        key={index} />
+                                        key={`${photo}-${index}`} />
                                 ))
                             }
                         </div>

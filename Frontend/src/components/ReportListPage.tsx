@@ -11,7 +11,7 @@ interface ReportListProps {
     user: User;
 }
 
-export default function ReportListPage({ user }: ReportListProps) {
+export default function ReportListPage({ user }: Readonly<ReportListProps>) {
     const [reports, setReports] = useState<Report[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string>();
@@ -273,16 +273,7 @@ export default function ReportListPage({ user }: ReportListProps) {
                                                     )}
                                                     {canAssignToEM(r) && (
                                                         <>
-                                                            {(assigningToMaintainer !== r.id) ? (
-                                                                <Button
-                                                                    variant="secondary"
-                                                                    size="sm"
-                                                                    onClick={() => selectExternalCategory(r)}
-                                                                    disabled={assigningToMaintainer === r.id}
-                                                                    className="w-100"
-                                                                >Assign to External Maintainer
-                                                                </Button>
-                                                            ) : (
+                                                            {(assigningToMaintainer === r.id) ? (
                                                                 <div className="d-flex flex-column gap-2">
                                                                     <select
                                                                         className="form-select form-select-sm"
@@ -291,7 +282,7 @@ export default function ReportListPage({ user }: ReportListProps) {
                                                                     >
                                                                         <option value="">Unregistered EM</option>
                                                                         {EMlist.map((em) => (
-                                                                            <option key={em.username} value={em.username}>{em.name} ({em.username})</option>
+                                                                            <option key={em.username} value={em.username}>{em.name} {em.surname} ({em.username})</option>
                                                                         ))}
                                                                     </select>
                                                                     <Button
@@ -302,6 +293,15 @@ export default function ReportListPage({ user }: ReportListProps) {
                                                                     >Assign
                                                                     </Button>
                                                                 </div>
+                                                            ) : (
+                                                                <Button
+                                                                    variant="secondary"
+                                                                    size="sm"
+                                                                    onClick={() => selectExternalCategory(r)}
+                                                                    disabled={assigningToMaintainer === r.id}
+                                                                    className="w-100"
+                                                                >Assign to External Maintainer
+                                                                </Button>
                                                             )}
                                                         </>
                                                     )}

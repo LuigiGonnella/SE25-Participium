@@ -20,7 +20,7 @@ interface ReportDetailPageProps {
   user?: User;
 }
 
-export default function ReportDetailPage({ user }: ReportDetailPageProps) {
+export default function ReportDetailPage({ user }: Readonly<ReportDetailPageProps>) {
   const { id } = useParams();
   const [report, setReport] = useState<Report | null>(null);
   const [loading, setLoading] = useState(true);
@@ -65,7 +65,7 @@ export default function ReportDetailPage({ user }: ReportDetailPageProps) {
           setLoadingMessages(false);
         }
 
-        if (data.coordinates && data.coordinates.length === 2) {
+        if (data.coordinates?.length === 2) {
           const [lat, lng] = data.coordinates;
           try {
             const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`;
@@ -261,7 +261,7 @@ return (
                                 <h5>Photos</h5>
                                 <Carousel type="landscape">
                                     {report.photos.map((photo, index) => (
-                                        <CarouselSlide key={index}>
+                                        <CarouselSlide key={`${photo}-${index}`}>
                                             <Card className="pb-0" rounded shadow="sm">
                                                 <div
                                                     style={{
@@ -302,7 +302,7 @@ return (
                                             >
                                                 <option value="">Select new status...</option>
                                                 {Object.entries(ReportStatus).filter(s => s[1] !== report.status && ["IN_PROGRESS", "SUSPENDED", "RESOLVED"].includes(s[0])).map(([key, value]) => (
-                                                    <option value={key}>{value}</option>
+                                                    <option key={key} value={key}>{value}</option>
                                                 ))}
                                             </Form.Select>
                                         </Form.Group>
@@ -568,20 +568,19 @@ return (
                                 <form onSubmit={handleUpdate}>
                                     <div className="mb-3">
                                         <label className="form-label fw-bold">
-                                            Category
-                                        </label>
-                                        <select
-                                            className="form-select"
-                                            value={categoryInput}
-                                            onChange={(e) => setCategoryInput(e.target.value)}
-                                        >
-                                            <option value="">Keep current: {report.category}</option>
-                                            {categoryOptions
-                                                .filter(([key]) => ![report.category, OfficeCategory.MOO].includes(OfficeCategory[key as keyof typeof OfficeCategory]))
-                                                .map(([key, label]) => (
-                                                    <option key={key} value={key}>{label}</option>
-                                                ))}
-                                        </select>
+                                            Category<select
+                                                className="form-select border rounded mt-1"
+                                                value={categoryInput}
+                                                onChange={(e) => setCategoryInput(e.target.value)}
+                                            >
+                                                <option value="">Keep current: {report.category}</option>
+                                                {categoryOptions
+                                                    .filter(([key]) => ![report.category, OfficeCategory.MOO].includes(OfficeCategory[key as keyof typeof OfficeCategory]))
+                                                    .map(([key, label]) => (
+                                                        <option key={key} value={key}>{label}</option>
+                                                    ))}
+                                            </select>
+                                        </label><br/>
                                         <small className="text-muted">
                                             Change category if needed before assignment.
                                         </small>
@@ -603,17 +602,17 @@ return (
                             {statusInput === ReportStatus.REJECTED && (
                                 <form onSubmit={handleUpdate}>
                                     <div className="mb-3">
-                                        <label className="form-label fw-bold">
+                                        <label className="form-label fw-bold w-100">
                                             Reason <span className="text-danger">*</span>
-                                        </label>
-                                        <textarea
-                                            className="form-control"
-                                            rows={4}
-                                            value={commentInput}
-                                            onChange={(e) => setCommentInput(e.target.value)}
-                                            required
-                                            placeholder="Explain why this report is being rejected."
-                                        />
+                                            <textarea
+                                                className="form-control mt-1"
+                                                rows={4}
+                                                value={commentInput}
+                                                onChange={(e) => setCommentInput(e.target.value)}
+                                                required
+                                                placeholder="Explain why this report is being rejected."
+                                            />
+                                        </label><br/>
                                         <small className="text-muted">
                                             This comment will be visible to the citizen who submitted the report.
                                         </small>

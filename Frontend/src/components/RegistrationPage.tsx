@@ -12,7 +12,7 @@ interface RegistrationFormProps {
     handleStaffRegistration?: (newStaff: NewStaff) => Promise<void>;
 }
 
-function RegistrationForm({ handleRegistration }: RegistrationFormProps) {
+function RegistrationForm({ handleRegistration }: Readonly<RegistrationFormProps>) {
     interface FormData {
         name: string;
         surname: string;
@@ -99,7 +99,7 @@ function RegistrationForm({ handleRegistration }: RegistrationFormProps) {
             confirmPassword: true
         });
 
-        if (Object.values(errors).some(error => error)) {
+        if (Object.values(errors).some(Boolean)) {
             return;
         }
 
@@ -308,7 +308,7 @@ function RegistrationForm({ handleRegistration }: RegistrationFormProps) {
     );
 }
 
-function MunicipalityRegistrationForm({ handleStaffRegistration }: RegistrationFormProps) {
+function MunicipalityRegistrationForm({ handleStaffRegistration }: Readonly<RegistrationFormProps>) {
     interface FormData {
         name: string;
         surname: string;
@@ -464,7 +464,7 @@ function MunicipalityRegistrationForm({ handleStaffRegistration }: RegistrationF
             officeNames: true
         });
 
-        if (Object.values(errors).some(error => error)) return;
+        if (Object.values(errors).some(Boolean)) return;
 
         const newStaff: NewStaff = {
             name: formData.name,
@@ -639,9 +639,9 @@ function MunicipalityRegistrationForm({ handleStaffRegistration }: RegistrationF
                                                         <Form.Group className="mb-3" controlId={`formOffice${index}`}>
                                                             <Form.Label>
                                                                 { 
-                                                                    formData.role !== "TOSM"
-                                                                    ? "Office"
-                                                                    : `Office ${index + 1}`
+                                                                    formData.role === "TOSM"
+                                                                        ? `Office ${index + 1}`
+                                                                        : "Office"
                                                                 }
                                                             </Form.Label>
 
@@ -703,11 +703,11 @@ function MunicipalityRegistrationForm({ handleStaffRegistration }: RegistrationF
                                                 variant="secondary"
                                                 disabled={
                                                     formData.officeNames.length === 0 ||
-                                                    formData.officeNames[formData.officeNames.length - 1] === ""
+                                                    formData.officeNames.at(-1) === ""
                                                 }
                                                 onClick={() => {
                                                     // Add empty dropdown only if previous is filled
-                                                    if (formData.officeNames[formData.officeNames.length - 1] !== "") {
+                                                    if (formData.officeNames.at(-1) !== "") {
                                                         setFormData(prev => ({
                                                             ...prev,
                                                             officeNames: [...prev.officeNames, ""]

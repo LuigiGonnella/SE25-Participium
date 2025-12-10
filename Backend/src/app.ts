@@ -3,7 +3,7 @@ import swaggerUi from "swagger-ui-express";
 import { CONFIG } from "@config";
 import { errorHandler } from "@middlewares/errorMiddleware";
 import cors from "cors";
-import path from 'path';
+import path from 'node:path';
 import authenticationRouter from '@routes/authRoutes'
 import staffRouter from '@routes/staffRoutes';
 import citizenRouter from '@routes/citizenRoutes';

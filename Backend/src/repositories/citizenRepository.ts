@@ -6,7 +6,7 @@ import AppError from "@models/errors/AppError";
 import bcrypt from "bcrypt";
 
 export class CitizenRepository {
-    private repo: Repository<CitizenDAO>;
+    private readonly repo: Repository<CitizenDAO>;
 
     constructor() {
         this.repo = AppDataSource.getRepository(CitizenDAO);
@@ -25,7 +25,9 @@ export class CitizenRepository {
                 ]
             });
 
-            if (!existing) {
+            if (existing) {
+                console.log(`Default citizen ${username} already exists.`);
+            } else {
                 const newCitizen = this.repo.create({
                     email,
                     username,
@@ -36,8 +38,6 @@ export class CitizenRepository {
                 });
                 await this.repo.save(newCitizen);
                 console.log(`Default citizen ${username} created with password 'cit123'.`);
-            } else {
-                console.log(`Default citizen ${username} already exists.`);
             }
         }
     }

@@ -2,8 +2,8 @@ import type { Citizen as CitizenDTO } from "@models/dto/Citizen"
 import { CitizenRepository } from "@repositories/citizenRepository"
 import { mapCitizenDAOToDTO } from "@services/mapperService"
 import multer from "multer";
-import fs from "fs";
-import path from "path";
+import fs from "node:fs";
+import path from "node:path";
 import { BadRequestError } from "@errors/BadRequestError";
 import {NotFoundError} from "@errors/NotFoundError";
 

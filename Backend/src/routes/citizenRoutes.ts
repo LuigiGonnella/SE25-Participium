@@ -26,9 +26,9 @@ router.get('/', async (req, res, next) => {
 // GET /citizens/id/:id - get citizen by ID
 router.get('/id/:id', async (req, res, next) => {
     try {
-        const id = parseInt(req.params.id);
+        const id = Number.parseInt(req.params.id);
         // If id is not a valid number, return 400 Bad Request
-        if (isNaN(id)) {
+        if (Number.isNaN(id)) {
             return res.status(400).json({ error: 'Invalid ID parameter' });
         }
         const citizen = await getCitizenById(id);
@@ -83,7 +83,7 @@ router.patch('/:username', isAuthenticated(['CITIZEN']), uploadProfilePicture.si
         const { telegram_username, receive_emails } = req.body;
         
         // Handle profile picture from multer upload
-        const profilePictureFile = req.file as Express.Multer.File | undefined;
+        const profilePictureFile = req.file;
         const profilePicture = profilePictureFile 
             ? `/uploads/profiles/${profilePictureFile.filename}`
             : undefined;
