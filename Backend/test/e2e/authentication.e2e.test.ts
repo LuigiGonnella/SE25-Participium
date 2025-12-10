@@ -4,6 +4,8 @@ import { beforeAllE2e, afterAllE2e, beforeEachE2e, DEFAULT_CITIZENS } from "@tes
 import { TestDataSource } from "../setup/test-datasource";
 import { CitizenDAO } from "@dao/citizenDAO";
 import bcrypt from "bcrypt";
+import { PendingVerificationDAO } from "@models/dao/pendingVerificationDAO";
+import { PendingVerificationRepository } from "@repositories/pendingVerificationRepository";
 
 describe("Authentication API E2E Tests", () => {
     beforeAll(async () => {
@@ -357,6 +359,60 @@ describe("Authentication API E2E Tests", () => {
                 .get("/api/v1/auth/me");
 
             expect(res.status).toBeGreaterThanOrEqual(401);
+        });
+    });
+
+    describe("POST /api/v1/auth/verify-email - Email Verification", () => {
+
+        it("should return 400 when code is missing", async () => {
+            const res = await request(app)
+                .post("/api/v1/auth/verify-email")
+                .send({ code: "" });
+    
+            expect(res.status).toBe(400);
+            expect(res.body).toHaveProperty("error");
+        });
+    
+        it("should return 404 when code is invalid", async () => {
+            const res = await request(app)
+                .post("/api/v1/auth/verify-email")
+                .send({ code: "INVALID_CODE_123" });
+    
+            expect(res.status).toBe(404);
+            expect(res.body).toHaveProperty("message");
+            expect(res.body.message).toMatch(/invalid|expired/i);
+        });
+    
+        it("should verify email successfully", async () => {
+            const citizenRepo = TestDataSource.getRepository(CitizenDAO);
+            const pvRepo = TestDataSource.getRepository(PendingVerificationDAO);
+            const pendingRepo = new PendingVerificationRepository();
+        
+            const citizen = await citizenRepo.findOneBy({
+                username: DEFAULT_CITIZENS.citizen1.username
+            });
+        
+            expect(citizen).not.toBeNull();
+        
+            const pending = await pendingRepo.createPendingVerification(
+                citizen!,
+                "verified@example.com",
+                "email"
+            );
+        
+            const res = await request(app)
+                .post("/api/v1/auth/verify-email")
+                .send({ code: pending.verificationCode });
+        
+            expect(res.status).toBe(200);
+        
+            const updatedCitizen = await citizenRepo.findOneBy({ id: citizen!.id });
+            expect(updatedCitizen?.email).toBe("verified@example.com");
+        
+            const leftover = await pvRepo.find();
+            const stillExists = leftover.find(p => p.verificationCode === pending.verificationCode);
+        
+            expect(stillExists).toBeUndefined();
         });
     });
 });
