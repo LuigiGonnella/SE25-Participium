@@ -446,38 +446,41 @@ return (
                         <div className="flex-grow-1 d-flex flex-column">
                             {/* Messages Display */}
                             <div className="flex-grow-1 overflow-auto mb-3 border-bottom p-3" style={{maxHeight: "calc(70vh - 250px)", backgroundColor: "#fffbf0"}}>
-                                {loadingMessages ? (
-                                    <div className="text-center text-muted">Loading notes...</div>
-                                ) : messages.filter(msg => msg.isPrivate).length === 0 ? (
-                                    <div className="text-center text-muted">
-                                        No internal notes yet.
-                                    </div>
-                                ) : (
-                                    <div className="d-flex flex-column-reverse gap-2">
-                                        {messages.filter(msg => msg.isPrivate).map((msg, index) => (
-                                            <div key={index} className="d-flex flex-column p-3 rounded shadow-sm"
-                                                 style={{backgroundColor: "#fff3cd"}}>
-                                                <div className="d-flex justify-content-between align-items-center mb-2">
-                                                    <span className="fw-bold text-warning">
-                                                        <i className="bi bi-person-circle me-2"></i>
-                                                        {(isTOSM(user) && msg.staffUsername === user.username)
-                                                            || (isEM(user) && msg.staffUsername === user.username) ? (
-                                                            "You"
-                                                        ) : (
-                                                            `${msg.staffUsername}`
-                                                        )}
-                                                    </span>
-                                                    <span className="text-muted" style={{fontSize: "0.85rem"}}>
-                                                        {new Date(msg.timestamp).toLocaleString()}
-                                                    </span>
+                                {(() => {
+                                    if (loadingMessages) {
+                                        return <div className="text-center text-muted">Loading notes...</div>;
+                                    }
+                                    const privateMessages = messages.filter(msg => msg.isPrivate);
+                                    if (privateMessages.length === 0) {
+                                        return <div className="text-center text-muted">No internal notes yet.</div>;
+                                    }
+                                    return (
+                                        <div className="d-flex flex-column-reverse gap-2">
+                                            {privateMessages.map((msg, index) => (
+                                                <div key={`${msg.timestamp}-${index}`} className="d-flex flex-column p-3 rounded shadow-sm"
+                                                     style={{backgroundColor: "#fff3cd"}}>
+                                                    <div className="d-flex justify-content-between align-items-center mb-2">
+                                                        <span className="fw-bold text-warning">
+                                                            <i className="bi bi-person-circle me-2"></i>
+                                                            {(isTOSM(user) && msg.staffUsername === user.username)
+                                                                || (isEM(user) && msg.staffUsername === user.username) ? (
+                                                                "You"
+                                                            ) : (
+                                                                `${msg.staffUsername}`
+                                                            )}
+                                                        </span>
+                                                        <span className="text-muted" style={{fontSize: "0.85rem"}}>
+                                                            {new Date(msg.timestamp).toLocaleString()}
+                                                        </span>
+                                                    </div>
+                                                    <div className="ps-4" style={{ whiteSpace: "pre-line" }}>
+                                                        {msg.message}
+                                                    </div>
                                                 </div>
-                                                <div className="ps-4" style={{ whiteSpace: "pre-line" }}>
-                                                    {msg.message}
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
+                                            ))}
+                                        </div>
+                                    );
+                                })()}
                             </div>
 
                             {/* Message Input */}
