@@ -1,6 +1,6 @@
 import '../../setup/mockEmailService';
 import { Response, NextFunction } from 'express';
-import { login, register } from '@controllers/authController';
+import { login, register, verifyEmailUser } from '@controllers/authController';
 import { CitizenDAO } from '@dao/citizenDAO';
 import { StaffDAO } from '@dao/staffDAO';
 import { OfficeDAO, OfficeCategory } from '@dao/officeDAO';
@@ -10,9 +10,11 @@ import bcrypt from 'bcrypt';
 import passport from 'passport';
 import { configurePassport } from '@config/passport';
 import { MessageDAO } from '@models/dao/messageDAO';
-import { beforeAllE2e, DEFAULT_CITIZENS, DEFAULT_STAFF } from "../../e2e/lifecycle";
+import { beforeAllE2e, beforeEachE2e, DEFAULT_CITIZENS, DEFAULT_STAFF } from "../../e2e/lifecycle";
 import { PendingVerificationDAO } from '@dao/pendingVerificationDAO';
 import { initializeTestDataSource, closeTestDataSource, TestDataSource } from "../../setup/test-datasource";
+import { PendingVerificationRepository } from '@repositories/pendingVerificationRepository';
+import { BadRequestError } from '@models/errors/BadRequestError';
 
 
 beforeAll(async () => {
@@ -95,7 +97,16 @@ describe('AuthController - register', () => {
             json: jest.fn()
         } as any;
 
-        await register(req, res);
+        await register(
+          req.body.email,
+          req.body.username,
+          req.body.name,
+          req.body.surname,
+          req.body.password,
+          req.body.receive_emails,
+          undefined,
+          req.body.telegram_username
+      );
 
         expect(res.status).toHaveBeenCalledWith(201);
         expect(res.json).toHaveBeenCalledWith(
@@ -121,7 +132,16 @@ describe('AuthController - register', () => {
             json: jest.fn()
         } as any;
 
-        await register(req, res);
+        await register(
+          req.body.email,
+          req.body.username,
+          req.body.name,
+          req.body.surname,
+          req.body.password,
+          req.body.receive_emails,
+          undefined,
+          req.body.telegram_username
+      );
 
         expect(res.status).toHaveBeenCalledWith(expect.any(Number));
         expect(res.status).not.toHaveBeenCalledWith(201);
@@ -142,7 +162,16 @@ describe('AuthController - register', () => {
             json: jest.fn()
         } as any;
 
-        await register(req, res);
+        await register(
+          req.body.email,
+          req.body.username,
+          req.body.name,
+          req.body.surname,
+          req.body.password,
+          req.body.receive_emails,
+          undefined,
+          req.body.telegram_username
+      );
 
         expect(res.status).toHaveBeenCalledWith(expect.any(Number));
         expect(res.status).not.toHaveBeenCalledWith(201);
@@ -160,7 +189,16 @@ describe('AuthController - register', () => {
             json: jest.fn()
         } as any;
 
-        await register(req, res);
+        await register(
+          req.body.email,
+          req.body.username,
+          req.body.name,
+          req.body.surname,
+          req.body.password,
+          req.body.receive_emails,
+          undefined,
+          req.body.telegram_username
+      );
 
         expect(res.status).toHaveBeenCalledWith(400);
     });
@@ -181,11 +219,20 @@ describe('AuthController - register', () => {
             json: jest.fn()
         } as any;
 
-        await register(req, res);
+        await register(
+          req.body.email,
+          req.body.username,
+          req.body.name,
+          req.body.surname,
+          req.body.password,
+          req.body.receive_emails,
+          undefined,
+          req.body.telegram_username
+      );
 
         const savedCitizen = await localDataSource
             .getRepository(CitizenDAO)
-            .findOneBy({ email: 'hashtest@example.com' });
+            .findOneBy({ username: req.body.username});
 
         expect(savedCitizen).toBeDefined();
         expect(savedCitizen?.password).not.toBe('plainpassword123');
@@ -345,6 +392,60 @@ describe("AuthController - register", () => {
       )
     ).rejects.toThrow();
   });
+
+  //--------------------------------------------------------------
+  // AuthController - verifyEmailUser (Story: Email Confirmation)
+  //--------------------------------------------------------------
+  describe("AuthController - verifyEmailUser", () => {
+    let citizenRepo: Repository<CitizenDAO>;
+    let pvRepo: Repository<PendingVerificationDAO>;
+    let pendingRepo: PendingVerificationRepository;
+    let citizen: CitizenDAO;
+
+    beforeEach(async () => {
+        citizenRepo = localDataSource.getRepository(CitizenDAO);
+        pvRepo = localDataSource.getRepository(PendingVerificationDAO);
+        pendingRepo = new PendingVerificationRepository();
+
+        await pvRepo.clear();
+        await citizenRepo.clear();
+
+        citizen = await citizenRepo.save({
+            username: "verify_test",
+            email: null,
+            name: "Verify",
+            surname: "Tester",
+            password: await bcrypt.hash("test123", 10),
+            receive_emails: true
+        });
+    });
+
+    it("throws BadRequestError for empty code", async () => {
+        await expect(verifyEmailUser("")).rejects.toBeInstanceOf(BadRequestError);
+    });
+
+    it("verifies email successfully", async () => {
+      const pending = await pendingRepo.createPendingVerification(
+          citizen,
+          "verified@example.com",
+          "email"
+      );
+  
+      await expect(verifyEmailUser(pending.verificationCode))
+          .resolves.not.toThrow();
+  
+      const updatedCitizen = await citizenRepo.findOneBy({ id: citizen.id });
+      expect(updatedCitizen?.email).toBeNull();
+  
+      const leftover = await pvRepo.find();
+      expect(leftover.length).toBe(0);
+    });
+
+    it("throws when code is invalid", async () => {
+        await expect(verifyEmailUser("WRONG999"))
+            .rejects.toThrow(/invalid|expired/i);
+    });
+});
 });
 
 describe('AuthController - updateStaffOffices', () => {
