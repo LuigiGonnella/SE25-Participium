@@ -367,6 +367,484 @@ describe("ReportRepository - test suite", () => {
 
         expect(report.anonymous).toBe(true);
     });
+
+    it("update a report for the MPRO", async () => {
+        const mpro = await TestDataManager.getStaff('mpro');
+        const citizen = await TestDataManager.getCitizen('citizen1');
+
+        const report = await reportRepo.create(
+            citizen,
+            "Report to Update",
+            "Description",
+            OfficeCategory.RSTLO,
+            45.0,
+            7.0,
+            false,
+            "/img.jpg"
+        );
+
+        const updatedReport = await reportRepo.updateReportAsMPRO(report.id, Status.ASSIGNED);
+        expect(updatedReport.status).toBe(Status.ASSIGNED);
+    });
+
+    it("throws NotFoundError when MPRO tries to update non-existent report", async () => {
+        await expect(
+            reportRepo.updateReportAsMPRO(99999, Status.ASSIGNED)
+        ).rejects.toThrow('Report with id \'99999\' not found');
+    });
+
+    it("sends notification to citizen when report status is updated by MPRO", async () => {
+        const mpro = await TestDataManager.getStaff('mpro');
+        const citizen = await TestDataManager.getCitizen('citizen1');
+        const report = await reportRepo.create(
+            citizen,
+            "Report for Notification",
+            "Description",
+            OfficeCategory.RSTLO,
+            45.0,
+            7.0,
+            false,
+            "/img.jpg"
+        );  
+        await reportRepo.updateReportAsMPRO(report.id, Status.ASSIGNED);
+
+        const notifications = await TestDataSource
+            .getRepository(NotificationDAO)
+            .find({ where: { citizen: { username: citizen.username } } });
+
+        expect(notifications.length).toBe(1);
+        expect(notifications[0].title).toBe("Report Assigned");
+        expect(notifications[0].message).toContain('Your report "Report for Notification" has been assigned to the appropriate office.');
+    });
+
+    it("throw NotFoundError when updating report with invalid id", async () => {
+        const mpro = await TestDataManager.getStaff('mpro');
+        await expect(
+            reportRepo.updateReportAsMPRO(123456, Status.RESOLVED)
+        ).rejects.toThrow(NotFoundError);
+    });
+
+    it("throw BadRequestError when updating a non-pending report", async () => {
+        const citizen = await TestDataManager.getCitizen('citizen1');
+        const report = await reportRepo.create(
+            citizen,
+            "Non-pending Report",
+            "Description",
+            OfficeCategory.RSTLO,
+            45.0,
+            7.0,
+            false,
+            "/img.jpg"
+        );
+        await reportRepo.updateReportAsMPRO(report.id, Status.ASSIGNED);
+
+        await expect(
+            reportRepo.updateReportAsMPRO(report.id, Status.RESOLVED)
+        ).rejects.toThrow(BadRequestError);
+    });
+
+    it("update report status to REJECTED with comment by MPRO", async () => {
+        const citizen = await TestDataManager.getCitizen('citizen1');
+        const report = await reportRepo.create(
+            citizen,
+            "Report to Reject",
+            "Description",
+            OfficeCategory.RSTLO,
+            45.0,
+            7.0,
+            false,
+            "/img.jpg"
+        );
+        
+        const updatedReport = await reportRepo.updateReportAsMPRO(report.id, Status.REJECTED, "Does not meet requirements");
+        expect(updatedReport.status).toBe(Status.REJECTED);
+        expect(updatedReport.comment).toBe("Does not meet requirements");
+    });
+
+    it("send notification to citizen when MPRO rejects report", async () => {
+        const citizen = await TestDataManager.getCitizen('citizen1');
+        const report = await reportRepo.create(
+            citizen,
+            "Report to Reject with Notification",
+            "Description",
+            OfficeCategory.RSTLO,
+            45.0,
+            7.0,
+            false,
+            "/img.jpg"
+        );
+        await reportRepo.updateReportAsMPRO(report.id, Status.REJECTED, "Invalid submission");
+        
+        const notifications = await TestDataSource
+            .getRepository(NotificationDAO)
+            .find({ where: { citizen: { username: citizen.username } } });
+        
+        expect(notifications.length).toBe(1);
+        expect(notifications[0].title).toBe("Report Rejected");
+        expect(notifications[0].message).toContain('Your report "Report to Reject with Notification" has been rejected.');
+        expect(notifications[0].message).toContain("Reason: Invalid submission");
+    });
+
+    it("update report status and category by MPRO", async () => {
+        const citizen = await TestDataManager.getCitizen('citizen1');
+        const report = await reportRepo.create(
+            citizen,
+            "Report with Wrong Category",
+            "Description",
+            OfficeCategory.MOO,
+            45.0,
+            7.0,
+            false,
+            "/img.jpg"
+        );
+        
+        const updatedReport = await reportRepo.updateReportAsMPRO(report.id, Status.ASSIGNED, undefined, OfficeCategory.RSTLO);
+        expect(updatedReport.status).toBe(Status.ASSIGNED);
+        expect(updatedReport.category).toBe(OfficeCategory.RSTLO);
+    });
+
+    it("throws BadRequestError when MPRO assigns MOO report without changing category", async () => {
+        const citizen = await TestDataManager.getCitizen('citizen1');
+        const report = await reportRepo.create(
+            citizen,
+            "MOO Report",
+            "Description",
+            OfficeCategory.MOO,
+            45.0,
+            7.0,
+            false,
+            "/img.jpg"
+        );
+        
+        await expect(
+            reportRepo.updateReportAsMPRO(report.id, Status.ASSIGNED)
+        ).rejects.toThrow(BadRequestError);
+    });
+
+    it("self-assign a report for the TOSM", async () => {
+        const tosm = await TestDataManager.getStaff('tosm_RSTLO');
+        const citizen = await TestDataManager.getCitizen('citizen1');
+        const report = await reportRepo.create(
+            citizen,
+            "Report to Update by TOSM",
+            "Description",
+            OfficeCategory.RSTLO,
+            45.0,
+            7.0,
+            false,
+            "/img.jpg"
+        );
+        // First, MPRO assigns the report
+        await reportRepo.updateReportAsMPRO(report.id, Status.ASSIGNED);
+        const updatedReport = await reportRepo.selfAssignReport(report.id, tosm.username);
+        expect(updatedReport.status).toBe(Status.ASSIGNED);
+    });
+
+    it("throws NotFoundError when TOSM tries to self-assign non-existent report", async () => {
+        const tosm = await TestDataManager.getStaff('tosm_RSTLO');
+        await expect(
+            reportRepo.selfAssignReport(99999, tosm.username)
+        ).rejects.toThrow('Report with id \'99999\' not found');
+    });
+
+    it("throws BadRequestError when TOSM tries to self-assign a report of different category", async () => {
+        const tosm = await TestDataManager.getStaff('tosm_WSO');
+        const citizen = await TestDataManager.getCitizen('citizen1');
+        const report = await reportRepo.create(
+            citizen,
+            "Report of different category",
+            "Description",
+            OfficeCategory.RSTLO,
+            45.0,
+            7.0,
+            false,
+            "/img.jpg"
+        );  
+        // First, MPRO assigns the report
+        await reportRepo.updateReportAsMPRO(report.id, Status.ASSIGNED);
+        await expect(
+            reportRepo.selfAssignReport(report.id, tosm.username)
+        ).rejects.toThrow(BadRequestError);
+    });
+
+    it("throws BadRequestError when TOSM tries to self-assign a non-assigned report", async () => {
+        const tosm = await TestDataManager.getStaff('tosm_RSTLO');
+        const citizen = await TestDataManager.getCitizen('citizen1');
+        const report = await reportRepo.create(
+            citizen,    
+            "Non-assigned Report",
+            "Description",
+            OfficeCategory.RSTLO,   
+            45.0,
+            7.0,
+            false,  
+            "/img.jpg"
+        );  
+        await expect( 
+            reportRepo.selfAssignReport(report.id, tosm.username)
+        ).rejects.toThrow(BadRequestError);
+    });
+
+    it("throws BadRequestError when TOSM tries to self-assign an already assigned report", async () => {
+        const tosm = await TestDataManager.getStaff('tosm_RSTLO');
+        const citizen = await TestDataManager.getCitizen('citizen1');   
+        const report = await reportRepo.create(
+            citizen,    
+            "Already Assigned Report",
+            "Description",
+            OfficeCategory.RSTLO,   
+            45.0,
+            7.0,
+            false,  
+            "/img.jpg"
+        );
+        // First, MPRO assigns the report
+        await reportRepo.updateReportAsMPRO(report.id, Status.ASSIGNED);
+        // Then, TOSM self-assigns the report
+        await reportRepo.selfAssignReport(report.id, tosm.username);
+        await expect(
+            reportRepo.selfAssignReport(report.id, tosm.username)
+        ).rejects.toThrow(BadRequestError);
+    });
+
+    it("update report for TOSM to RESOLVED", async () => {
+        const tosm = await TestDataManager.getStaff('tosm_RSTLO');
+        const citizen = await TestDataManager.getCitizen('citizen1');
+        const report = await reportRepo.create(
+            citizen,
+            "Report to Update Status by TOSM",
+            "Description",
+            OfficeCategory.RSTLO,
+            45.0,
+            7.0,
+            false,
+            "/img.jpg"
+        );
+        // First, MPRO assigns the report   
+        await reportRepo.updateReportAsMPRO(report.id, Status.ASSIGNED);
+        // Then, TOSM self-assigns the report
+        await reportRepo.selfAssignReport(report.id, tosm.username);
+        const updatedReport = await reportRepo.updateReportAsTOSM(report.id, Status.RESOLVED, tosm.username);
+        expect(updatedReport.status).toBe(Status.RESOLVED);
+    });
+
+    it("throws NotFoundError when TOSM tries to update non-existent report", async () => {
+        const tosm = await TestDataManager.getStaff('tosm_RSTLO');
+        await expect(
+            reportRepo.updateReportAsTOSM(99999, Status.RESOLVED, tosm.username)
+        ).rejects.toThrow('Report with id \'99999\' not found');
+    });
+
+    it("throws BadRequestError when TOSM tries to update a report of different category", async () => {     
+        const tosm = await TestDataManager.getStaff('tosm_WSO');
+        const citizen = await TestDataManager.getCitizen('citizen1');
+        const report = await reportRepo.create( 
+            citizen,
+            "Report of different category to update",
+            "Description",
+            OfficeCategory.RSTLO,
+            45.0,
+            7.0,
+            false,
+            "/img.jpg"
+        );
+        // First, MPRO assigns the report
+        await reportRepo.updateReportAsMPRO(report.id, Status.ASSIGNED);
+        // Then, TOSM tries to update the report
+        await expect(
+            reportRepo.updateReportAsTOSM(report.id, Status.RESOLVED, tosm.username)
+        ).rejects.toThrow(BadRequestError);
+    });
+
+    it("send notification to citizen when TOSM updates report status to RESOLVED", async () => {
+        const tosm = await TestDataManager.getStaff('tosm_RSTLO');
+        const citizen = await TestDataManager.getCitizen('citizen1');
+        const report = await reportRepo.create(
+            citizen,
+            "Report for TOSM Notification",
+            "Description",
+            OfficeCategory.RSTLO,
+            45.0,
+            7.0,
+            false,
+            "/img.jpg"
+        );
+        // First, MPRO assigns the report
+        await reportRepo.updateReportAsMPRO(report.id, Status.ASSIGNED);
+        // Then, TOSM self-assigns the report
+        await reportRepo.selfAssignReport(report.id, tosm.username);
+        await reportRepo.updateReportAsTOSM(report.id, Status.RESOLVED, tosm.username);
+        const notifications = await TestDataSource
+            .getRepository(NotificationDAO)
+            .find({ where: { citizen: { username: citizen.username } } });
+        expect(notifications.length).toBe(2);
+        const resolvedNotification = notifications.find(n => n.title === "Report Resolved");
+        expect(resolvedNotification).toBeDefined();
+        expect(resolvedNotification?.message).toContain('Your report "Report for TOSM Notification" has been marked as resolved.');
+    });
+
+    it("update status for TOSM to SUSPENDED", async () => {
+        const tosm = await TestDataManager.getStaff('tosm_RSTLO');
+        const citizen = await TestDataManager.getCitizen('citizen1');
+        const report = await reportRepo.create(
+            citizen,
+            "Report to Suspend by TOSM",
+            "Description",
+            OfficeCategory.RSTLO,
+            45.0,
+            7.0,
+            false,
+            "/img.jpg"
+        );
+        // First, MPRO assigns the report
+        await reportRepo.updateReportAsMPRO(report.id, Status.ASSIGNED);
+        // Then, TOSM self-assigns the report
+        await reportRepo.selfAssignReport(report.id, tosm.username);
+        const updatedReport = await reportRepo.updateReportAsTOSM(report.id, Status.SUSPENDED, tosm.username);
+        expect(updatedReport.status).toBe(Status.SUSPENDED);
+    });
+
+    it("send notification to citizen when TOSM updates report status to SUSPENDED", async () => {
+        const tosm = await TestDataManager.getStaff('tosm_RSTLO');
+        const citizen = await TestDataManager.getCitizen('citizen1');
+        const report = await reportRepo.create(
+            citizen,
+            "Report for TOSM Suspension Notification",
+            "Description",
+            OfficeCategory.RSTLO,
+            45.0,
+            7.0,
+            false,
+            "/img.jpg"
+        );
+        // First, MPRO assigns the report
+        await reportRepo.updateReportAsMPRO(report.id, Status.ASSIGNED);
+        // Then, TOSM self-assigns the report
+        await reportRepo.selfAssignReport(report.id, tosm.username);
+        await reportRepo.updateReportAsTOSM(report.id, Status.SUSPENDED, tosm.username);
+        const notifications = await TestDataSource
+            .getRepository(NotificationDAO)
+            .find({ where: { citizen: { username: citizen.username } } });
+        expect(notifications.length).toBe(2);
+        const suspendedNotification = notifications.find(n => n.title === "Report Suspended");
+        expect(suspendedNotification).toBeDefined();
+        expect(suspendedNotification?.message).toContain('Your report "Report for TOSM Suspension Notification" has been suspended.');
+    });
+
+    it("throw BadRequestError when TOSM tries to update to RESOLVED when the report is SUSPENDED", async () => {
+        const tosm = await TestDataManager.getStaff('tosm_RSTLO');
+        const citizen = await TestDataManager.getCitizen('citizen1');
+        const report = await reportRepo.create(
+            citizen,
+            "Report to Fail Update by TOSM",
+            "Description",
+            OfficeCategory.RSTLO,
+            45.0,
+            7.0,
+            false,
+            "/img.jpg"
+        );
+        // First, MPRO assigns the report
+        await reportRepo.updateReportAsMPRO(report.id, Status.ASSIGNED);
+        // Then, TOSM self-assigns the report
+        await reportRepo.selfAssignReport(report.id, tosm.username);
+        await reportRepo.updateReportAsTOSM(report.id, Status.SUSPENDED, tosm.username);
+        await expect(
+            reportRepo.updateReportAsTOSM(report.id, Status.RESOLVED, tosm.username)
+        ).rejects.toThrow(BadRequestError);
+    });
+
+    it("update status for TOSM to IN_PROGRESS", async () => {
+        const tosm = await TestDataManager.getStaff('tosm_RSTLO');
+        const citizen = await TestDataManager.getCitizen('citizen1');
+        const report = await reportRepo.create(
+            citizen,
+            "Report to Start by TOSM",
+            "Description",
+            OfficeCategory.RSTLO,
+            45.0,
+            7.0,
+            false,
+            "/img.jpg"
+        );
+        await reportRepo.updateReportAsMPRO(report.id, Status.ASSIGNED);
+        await reportRepo.selfAssignReport(report.id, tosm.username);
+        
+        const updatedReport = await reportRepo.updateReportAsTOSM(report.id, Status.IN_PROGRESS, tosm.username);
+        expect(updatedReport.status).toBe(Status.IN_PROGRESS);
+    });
+
+    it("send notification to citizen when TOSM updates report status to IN_PROGRESS", async () => {
+        const tosm = await TestDataManager.getStaff('tosm_RSTLO');
+        const citizen = await TestDataManager.getCitizen('citizen1');
+        const report = await reportRepo.create(
+            citizen,
+            "Report for TOSM In Progress Notification",
+            "Description",
+            OfficeCategory.RSTLO,
+            45.0,
+            7.0,
+            false,
+            "/img.jpg"
+        );
+        await reportRepo.updateReportAsMPRO(report.id, Status.ASSIGNED);
+        await reportRepo.selfAssignReport(report.id, tosm.username);
+        await reportRepo.updateReportAsTOSM(report.id, Status.IN_PROGRESS, tosm.username);
+        
+        const notifications = await TestDataSource
+            .getRepository(NotificationDAO)
+            .find({ where: { citizen: { username: citizen.username } } });
+        
+        expect(notifications.length).toBe(2);
+        const inProgressNotification = notifications.find(n => n.title === "Report In Progress");
+        expect(inProgressNotification).toBeDefined();
+        expect(inProgressNotification?.message).toContain(`Your report "Report for TOSM In Progress Notification" has been assigned to ${tosm.username} and is now in progress.`);
+    });
+
+    it("throws BadRequestError when TOSM tries to update report not assigned to them", async () => {
+        const tosm1 = await TestDataManager.getStaff('tosm_RSTLO');
+        const tosm2 = await TestDataManager.getStaff('tosm_WSO');
+        const citizen = await TestDataManager.getCitizen('citizen1');
+        const report = await reportRepo.create(
+            citizen,
+            "Report assigned to another TOSM",
+            "Description",
+            OfficeCategory.WSO,
+            45.0,
+            7.0,
+            false,
+            "/img.jpg"
+        );
+        await reportRepo.updateReportAsMPRO(report.id, Status.ASSIGNED);
+        await reportRepo.selfAssignReport(report.id, tosm2.username);
+        
+        await expect(
+            reportRepo.updateReportAsTOSM(report.id, Status.IN_PROGRESS, tosm1.username)
+        ).rejects.toThrow(BadRequestError);
+    });
+
+    it("throws BadRequestError when TOSM tries to update report assigned to EM", async () => {
+        const tosm = await TestDataManager.getStaff('tosm_RSTLO');
+        const em = await TestDataManager.getStaff('em_RSTLO');
+        const citizen = await TestDataManager.getCitizen('citizen1');
+        const report = await reportRepo.create(
+            citizen,
+            "Report assigned to EM",
+            "Description",
+            OfficeCategory.RSTLO,
+            45.0,
+            7.0,
+            false,
+            "/img.jpg"
+        );
+        await reportRepo.updateReportAsMPRO(report.id, Status.ASSIGNED);
+        await reportRepo.selfAssignReport(report.id, tosm.username);
+        await reportRepo.assignEMToReport(report.id, em.username, tosm.username);
+        
+        await expect(
+            reportRepo.updateReportAsTOSM(report.id, Status.IN_PROGRESS, tosm.username)
+        ).rejects.toThrow(BadRequestError);
+    });
 });
 
 describe("ReportRepository - assignEMToReport (Story 24)", () => {
