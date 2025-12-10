@@ -69,6 +69,12 @@ export function validateStatusByRole(
       throw new BadRequestError("A comment is required when rejecting a report.");
   }
 
+  if (role === StaffRole.TOSM || role === StaffRole.EM) {
+    if (updatedStatus !== Status.RESOLVED && comment) {
+      throw new BadRequestError("Comments can only be added when resolving a report.");
+    }
+  }
+
   return updatedStatus;
 }
 

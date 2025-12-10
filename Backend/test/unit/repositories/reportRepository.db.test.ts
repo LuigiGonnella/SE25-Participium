@@ -196,22 +196,6 @@ describe("ReportRepository - test suite", () => {
         expect(reports.length).toBe(2);
     });
 
-    it.skip("updates report status successfully", async () => {
-        // Method updateStatus does not exist in ReportRepository
-    });
-
-    it.skip("updates report category successfully", async () => {
-        // Method updateCategory does not exist in ReportRepository
-    });
-
-    it.skip("throws NotFoundError when updating non-existent report status", async () => {
-        // Method updateStatus does not exist in ReportRepository
-    });
-
-    it.skip("throws NotFoundError when updating non-existent report category", async () => {
-        // Method updateCategory does not exist in ReportRepository
-    });
-
     it("filters reports by status", async () => {
         const citizen = await TestDataManager.getCitizen('citizen1');
         const staff = await TestDataManager.getStaff('mpro');
@@ -385,6 +369,22 @@ describe("ReportRepository - test suite", () => {
 
         const updatedReport = await reportRepo.updateReportAsMPRO(report.id, Status.ASSIGNED);
         expect(updatedReport.status).toBe(Status.ASSIGNED);
+    });
+
+    it("update the category of a report by MPRO", async () => {
+        const citizen = await TestDataManager.getCitizen('citizen1');
+        const report = await reportRepo.create(
+            citizen,
+            "Report with Wrong Category",
+            "Description",
+            OfficeCategory.MOO,
+            45.0,
+            7.0,
+            false,
+            "/img.jpg"
+        );
+        const updatedReport = await reportRepo.updateReportAsMPRO(report.id, Status.ASSIGNED, undefined, OfficeCategory.RSTLO);
+        expect(updatedReport.category).toBe(OfficeCategory.RSTLO);
     });
 
     it("throws NotFoundError when MPRO tries to update non-existent report", async () => {

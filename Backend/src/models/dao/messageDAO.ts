@@ -1,4 +1,4 @@
-import { Column, Entity, PrimaryGeneratedColumn, ManyToOne } from "typeorm";
+import { Column, Entity, PrimaryGeneratedColumn, ManyToOne, JoinColumn } from "typeorm";
 import { StaffDAO } from "./staffDAO";
 import {ReportDAO} from "@dao/reportDAO";
 
@@ -7,7 +7,7 @@ export class MessageDAO {
     @PrimaryGeneratedColumn('increment', { type: 'int', unsigned: true })
     id: number;
 
-    @ManyToOne(() => ReportDAO, (report) => report.id)
+    @ManyToOne(() => ReportDAO, (report) => report.messages, {onDelete: "CASCADE", nullable: false})
     report: ReportDAO;
 
     @Column({ default: () => "CURRENT_TIMESTAMP" })
@@ -16,7 +16,8 @@ export class MessageDAO {
     @Column({ nullable: false, type: "text" })
     message: string;
 
-    @ManyToOne(() => StaffDAO, (staff) => staff.username, {onDelete: "SET NULL", nullable: true})
+    @ManyToOne(() => StaffDAO, {onDelete: "SET NULL", nullable: true})
+    @JoinColumn({ name: "staffId" })
     staff?: StaffDAO;
 
     @Column({ nullable: false, default: false})

@@ -122,6 +122,7 @@ describe("Authentication API E2E Tests", () => {
                 });
 
             expect(res.status).toBe(201);
+            expect(res.body.email).toBeUndefined();
             expect(res.body.username).toBe("minimaluser");
         });
 

@@ -54,22 +54,6 @@ describe("OfficeRepository - test suite", () => {
         expect(office?.category).toBe(OfficeCategory.MOO);
     });
 
-    it.skip("should create a new custom office", async () => {
-        // Method createOffice is commented out in OfficeRepository
-    });
-
-    it.skip("should update an existing default office", async () => {
-        // Method updateOffice is commented out in OfficeRepository
-    });
-
-    it.skip("should delete a custom office", async () => {
-        // Method deleteOffice is commented out in OfficeRepository
-    });
-
-    it.skip("should not update a non-existent office", async () => {
-        // Method updateOffice is commented out in OfficeRepository
-    });
-
     it("should create default offices if called again (idempotent)", async () => {
         const beforeCount = (await officeRepo.getAllOffices()).length;
         

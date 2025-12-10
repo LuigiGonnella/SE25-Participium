@@ -49,6 +49,7 @@ describe("Reports API E2E Tests", () => {
     let adminCookie: string;
     let mproCookie: string;
     let tosmCookie: string;
+    let emCookie: string;
     let testReport1: ReportDAO;
     let testReport2: ReportDAO;
     let testReport3: ReportDAO;
@@ -97,6 +98,16 @@ describe("Reports API E2E Tests", () => {
             })
             .expect(200);
         tosmCookie = tosmLogin.headers['set-cookie'][0];
+
+        // Login as EM for RSTLO category
+        const emLogin = await request(app)
+            .post('/api/v1/auth/login?type=STAFF')
+            .send({
+                username: DEFAULT_STAFF.em_RSTLO.username,
+                password: DEFAULT_STAFF.em_RSTLO.password,
+            })
+            .expect(200);
+        emCookie = emLogin.headers['set-cookie'][0];
     });
 
     afterAll(async () => {
@@ -624,6 +635,11 @@ describe("Reports API E2E Tests", () => {
                 { id: testReport2.id },
                 { status: Status.ASSIGNED, assignedStaff: tosmStaff }
             );
+            // assign report to TOSM (self-assign)
+            /* await request(app)
+                .patch(`/api/v1/reports/${testReport1.id}/assignSelf`)
+                .set('Cookie', tosmCookie)
+                .expect(200); */
         });
 
         it("should update report status to IN_PROGRESS", async () => {
@@ -695,10 +711,10 @@ describe("Reports API E2E Tests", () => {
                     status: getStatusKey(Status.IN_PROGRESS),
                     comment: "This should not be allowed"
                 })
-                .expect(200);
+                .expect(400);
 
             // Comment is actually allowed, so we expect success
-            expect(res.body.status).toBe("In Progress");
+            expect(res.body.message).toBe("Comments can only be added when resolving a report.");
         });
 
         it("should return 400 for invalid status for TOSM", async () => {
@@ -771,5 +787,230 @@ describe("Reports API E2E Tests", () => {
 
             expect(res.status).toBe(403);
         });
+    });
+
+    describe("PATCH /api/v1/reports/:reportId/updateStatus - Update report as EM", () => {
+        beforeEach(async () => {
+            // Set reports to ASSIGNED status for TOSM tests
+            await TestDataSource.getRepository(ReportDAO).update(
+                { id: testReport1.id },
+                { status: Status.ASSIGNED }
+            );
+            await TestDataSource.getRepository(ReportDAO).update(
+                { id: testReport2.id },
+                { status: Status.ASSIGNED }
+            );
+            // assign report to TOSM (self-assign)
+            await request(app)
+                .patch(`/api/v1/reports/${testReport1.id}/assignSelf`)
+                .set('Cookie', tosmCookie)
+                .expect(200);
+        
+            // assign report to EM
+            const emUsername = DEFAULT_STAFF.em_RSTLO.username;
+            await request(app)
+                .patch(`/api/v1/reports/${testReport1.id}/assignExternal`)
+                .set('Cookie', tosmCookie)
+                .send({ staffEM: emUsername })
+                .expect(200);
+            });
+
+        it("should update report status to IN_PROGRESS", async () => {
+            const res = await request(app)
+                .patch(`/api/v1/reports/${testReport1.id}/updateStatus`)
+                .set('Cookie', emCookie)
+                .send({
+                    status: getStatusKey(Status.IN_PROGRESS)
+                })
+                .expect(200);
+
+            expect(res.body.status).toBe(Status.IN_PROGRESS);
+            expect(res.body.id).toBe(testReport1.id);
+        });
+
+        it("should update report status to SUSPENDED", async () => {
+            // First set to IN_PROGRESS
+            await TestDataSource.getRepository(ReportDAO).update(
+                { id: testReport1.id },
+                { status: Status.IN_PROGRESS }
+            );
+
+            const res = await request(app)
+                .patch(`/api/v1/reports/${testReport1.id}/updateStatus`)
+                .set('Cookie', emCookie)
+                .send({
+                    status: getStatusKey(Status.SUSPENDED)
+                })
+                .expect(200);
+
+            expect(res.body.status).toBe(Status.SUSPENDED);
+        });
+
+        it("should update report status to RESOLVED with comment", async () => {
+            // First set to IN_PROGRESS
+            await TestDataSource.getRepository(ReportDAO).update(
+                { id: testReport1.id },
+                { status: Status.IN_PROGRESS }
+            );
+
+            const res = await request(app)
+                .patch(`/api/v1/reports/${testReport1.id}/updateStatus`)
+                .set('Cookie', emCookie)
+                .send({
+                    status: getStatusKey(Status.RESOLVED),
+                    comment: "Issue has been fixed"
+                })
+                .expect(200);
+
+            expect(res.body.status).toBe(Status.RESOLVED);
+            expect(res.body.comment).toBe("Issue has been fixed");
+        });
+
+        it("should return 400 when status is missing", async () => {
+            const res = await request(app)
+                .patch(`/api/v1/reports/${testReport1.id}/updateStatus`)
+                .set('Cookie', emCookie)
+                .send({})
+                .expect(400);
+
+            expectErrorResponse(res);
+        });
+
+        it("should return 400 when adding comment to non-resolved status", async () => {
+            const res = await request(app)
+                .patch(`/api/v1/reports/${testReport1.id}/updateStatus`)
+                .set('Cookie', emCookie)
+                .send({
+                    status: getStatusKey(Status.IN_PROGRESS),
+                    comment: "This should not be allowed"
+                })
+                .expect(400);
+
+            expectErrorResponse(res);
+        });
+
+        it("should return 400 for invalid status for EM", async () => {
+            const res = await request(app)
+                .patch(`/api/v1/reports/${testReport1.id}/updateStatus`)
+                .set('Cookie', emCookie)
+                .send({
+                    status: getStatusKey(Status.PENDING)
+                })
+                .expect(400);
+
+            expectErrorResponse(res);
+        });
+
+        it("should return 400 for invalid status value", async () => {
+            const res = await request(app)
+                .patch(`/api/v1/reports/${testReport1.id}/updateStatus`)
+                .set('Cookie', emCookie)
+                .send({
+                    status: "INVALID_STATUS"
+                })
+                .expect(400);
+
+            expectErrorResponse(res);
+        });
+
+        it("should return 400 for invalid report ID", async () => {
+            const res = await request(app)
+                .patch("/api/v1/reports/invalid/updateStatus")
+                .set('Cookie', emCookie)
+                .send({
+                    status: getStatusKey(Status.IN_PROGRESS)
+                })
+                .expect(400);
+
+            expectErrorResponse(res);
+        });
+
+        it("should return 404 for non-existent report", async () => {
+            const res = await request(app)
+                .patch("/api/v1/reports/9999/updateStatus")
+                .set('Cookie', emCookie)
+                .send({
+                    status: getStatusKey(Status.IN_PROGRESS)
+                })
+                .expect(404);
+
+            expectErrorResponse(res);
+        });
+
+        it("should require EM authentication", async () => {
+            const res = await request(app)
+                .patch(`/api/v1/reports/${testReport1.id}/updateStatus`)
+                .send({
+                    status: getStatusKey(Status.IN_PROGRESS)
+                })
+                .expect(401);
+
+            expect(res.status).toBe(401);
+        });
+
+        it("should not allow EM to access report if not assigned to a TOSM", async () => {
+            const res = await request(app)
+                .patch(`/api/v1/reports/${testReport1.id}/updateStatus`)
+                .set('Cookie', mproCookie)
+                .send({
+                    status: getStatusKey(Status.IN_PROGRESS)
+                })
+                .expect(403);
+
+            expect(res.status).toBe(403);
+        });
+    });
+
+    describe("POST /api/v1/reports/:reportId/messages - Add message to report", () => {
+        beforeEach(async () => {
+            // Set reports to ASSIGNED status for TOSM tests
+            await TestDataSource.getRepository(ReportDAO).update(
+                { id: testReport1.id },
+                { status: Status.ASSIGNED, assignedStaff: undefined, assignedEM: undefined }
+            );
+            await TestDataSource.getRepository(ReportDAO).update(
+                { id: testReport2.id },
+                { status: Status.ASSIGNED, assignedStaff: undefined, assignedEM: undefined }
+            );
+            // assign report to TOSM (self-assign)
+            await request(app)
+                .patch(`/api/v1/reports/${testReport1.id}/assignSelf`)
+                .set('Cookie', tosmCookie)
+                .expect(200);
+        
+            // assign report to EM
+            const emUsername = DEFAULT_STAFF.em_RSTLO.username;
+            await request(app)
+                .patch(`/api/v1/reports/${testReport1.id}/assignExternal`)
+                .set('Cookie', tosmCookie)
+                .send({ staffEM: emUsername })
+                .expect(200);
+        });
+
+        it("should add a public message from TOSM to citizen", async () => {
+            const res = await request(app)
+                .post(`/api/v1/reports/${testReport1.id}/messages`)
+                .set('Cookie', tosmCookie)
+                .send({
+                    message: "We are looking into your report.",
+                    isPrivate: false
+                })
+                .expect(201);
+                
+        });
+        
+        it("should add a private message from TOSM to EM", async () => {
+            
+            const res = await request(app)
+                .post(`/api/v1/reports/${testReport1.id}/messages`)
+                .set('Cookie', tosmCookie)
+                .send({
+                    message: "Please update the status.",
+                    isPrivate: true
+                })
+                .expect(201);
+        });
+        
+        
     });
 });
