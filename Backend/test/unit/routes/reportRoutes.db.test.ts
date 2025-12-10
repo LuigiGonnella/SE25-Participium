@@ -225,6 +225,73 @@ describe('Report Routes Tests', () => {
         });
     });
 
+    describe('PATCH /api/v1/reports/:id/updateStatus', () => {
+        beforeEach(() => {
+            // Mock MPRO user
+            app.use((req: any, res, next) => {
+                req.user = { username: DEFAULT_STAFF.mpro.username, type: 'STAFF', role: 'MPRO' };
+                req.isAuthenticated = () => true;
+                next();
+            });
+            // Mock TOSM user
+            app.use((req: any, res, next) => {
+                req.user = { username: DEFAULT_STAFF.tosm_RSTLO.username, type: 'STAFF', role: 'TOSM' };
+                req.isAuthenticated = () => true;
+                next();
+            });
+        });
+
+        it('should update report status to IN_PROGRESS by EM', async () => {
+            const citizen = await TestDataManager.getCitizen('citizen1');
+            const report = await reportRepo.create(
+                citizen,
+                "Test Report",
+                "Description",
+                OfficeCategory.RSTLO,
+                45.0,
+                7.0,
+                false,
+                "/img.jpg"
+            );
+            const agent = request.agent(app);
+            //assign to MPRO
+            await agent.post('/api/v1/auth/login?type=STAFF')
+                .send({ username: 'mpro', password: 'mpro123' })
+                .expect(200);
+            await agent
+                .patch(`/api/v1/reports/${report.id}/manage`)
+                .send({ status: 'ASSIGNED' })
+                .expect(200);
+
+            //self-assign to TOSM
+            await agent.post('/api/v1/auth/login?type=STAFF')
+                .send({ username: 'tosm_RSTLO', password: 'tosm123' })
+                .expect(200);
+            await agent
+                .patch(`/api/v1/reports/${report.id}/assignSelf`)
+                .send({ status: 'IN_PROGRESS', comment: 'Starting work' })
+                .expect(200);
+
+            //assign to EM
+            await agent
+                .patch(`/api/v1/reports/${report.id}/assignExternal`)
+                .send({ staffEM: 'em_RSTLO' })
+                .expect(200);
+
+            await agent.post('/api/v1/auth/login?type=STAFF')
+                .send({ username: 'em_RSTLO', password: 'em123' })
+                .expect(200);
+            
+
+            const response = await agent
+                .patch(`/api/v1/reports/${report.id}/updateStatus`)
+                .send({ status: 'IN_PROGRESS' })  
+                .expect(200);
+
+            expect(response.body.status).toBe(Status.IN_PROGRESS);
+        });
+    });
+
     describe('POST /api/v1/reports/:id/messages', () => {
         it('should add message to report', async () => {
             const citizen = await TestDataManager.getCitizen('citizen1');
