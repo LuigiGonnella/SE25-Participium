@@ -785,6 +785,68 @@ describe("Reports API E2E Tests", () => {
         });
     });
 
+    describe("PATCH /api/v1/reports/:reportId/assignExternal - Story 24 EM Assignment", () => {
+
+    it("should assign an EM successfully to an ASSIGNED report", async () => {
+
+        // Ensure the report is ASSIGNED
+        await TestDataSource.getRepository(ReportDAO).update(
+            { id: testReport1.id },
+            { status: Status.ASSIGNED }
+        );
+
+        // TOSM self-assign
+        await request(app)
+            .patch(`/api/v1/reports/${testReport1.id}/assignSelf`)
+            .set("Cookie", tosmCookie)
+            .expect(200);
+
+        const res = await request(app)
+            .patch(`/api/v1/reports/${testReport1.id}/assignExternal`)
+            .set("Cookie", tosmCookie)
+            .send({
+                staffEM: DEFAULT_STAFF.em_RSTLO.username
+            })
+            .expect(200);
+
+        expect(res.body.assignedEM).toBeDefined();
+        expect(res.body.assignedEM).not.toBeNull();   // backend does NOT return username
+        expect(res.body.isExternal).toBe(true);
+    });
+
+    it("should return 400 when report is not in ASSIGNED status", async () => {
+
+        // report1 is PENDING by default → not ASSIGNED
+
+        const res = await request(app)
+            .patch(`/api/v1/reports/${testReport1.id}/assignExternal`)
+            .set("Cookie", tosmCookie)
+            .send({
+                staffEM: DEFAULT_STAFF.em_RSTLO.username
+            })
+            .expect(400);
+
+        // backend returns assignment error FIRST
+        expect(res.body.message).toContain("not assigned to you");
+    });
+
+    it("should return 400 if TOSM tries to assign EM for category they do not manage", async () => {
+
+        // TOSM_RSTLO tries to assign EM_RUFO → backend returns 400 (not 403)
+
+        const res = await request(app)
+            .patch(`/api/v1/reports/${testReport2.id}/assignExternal`)
+            .set("Cookie", tosmCookie)
+            .send({ 
+                staffEM: DEFAULT_STAFF.em_RUFO.username 
+            })
+            .expect(400);
+
+        expect(res.body.message).toBeDefined();
+    });
+});
+
+
     describe("PATCH /api/v1/reports/:reportId/updateStatus - Update report as EM", () => {
         beforeEach(async () => {
             // Set reports to ASSIGNED status for TOSM tests
