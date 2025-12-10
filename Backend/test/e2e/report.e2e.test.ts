@@ -956,4 +956,57 @@ describe("Reports API E2E Tests", () => {
             expect(res.status).toBe(403);
         });
     });
+
+    describe("POST /api/v1/reports/:reportId/messages - Add message to report", () => {
+        beforeEach(async () => {
+            // Set reports to ASSIGNED status for TOSM tests
+            await TestDataSource.getRepository(ReportDAO).update(
+                { id: testReport1.id },
+                { status: Status.ASSIGNED, assignedStaff: undefined, assignedEM: undefined }
+            );
+            await TestDataSource.getRepository(ReportDAO).update(
+                { id: testReport2.id },
+                { status: Status.ASSIGNED, assignedStaff: undefined, assignedEM: undefined }
+            );
+            // assign report to TOSM (self-assign)
+            await request(app)
+                .patch(`/api/v1/reports/${testReport1.id}/assignSelf`)
+                .set('Cookie', tosmCookie)
+                .expect(200);
+        
+            // assign report to EM
+            const emUsername = DEFAULT_STAFF.em_RSTLO.username;
+            await request(app)
+                .patch(`/api/v1/reports/${testReport1.id}/assignExternal`)
+                .set('Cookie', tosmCookie)
+                .send({ staffEM: emUsername })
+                .expect(200);
+        });
+
+        it("should add a public message from TOSM to citizen", async () => {
+            const res = await request(app)
+                .post(`/api/v1/reports/${testReport1.id}/messages`)
+                .set('Cookie', tosmCookie)
+                .send({
+                    message: "We are looking into your report.",
+                    isPrivate: false
+                })
+                .expect(201);
+                
+        });
+        
+        it("should add a private message from TOSM to EM", async () => {
+            
+            const res = await request(app)
+                .post(`/api/v1/reports/${testReport1.id}/messages`)
+                .set('Cookie', tosmCookie)
+                .send({
+                    message: "Please update the status.",
+                    isPrivate: true
+                })
+                .expect(201);
+        });
+        
+        
+    });
 });

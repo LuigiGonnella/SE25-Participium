@@ -31,7 +31,29 @@ beforeEach(async () => {
 
 describe("Office E2E Tests", () => {
     describe("GET /offices - Get all offices", () => {
-        it("should return an empty array when no offices exist", async () => {
+        it("should return only internal offices", async () => {
+            const response = await request(app)
+                .get('/api/v1/offices?isExternal=false')
+                .set('Cookie', adminCookie)
+                .expect(200);
+
+            expect(response.body).toBeDefined();
+            expect(Array.isArray(response.body)).toBe(true);
+            expect(response.body.length).toBe(9);
+        });
+
+        it("should return only external offices", async () => {
+            const response = await request(app)
+                .get('/api/v1/offices?isExternal=true')
+                .set('Cookie', adminCookie)
+                .expect(200);
+
+            expect(response.body).toBeDefined();
+            expect(Array.isArray(response.body)).toBe(true);
+            expect(response.body.length).toBe(8);
+        });
+
+        it("should return every office", async () => {
             const response = await request(app)
                 .get('/api/v1/offices')
                 .set('Cookie', adminCookie)
@@ -39,7 +61,7 @@ describe("Office E2E Tests", () => {
 
             expect(response.body).toBeDefined();
             expect(Array.isArray(response.body)).toBe(true);
-            expect(response.body.length).toBe(9);
+            expect(response.body.length).toBe(17);
         });
         
     });
