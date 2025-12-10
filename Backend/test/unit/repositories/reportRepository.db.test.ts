@@ -368,3 +368,128 @@ describe("ReportRepository - test suite", () => {
         expect(report.anonymous).toBe(true);
     });
 });
+
+describe("ReportRepository - assignEMToReport (Story 24)", () => {
+
+    let citizen: CitizenDAO;
+    let tosm: StaffDAO;
+    let em: StaffDAO;
+
+    beforeEach(async () => {
+        citizen = await TestDataManager.getCitizen("citizen1");
+        tosm = await TestDataManager.getStaff("tosm_RSTLO");
+        em = await TestDataManager.getStaff("em_RSTLO");
+    });
+
+    it("assigns EM successfully to a report", async () => {
+        const report = await reportRepo.create(
+            citizen,
+            "Test assign EM",
+            "Description",
+            OfficeCategory.RSTLO,
+            45, 7,
+            false,
+            "/img.jpg"
+        );
+
+        await reportRepo.updateReportAsMPRO(report.id, Status.ASSIGNED);
+        await reportRepo.selfAssignReport(report.id, tosm.username);
+
+        const updated = await reportRepo.assignEMToReport(report.id, em.username, tosm.username);
+
+        expect(updated.assignedEM?.username).toBe(em.username);
+        expect(updated.isExternal).toBe(true);
+    });
+
+    it("throws NotFoundError when report does not exist", async () => {
+        await expect(
+            reportRepo.assignEMToReport(123456, em.username, tosm.username)
+        ).rejects.toThrow(NotFoundError);
+    });
+
+    it("throws BadRequestError if report is not assigned to TOSM", async () => {
+        const report = await reportRepo.create(
+            citizen,
+            "Test wrong assign",
+            "Description",
+            OfficeCategory.RSTLO,
+            45, 7,
+            false,
+            "/img.jpg"
+        );
+
+        await reportRepo.updateReportAsMPRO(report.id, Status.ASSIGNED);
+
+        await expect(
+            reportRepo.assignEMToReport(report.id, em.username, "wrongUser")
+        ).rejects.toThrow("This report is not assigned to you.");
+    });
+
+    /** FIXED VERSION — CORRECT BEHAVIOR FOR STATUS TEST **/
+    it("throws BadRequestError if report status is not ASSIGNED", async () => {
+        const report = await reportRepo.create(
+            citizen,
+            "Test wrong status",
+            "Description",
+            OfficeCategory.RSTLO,
+            45, 7,
+            false,
+            "/img.jpg"
+        );
+
+        // 🔥 MUST assign staff, otherwise first error triggers
+        await TestDataSource.getRepository(ReportDAO).update(
+            { id: report.id },
+            { assignedStaff: tosm } // manually attach TOSM
+        );
+
+        // Status remains PENDING → triggers correct error branch
+
+        await expect(
+            reportRepo.assignEMToReport(report.id, em.username, tosm.username)
+        ).rejects.toThrow("Only reports with ASSIGNED status can be assigned to an EM.");
+    });
+
+    it("throws BadRequestError if EM is not valid for the category", async () => {
+        const wrongEM = await TestDataManager.getStaff("em_WSO");
+
+        const report = await reportRepo.create(
+            citizen,
+            "Wrong EM test",
+            "Description",
+            OfficeCategory.RSTLO,
+            45, 7,
+            false,
+            "/img.jpg"
+        );
+
+        await reportRepo.updateReportAsMPRO(report.id, Status.ASSIGNED);
+        await reportRepo.selfAssignReport(report.id, tosm.username);
+
+        await expect(
+            reportRepo.assignEMToReport(report.id, wrongEM.username, tosm.username)
+        ).rejects.toThrow("cannot be assigned to reports of category");
+    });
+
+    it("throws BadRequestError if EM already assigned", async () => {
+        const report = await reportRepo.create(
+            citizen,
+            "Already EM",
+            "Description",
+            OfficeCategory.RSTLO,
+            45, 7,
+            false,
+            "/img.jpg"
+        );
+
+        await reportRepo.updateReportAsMPRO(report.id, Status.ASSIGNED);
+        await reportRepo.selfAssignReport(report.id, tosm.username);
+
+        await reportRepo.assignEMToReport(report.id, em.username, tosm.username);
+
+        await expect(
+            reportRepo.assignEMToReport(report.id, em.username, tosm.username)
+        ).rejects.toThrow("Report is already assigned to EM");
+    });
+
+});
