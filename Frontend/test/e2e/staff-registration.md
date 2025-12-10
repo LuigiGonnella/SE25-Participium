@@ -25,8 +25,15 @@ This document provides **manual E2E UI testing procedures** for verifying the **
 **Application Version:** 1.0.0
 **Environment:** Docker Compose (Backend + Frontend + DB)
 **Browser:** Google Chrome
-**Test Suites Executed:** 1
+**Tests Executed:** 1
 **Results:** TC 1.4 Failed: showed `Registration succesfully submitted`.
+
+**Testing Date:** December 10, 2025
+**Application Version:** 1.0.0
+**Environment:** Docker Compose (Backend + Frontend + DB)
+**Browser:** Google Chrome
+**Tests Executed:** 1.4
+**Results:** Passed.
 
 ## Test Suite 1: EM Registration Flow
 
@@ -121,5 +128,5 @@ Trying to register Mario Rossi (Username: em_testuser, Email: em.test@external.c
    - **Role**: `External Maintainer`
    - **Office**: `External Company - Water Supply`
 
-**Expected**: Error: "Username already exists."
+**Expected**: Error: "Staff already exists with username `em_testuser`"
 **Expected**: Form remains on registration page

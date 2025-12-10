@@ -24,7 +24,7 @@ This document provides **manual E2E UI testing procedures** for verifying the **
 **Application Version:** 1.0.0
 **Environment:** Docker Compose (Backend + Frontend + DB)
 **Browser:** Google Chrome
-**Test Suites Executed:** 1
+**Tests Executed:** 1
 **Results:** All test cases passed.
 
 ## Test Suite 1: Assign Report to EM Flow
