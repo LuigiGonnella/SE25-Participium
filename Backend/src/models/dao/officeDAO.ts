@@ -1,4 +1,4 @@
-import {Column, Entity, OneToMany, ManyToMany, PrimaryGeneratedColumn} from "typeorm";
+import {Column, Entity, ManyToMany, PrimaryGeneratedColumn} from "typeorm";
 import {StaffDAO} from "./staffDAO";
 
 export enum OfficeCategory {

@@ -1,12 +1,10 @@
 import { AppDataSource } from "@database";
 import { OfficeCategory, OfficeDAO } from "@models/dao/officeDAO";
-import { ConflictError } from "@models/errors/ConflictError";
-import { NotFoundError } from "@models/errors/NotFoundError";
 import { Repository } from "typeorm";
 
 
 export class OfficeRepository {
-    private repo: Repository<OfficeDAO>;
+    private readonly repo: Repository<OfficeDAO>;
 
     constructor() {
         this.repo = AppDataSource.getRepository(OfficeDAO);

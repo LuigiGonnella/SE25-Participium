@@ -7,12 +7,54 @@ import {OfficeCategory, OfficeDAO} from "@dao/officeDAO";
 import {BadRequestError} from "@errors/BadRequestError";
 
 export class StaffRepository {
-    private repo: Repository<StaffDAO>;
-    private officeRepo: Repository<OfficeDAO>;
+    private readonly repo: Repository<StaffDAO>;
+    private readonly officeRepo: Repository<OfficeDAO>;
 
     constructor() {
         this.repo = AppDataSource.getRepository(StaffDAO);
         this.officeRepo = AppDataSource.getRepository(OfficeDAO);
+    }
+
+    private async createDefaultTOSMForOffice(office: OfficeDAO, key: string | undefined) {
+        const tosmsExist = await this.repo.exists({
+            where: {
+                role: StaffRole.TOSM,
+                offices: {id: office.id, isExternal: false}
+            }
+        });
+        if (!tosmsExist) {
+            const defaultTOSM = this.repo.create({
+                username: `tosm_${key}`,
+                name: "Default",
+                surname: `TOSM ${key}`,
+                password: bcrypt.hashSync('tosm123', 10),
+                role: StaffRole.TOSM,
+                offices: [office]
+            });
+            await this.repo.save(defaultTOSM);
+            console.log(`Default TOSM user created for office ${office.name} with username '${defaultTOSM.username}' and password 'tosm123'`);
+        }
+    }
+
+    private async createDefaultEMForOffice(office: OfficeDAO, key: string | undefined) {
+        const emsExist = await this.repo.exists({
+            where: {
+                role: StaffRole.EM,
+                offices: {id: office.id, isExternal: true}
+            }
+        });
+        if (!emsExist) {
+            const defaultEM = this.repo.create({
+                username: `em_${key}`,
+                name: "Default",
+                surname: `EM ${key}`,
+                password: bcrypt.hashSync('em123', 10),
+                role: StaffRole.EM,
+                offices: [office]
+            });
+            await this.repo.save(defaultEM);
+            console.log(`Default EM user created for office ${office.name} with username '${defaultEM.username}' and password 'em123'`);
+        }
     }
 
     async createDefaultStaffMembersIfNotExists() {
@@ -67,44 +109,10 @@ export class StaffRepository {
         // TOSM and EM for each office
         for (const office of await this.officeRepo.find({ where: { category: Not(OfficeCategory.MOO) }} )) {
             const key = Object.keys(OfficeCategory).find(c => OfficeCategory[c as keyof typeof OfficeCategory] === office.category);
-            if (!office.isExternal) {
-                const tosmsExist = await this.repo.exists({
-                    where: {
-                        role: StaffRole.TOSM,
-                        offices: {id: office.id, isExternal: false}
-                    }
-                });
-                if (!tosmsExist) {
-                    const defaultTOSM = this.repo.create({
-                        username: `tosm_${key}`,
-                        name: "Default",
-                        surname: `TOSM ${key}`,
-                        password: bcrypt.hashSync('tosm123', 10),
-                        role: StaffRole.TOSM,
-                        offices: [office]
-                    });
-                    await this.repo.save(defaultTOSM);
-                    console.log(`Default TOSM user created for office ${office.name} with username '${defaultTOSM.username}' and password 'tosm123'`);
-                }
+            if (office.isExternal) {
+                await this.createDefaultEMForOffice(office, key);
             } else {
-                const emsExist = await this.repo.exists({
-                    where: {
-                        role: StaffRole.EM,
-                        offices: {id: office.id, isExternal: true}
-                    }
-                });
-                if (!emsExist) {
-                    const defaultEM = this.repo.create({
-                        username: `em_${key}`,
-                        name: "Default",
-                        surname: `EM ${key}`,
-                        password: bcrypt.hashSync('em123', 10),
-                        role: StaffRole.EM,
-                        offices: [office]
-                    });
-                    await this.repo.save(defaultEM);
-                    console.log(`Default EM user created for office ${office.name} with username '${defaultEM.username}' and password 'em123'`);
-                }
+                await this.createDefaultTOSMForOffice(office, key);
             }
         }
     }
@@ -115,8 +123,8 @@ export class StaffRepository {
             return await this.repo.find(
                 {
                     where: {
-                        ...(isExternal !== undefined ? { role: StaffRole.EM } : {}),
-                        ...(category !== undefined ? { offices: { category } } : {})
+                        ...(isExternal === undefined ? {} : {role: StaffRole.EM}),
+                        ...(category === undefined ? {} : {offices: {category}})
                     },
                     relations: ["offices"]
                 }
@@ -178,8 +186,8 @@ export class StaffRepository {
         });
     
         if (offices.length !== officeNames.length) {
-            const found = offices.map(o => o.name);
-            const missing = officeNames.filter(n => !found.includes(n));
+            const found = new Set(offices.map(o => o.name));
+            const missing = officeNames.filter(n => !found.has(n));
             throw new BadRequestError(`Offices not found: ${missing.join(", ")}`);
         }
         
@@ -210,8 +218,8 @@ export class StaffRepository {
         });
 
         if (offices.length !== officeNames.length) {
-            const foundNames = offices.map(o => o.name);
-            const missing = officeNames.filter(n => !foundNames.includes(n));
+            const foundNames = new Set(offices.map(o => o.name));
+            const missing = officeNames.filter(n => !foundNames.has(n));
             throw new BadRequestError(`Offices not found: ${missing.join(", ")}`);
         }
 

@@ -75,8 +75,8 @@ export function StaffFromJSONTyped(json: any, ignoreDiscriminator: boolean): Sta
         'username': json['username'],
         'name': json['name'],
         'surname': json['surname'],
-        'role': json['role'] == null ? undefined : json['role'],
-        'officeNames': json['officeNames'] == null ? undefined : json['officeNames'],
+        'role': json['role'] ?? undefined,
+        'officeNames': json['officeNames'] ?? undefined,
     };
 }
 

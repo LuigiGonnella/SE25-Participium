@@ -6,9 +6,9 @@ import { NotFoundError } from "@errors/NotFoundError";
 import {ReportDAO} from "@dao/reportDAO";
 
 export class NotificationRepository {
-    private repo = AppDataSource.getRepository(NotificationDAO);
-    private citizenRepo = AppDataSource.getRepository(CitizenDAO);
-    private staffRepo = AppDataSource.getRepository(StaffDAO);
+    private readonly repo = AppDataSource.getRepository(NotificationDAO);
+    private readonly citizenRepo = AppDataSource.getRepository(CitizenDAO);
+    private readonly staffRepo = AppDataSource.getRepository(StaffDAO);
 
     async createNotificationForCitizen(
         report: ReportDAO,

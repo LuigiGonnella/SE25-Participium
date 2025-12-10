@@ -27,6 +27,7 @@
   },
   "homepage": "https://github.com/LuigiGonnella/SE25-Participium#readme",
   "dependencies": {
+    "@turf/turf": "^7.3.1",
     "bcrypt": "^6.0.0",
     "bootstrap": "^5.3.8",
     "config": "^4.1.1",

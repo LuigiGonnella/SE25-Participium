@@ -14,12 +14,13 @@ import {
 } from "../models/Models.ts";
 import {Card, Carousel, CarouselSlide} from "design-react-kit";
 import {Alert, Button, Col, Form, Row } from "react-bootstrap";
+import {getReportStatusColor} from "../utils/reportUtils.ts";
 
 interface ReportDetailPageProps {
   user?: User;
 }
 
-export default function ReportDetailPage({ user }: ReportDetailPageProps) {
+export default function ReportDetailPage({ user }: Readonly<ReportDetailPageProps>) {
   const { id } = useParams();
   const [report, setReport] = useState<Report | null>(null);
   const [loading, setLoading] = useState(true);
@@ -64,7 +65,7 @@ export default function ReportDetailPage({ user }: ReportDetailPageProps) {
           setLoadingMessages(false);
         }
 
-        if (data.coordinates && data.coordinates.length === 2) {
+        if (data.coordinates?.length === 2) {
           const [lat, lng] = data.coordinates;
           try {
             const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`;
@@ -208,15 +209,7 @@ return (
 
                                 <h5>Status</h5>
                                 <p>
-                                  <span className={`badge ${
-                                      report.status === ReportStatus.PENDING ? 'bg-info' :
-                                      report.status === ReportStatus.ASSIGNED ? 'bg-primary' :
-                                      report.status === ReportStatus.REJECTED ? 'bg-danger' :
-                                      report.status === ReportStatus.IN_PROGRESS ? 'bg-primary' :
-                                      report.status === ReportStatus.SUSPENDED ? 'bg-warning' :
-                                      report.status === ReportStatus.RESOLVED ? 'bg-success' :
-                                      'bg-secondary'
-                                  }`}>
+                                  <span className={`badge ${getReportStatusColor(report.status)}`}>
                                     {report.status}
                                   </span>
                                 </p>
@@ -268,7 +261,7 @@ return (
                                 <h5>Photos</h5>
                                 <Carousel type="landscape">
                                     {report.photos.map((photo, index) => (
-                                        <CarouselSlide key={index}>
+                                        <CarouselSlide key={`${photo}-${index}`}>
                                             <Card className="pb-0" rounded shadow="sm">
                                                 <div
                                                     style={{
@@ -309,7 +302,7 @@ return (
                                             >
                                                 <option value="">Select new status...</option>
                                                 {Object.entries(ReportStatus).filter(s => s[1] !== report.status && ["IN_PROGRESS", "SUSPENDED", "RESOLVED"].includes(s[0])).map(([key, value]) => (
-                                                    <option value={key}>{value}</option>
+                                                    <option key={key} value={key}>{value}</option>
                                                 ))}
                                             </Form.Select>
                                         </Form.Group>
@@ -377,31 +370,35 @@ return (
                         <div className="flex-grow-1 d-flex flex-column">
                             {/* Messages Display */}
                             <div className="flex-grow-1 overflow-auto mb-3 border-bottom p-3" style={{maxHeight: "calc(70vh - 250px)", backgroundColor: "#f0f8ff"}}>
-                                {loadingMessages ? (
-                                    <div className="text-center text-muted">Loading messages...</div>
-                                ) : messages.filter(msg => !msg.isPrivate).length === 0 ? (
-                                    <div className="text-center text-muted">No public messages yet.</div>
-                                ) : (
-                                    <div className="d-flex flex-column-reverse gap-2">
-                                        {messages.filter(msg => !msg.isPrivate).map((msg, index) => (
-                                            <div key={index} className="d-flex flex-column p-3 rounded shadow-sm"
-                                                 style={{backgroundColor: "#cde6ff"}}>
-                                                <div className="d-flex justify-content-between align-items-center mb-2">
-                                                    <span className="fw-bold text-primary">
-                                                        <i className="bi bi-person-circle me-2"></i>
-                                                            You
-                                                    </span>
-                                                    <span className="text-muted" style={{fontSize: "0.85rem"}}>
-                                                        {new Date(msg.timestamp).toLocaleString()}
-                                                    </span>
+                                {(() => {
+                                    if (loadingMessages) {
+                                        return <div className="text-center text-muted">Loading messages...</div>;
+                                    }
+                                    const publicMessages = messages.filter(msg => !msg.isPrivate);
+                                    if (publicMessages.length === 0) {
+                                        return <div className="text-center text-muted">No public messages yet.</div>;
+                                    }
+                                    return (
+                                        <div className="d-flex flex-column-reverse gap-2">
+                                            {publicMessages.map((msg, index) => (
+                                                <div key={`${msg.timestamp}-${index}`} className="d-flex flex-column p-3 rounded shadow-sm"
+                                                     style={{backgroundColor: "#cde6ff"}}>
+                                                    <div className="d-flex justify-content-between align-items-center mb-2">
+                                                        <span className="fw-bold text-primary">
+                                                            <i className="bi bi-person-circle me-2"></i>You
+                                                        </span>
+                                                        <span className="text-muted" style={{fontSize: "0.85rem"}}>
+                                                            {new Date(msg.timestamp).toLocaleString()}
+                                                        </span>
+                                                    </div>
+                                                    <div className="ps-4" style={{ whiteSpace: "pre-line" }}>
+                                                        {msg.message}
+                                                    </div>
                                                 </div>
-                                                <div className="ps-4" style={{ whiteSpace: "pre-line" }}>
-                                                    {msg.message}
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
+                                            ))}
+                                        </div>
+                                    );
+                                })()}
                             </div>
 
                             {/* Message Input */}
@@ -421,8 +418,7 @@ return (
                                     {messageError && <div className="alert alert-danger py-2 mb-2">{messageError}</div>}
                                     <button type="submit" className="btn btn-primary w-100"
                                             disabled={messageLoading || !publicMessage.trim()}>
-                                        <i className="bi bi-send me-2"></i>
-                                            {messageLoading ? "Sending..." : "Send Message"}
+                                        <i className="bi bi-send me-2"></i>{messageLoading ? "Sending..." : "Send Message"}
                                     </button>
                                 </form>
                             </div>
@@ -450,38 +446,41 @@ return (
                         <div className="flex-grow-1 d-flex flex-column">
                             {/* Messages Display */}
                             <div className="flex-grow-1 overflow-auto mb-3 border-bottom p-3" style={{maxHeight: "calc(70vh - 250px)", backgroundColor: "#fffbf0"}}>
-                                {loadingMessages ? (
-                                    <div className="text-center text-muted">Loading notes...</div>
-                                ) : messages.filter(msg => msg.isPrivate).length === 0 ? (
-                                    <div className="text-center text-muted">
-                                        No internal notes yet.
-                                    </div>
-                                ) : (
-                                    <div className="d-flex flex-column-reverse gap-2">
-                                        {messages.filter(msg => msg.isPrivate).map((msg, index) => (
-                                            <div key={index} className="d-flex flex-column p-3 rounded shadow-sm"
-                                                 style={{backgroundColor: "#fff3cd"}}>
-                                                <div className="d-flex justify-content-between align-items-center mb-2">
-                                                    <span className="fw-bold text-warning">
-                                                        <i className="bi bi-person-circle me-2"></i>
-                                                        {(isTOSM(user) && msg.staffUsername === user.username)
-                                                            || (isEM(user) && msg.staffUsername === user.username) ? (
-                                                            "You"
-                                                        ) : (
-                                                            `${msg.staffUsername}`
-                                                        )}
-                                                    </span>
-                                                    <span className="text-muted" style={{fontSize: "0.85rem"}}>
-                                                        {new Date(msg.timestamp).toLocaleString()}
-                                                    </span>
+                                {(() => {
+                                    if (loadingMessages) {
+                                        return <div className="text-center text-muted">Loading notes...</div>;
+                                    }
+                                    const privateMessages = messages.filter(msg => msg.isPrivate);
+                                    if (privateMessages.length === 0) {
+                                        return <div className="text-center text-muted">No internal notes yet.</div>;
+                                    }
+                                    return (
+                                        <div className="d-flex flex-column-reverse gap-2">
+                                            {privateMessages.map((msg, index) => (
+                                                <div key={`${msg.timestamp}-${index}`} className="d-flex flex-column p-3 rounded shadow-sm"
+                                                     style={{backgroundColor: "#fff3cd"}}>
+                                                    <div className="d-flex justify-content-between align-items-center mb-2">
+                                                        <span className="fw-bold text-warning">
+                                                            <i className="bi bi-person-circle me-2"></i>
+                                                            {(isTOSM(user) && msg.staffUsername === user.username)
+                                                                || (isEM(user) && msg.staffUsername === user.username) ? (
+                                                                "You"
+                                                            ) : (
+                                                                `${msg.staffUsername}`
+                                                            )}
+                                                        </span>
+                                                        <span className="text-muted" style={{fontSize: "0.85rem"}}>
+                                                            {new Date(msg.timestamp).toLocaleString()}
+                                                        </span>
+                                                    </div>
+                                                    <div className="ps-4" style={{ whiteSpace: "pre-line" }}>
+                                                        {msg.message}
+                                                    </div>
                                                 </div>
-                                                <div className="ps-4" style={{ whiteSpace: "pre-line" }}>
-                                                    {msg.message}
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
+                                            ))}
+                                        </div>
+                                    );
+                                })()}
                             </div>
 
                             {/* Message Input */}
@@ -501,8 +500,7 @@ return (
                                     {messageError && <div className="alert alert-danger py-2 mb-2">{messageError}</div>}
                                     <button type="submit" className="btn btn-warning w-100"
                                             disabled={messageLoading || !privateMessage.trim()}>
-                                        <i className="bi bi-send me-2"></i>
-                                            {messageLoading ? "Sending..." : "Send Message"}
+                                        <i className="bi bi-send me-2"></i>{messageLoading ? "Sending..." : "Send Message"}
                                     </button>
                                 </form>
                             </div>
@@ -570,20 +568,19 @@ return (
                                 <form onSubmit={handleUpdate}>
                                     <div className="mb-3">
                                         <label className="form-label fw-bold">
-                                            Category
-                                        </label>
-                                        <select
-                                            className="form-select"
-                                            value={categoryInput}
-                                            onChange={(e) => setCategoryInput(e.target.value)}
-                                        >
-                                            <option value="">Keep current: {report.category}</option>
-                                            {categoryOptions
-                                                .filter(([key]) => ![report.category, OfficeCategory.MOO].includes(OfficeCategory[key as keyof typeof OfficeCategory]))
-                                                .map(([key, label]) => (
-                                                    <option key={key} value={key}>{label}</option>
-                                                ))}
-                                        </select>
+                                            Category<select
+                                                className="form-select border rounded mt-1"
+                                                value={categoryInput}
+                                                onChange={(e) => setCategoryInput(e.target.value)}
+                                            >
+                                                <option value="">Keep current: {report.category}</option>
+                                                {categoryOptions
+                                                    .filter(([key]) => ![report.category, OfficeCategory.MOO].includes(OfficeCategory[key as keyof typeof OfficeCategory]))
+                                                    .map(([key, label]) => (
+                                                        <option key={key} value={key}>{label}</option>
+                                                    ))}
+                                            </select>
+                                        </label><br/>
                                         <small className="text-muted">
                                             Change category if needed before assignment.
                                         </small>
@@ -605,17 +602,17 @@ return (
                             {statusInput === ReportStatus.REJECTED && (
                                 <form onSubmit={handleUpdate}>
                                     <div className="mb-3">
-                                        <label className="form-label fw-bold">
+                                        <label className="form-label fw-bold w-100">
                                             Reason <span className="text-danger">*</span>
-                                        </label>
-                                        <textarea
-                                            className="form-control"
-                                            rows={4}
-                                            value={commentInput}
-                                            onChange={(e) => setCommentInput(e.target.value)}
-                                            required
-                                            placeholder="Explain why this report is being rejected."
-                                        />
+                                            <textarea
+                                                className="form-control mt-1"
+                                                rows={4}
+                                                value={commentInput}
+                                                onChange={(e) => setCommentInput(e.target.value)}
+                                                required
+                                                placeholder="Explain why this report is being rejected."
+                                            />
+                                        </label><br/>
                                         <small className="text-muted">
                                             This comment will be visible to the citizen who submitted the report.
                                         </small>

@@ -19,7 +19,7 @@ interface LogoutButtonProps {
     logout: () => void;
 }
 
-function LoginForm({handleLogin}: LoginFormProps) {
+function LoginForm({handleLogin}: Readonly<LoginFormProps>) {
     const [type, setType] = useState<'CITIZEN' | 'STAFF'>('CITIZEN');
     const [error, setError] = useState<string>();
     const [, formAction, isPending] = useActionState<LoginState, FormData>(
@@ -147,7 +147,7 @@ function LoginForm({handleLogin}: LoginFormProps) {
     );
 }
 
-function LogoutButton({logout}: LogoutButtonProps) {
+function LogoutButton({logout}: Readonly<LogoutButtonProps>) {
     return (
         <span role="button" onClick={logout}>
             <Icon

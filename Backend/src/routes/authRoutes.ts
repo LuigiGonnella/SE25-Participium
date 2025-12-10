@@ -20,19 +20,19 @@ router.post('/register', uploadProfilePicture.single('profilePicture'), async (r
         // Validate required fields
         const { email, username, name, surname, password } = req.body;
         
-        if (!email || !email.trim() || !email.includes('@')) {
+        if (!email?.trim() || !email.includes('@')) {
             return res.status(400).json({ error: 'Invalid or missing email' });
         }
-        if (!username || !username.trim()) {
+        if (!username?.trim()) {
             return res.status(400).json({ error: 'Invalid or missing username' });
         }
-        if (!name || !name.trim()) {
+        if (!name?.trim()) {
             return res.status(400).json({ error: 'Invalid or missing name' });
         }
-        if (!surname || !surname.trim()) {
+        if (!surname?.trim()) {
             return res.status(400).json({ error: 'Invalid or missing surname' });
         }
-        if (!password || !password.trim()) {
+        if (!password?.trim()) {
             return res.status(400).json({ error: 'Invalid or missing password' });
         }
         const citizen = await register(
@@ -72,10 +72,10 @@ router.post('/login', async (req, res, next) => {
         // Validate required fields
         const { username, password } = req.body;
         
-        if (!username || !username.trim()) {
+        if (!username?.trim()) {
             return res.status(400).json({ error: 'Invalid or missing username' });
         }
-        if (!password || !password.trim()) {
+        if (!password?.trim()) {
             return res.status(400).json({ error: 'Invalid or missing password' });
         }
 
@@ -121,7 +121,7 @@ router.post('/verify-email', async (req, res, next) => {
     try {
         const { code } = req.body;
 
-        if (!code || !code.trim()) {
+        if (!code?.trim()) {
             return res.status(400).json({ error: 'Invalid or missing verification code' });
         }
 

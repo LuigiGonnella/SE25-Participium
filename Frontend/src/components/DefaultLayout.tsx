@@ -10,36 +10,34 @@ interface DefaultLayoutProps {
     loading?: boolean;
 }
 
-function DefaultLayout({ loggedIn, user, handleLogout, loading = false }: DefaultLayoutProps) {
+function DefaultLayout({ loggedIn, user, handleLogout, loading = false }: Readonly<DefaultLayoutProps>) {
     return (
-        <>
-            <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-                <NavComponent loggedIn={loggedIn} user={user} handleLogout={handleLogout} />
-                <Container
-                    fluid
-                    style={{
-                        flex: 1,
+        <div style={{display: 'flex', flexDirection: 'column', minHeight: '100vh'}}>
+            <NavComponent loggedIn={loggedIn} user={user} handleLogout={handleLogout}/>
+            <Container
+                fluid
+                style={{
+                    flex: 1,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    overflowY: 'auto',
+                    padding: '0'
+                }}
+            >
+                {loading ? (
+                    <div style={{
                         display: 'flex',
-                        flexDirection: 'column',
-                        overflowY: 'auto',
-                        padding: '0'
-                    }}
-                >
-                    {loading ? (
-                        <div style={{
-                            display: 'flex',
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                            flex: 1
-                        }}>
-                            <Spinner active />
-                        </div>
-                    ) : (
-                        <Outlet />
-                    )}
-                </Container>
-            </div>
-        </>
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        flex: 1
+                    }}>
+                        <Spinner active/>
+                    </div>
+                ) : (
+                    <Outlet/>
+                )}
+            </Container>
+        </div>
     );
 }
 
