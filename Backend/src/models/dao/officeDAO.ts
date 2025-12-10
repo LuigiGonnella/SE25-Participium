@@ -1,4 +1,4 @@
-import {Column, Entity, OneToMany, PrimaryGeneratedColumn} from "typeorm";
+import {Column, Entity, ManyToMany, PrimaryGeneratedColumn} from "typeorm";
 import {StaffDAO} from "./staffDAO";
 
 export enum OfficeCategory {
@@ -26,9 +26,13 @@ export class OfficeDAO {
     @Column()
     description: string;
 
-    @Column({ type: "simple-enum", enum: OfficeCategory, unique: true, nullable: false })
+    @Column({ type: "simple-enum", enum: OfficeCategory, unique: false, nullable: false })
     category: OfficeCategory;
 
-    @OneToMany(() => StaffDAO, (staff) => staff.office)
+    @Column({ nullable: false, default: false })
+    isExternal: boolean;
+
+    @ManyToMany(() => StaffDAO, (staff) => staff.offices)
     members: StaffDAO[];
+
 }

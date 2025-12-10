@@ -5,6 +5,7 @@ import {
     isMPRO,
     isStaff,
     isTOSM,
+    isEM,
     type Message,
     OfficeCategory,
     type Report,
@@ -12,13 +13,14 @@ import {
     type User
 } from "../models/Models.ts";
 import {Card, Carousel, CarouselSlide} from "design-react-kit";
-import {Alert, Button, Col, Form, Row} from "react-bootstrap";
+import {Alert, Button, Col, Form, Row } from "react-bootstrap";
+import {getReportStatusColor} from "../utils/reportUtils.ts";
 
 interface ReportDetailPageProps {
   user?: User;
 }
 
-export default function ReportDetailPage({ user }: ReportDetailPageProps) {
+export default function ReportDetailPage({ user }: Readonly<ReportDetailPageProps>) {
   const { id } = useParams();
   const [report, setReport] = useState<Report | null>(null);
   const [loading, setLoading] = useState(true);
@@ -35,11 +37,12 @@ export default function ReportDetailPage({ user }: ReportDetailPageProps) {
   const [success, setSuccess] = useState("");
 
   // Message state
-  const [messageInput, setMessageInput] = useState<string>("");
   const [messageLoading, setMessageLoading] = useState<boolean>(false);
   const [messageError, setMessageError] = useState<string>("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [loadingMessages, setLoadingMessages] = useState(false);
+  const [publicMessage, setPublicMessage] = useState<string>("");
+  const [privateMessage, setPrivateMessage] = useState<string>("");
 
   const [statusUpdate, setStatusUpdate] = useState("");
 
@@ -62,7 +65,7 @@ export default function ReportDetailPage({ user }: ReportDetailPageProps) {
           setLoadingMessages(false);
         }
 
-        if (data.coordinates && data.coordinates.length === 2) {
+        if (data.coordinates?.length === 2) {
           const [lat, lng] = data.coordinates;
           try {
             const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`;
@@ -131,15 +134,21 @@ export default function ReportDetailPage({ user }: ReportDetailPageProps) {
     }
   };
 
-  const handleMessage = async (e: React.FormEvent) => {
+  const handleMessage = async (e: React.FormEvent, isPrivate: boolean) => {
     e.preventDefault();
-    if (!report || !user || !isTOSM(user)) return;
+    if (!report || !user || !(isTOSM(user)||isEM(user)) ) return;
     setMessageLoading(true);
     setMessageError("");
 
     try {
-      await API.createMessage(report.id, messageInput);
-      setMessageInput("");
+    const message = isPrivate ? privateMessage : publicMessage;
+      await API.createMessage(report.id, message, isPrivate);
+
+      if (isPrivate) {
+        setPrivateMessage("");
+      } else {
+        setPublicMessage("");
+      }
 
       // Reload messages
       const msgs = await API.getAllMessages(report.id);
@@ -147,12 +156,12 @@ export default function ReportDetailPage({ user }: ReportDetailPageProps) {
 
       const updateReport = await API.getReportById(report.id);
       setReport(updateReport);
-  } catch (err: any) {
+      } catch (err: any) {
       setMessageError(err?.details || "Failed to send message");
-    } finally {
+      } finally {
       setMessageLoading(false);
-    }
-  };
+      }
+    };
 
     const handleStatusUpdate = async () => {
         setError("");
@@ -185,7 +194,11 @@ return (
 
             <div className="row">
                 {/* LEFT COLUMN — REPORT DETAILS */}
-                <div className={(isTOSM(user) && report.assignedStaff === user.username) || report.status === ReportStatus.PENDING ? "col-md-8" : "col-12"}>
+                <div className={(
+                    (isTOSM(user) && report.assignedStaff === user.username) ||
+                    report.status === ReportStatus.PENDING) ||
+                    (isEM(user) && report.assignedEM === user.username)
+                    ? "col-md-8" : "col-12"}>
                     <div className="card shadow-sm h-100 d-flex flex-column">
                         <div className="card-header">
                             <h2>{report.title}</h2>
@@ -196,15 +209,7 @@ return (
 
                                 <h5>Status</h5>
                                 <p>
-                                  <span className={`badge ${
-                                      report.status === ReportStatus.PENDING ? 'bg-info' :
-                                      report.status === ReportStatus.ASSIGNED ? 'bg-primary' :
-                                      report.status === ReportStatus.REJECTED ? 'bg-danger' :
-                                      report.status === ReportStatus.IN_PROGRESS ? 'bg-primary' :
-                                      report.status === ReportStatus.SUSPENDED ? 'bg-warning' :
-                                      report.status === ReportStatus.RESOLVED ? 'bg-success' :
-                                      'bg-secondary'
-                                  }`}>
+                                  <span className={`badge ${getReportStatusColor(report.status)}`}>
                                     {report.status}
                                   </span>
                                 </p>
@@ -243,13 +248,20 @@ return (
                                         <i>Unknown</i>
                                     )}
                                 </p>
+
+                                {isTOSM(user) && report.assignedEM && (
+                                    <>
+                                        <h5>External Maintainer</h5>
+                                        <p>{report.assignedEM}</p>
+                                    </>
+                                )}
                             </div>
 
                             <div className="col-md-6">
                                 <h5>Photos</h5>
                                 <Carousel type="landscape">
                                     {report.photos.map((photo, index) => (
-                                        <CarouselSlide key={index}>
+                                        <CarouselSlide key={`${photo}-${index}`}>
                                             <Card className="pb-0" rounded shadow="sm">
                                                 <div
                                                     style={{
@@ -276,7 +288,7 @@ return (
                                 </Carousel>
                             </div>
                         </div>
-                        { (isTOSM(user) && report.assignedStaff === user.username) &&
+                        { ((isTOSM(user) || isEM(user)) && (report.assignedStaff === user.username || report.assignedEM === user.username)) &&
                         <div className="row px-4">
                             {!loading && error && <Alert variant="danger">{error}</Alert>}
                             <div className="ms-4 pt-3">
@@ -290,7 +302,7 @@ return (
                                             >
                                                 <option value="">Select new status...</option>
                                                 {Object.entries(ReportStatus).filter(s => s[1] !== report.status && ["IN_PROGRESS", "SUSPENDED", "RESOLVED"].includes(s[0])).map(([key, value]) => (
-                                                    <option value={key}>{value}</option>
+                                                    <option key={key} value={key}>{value}</option>
                                                 ))}
                                             </Form.Select>
                                         </Form.Group>
@@ -327,69 +339,178 @@ return (
 
                 <div className="col-md-4">
                     {/* RIGHT COLUMN — MESSAGES CHAT (for TOSM) */}
-                    {user && isTOSM(user) && report.assignedStaff === user.username && (
-                        <div className="card shadow-sm h-100 d-flex flex-column">
-                            <div className="card-header">
-                                <h5 className="mb-0">Messages</h5>
-                            </div>
-                            <div className="card-body flex-grow-1 d-flex flex-column"
-                                 style={{maxHeight: "calc(100vh - 250px)"}}>
-                                {/* Messages Display */}
-                                <div className="flex-grow-1 overflow-auto mb-3 border rounded p-3"
-                                     style={{backgroundColor: "#f8f9fa"}}>
-                                    {loadingMessages ? (
-                                        <div className="text-center text-muted">Loading messages...</div>
-                                    ) : messages.length === 0 ? (
-                                        <div className="text-center text-muted">No messages yet. Start the
-                                            conversation!</div>
-                                    ) : (
+    {user && ((isTOSM(user) && report.assignedStaff === user.username)
+        || (isEM(user) && report.assignedEM === user.username)) && (
+        <div className="card shadow-sm h-100 d-flex flex-column">
+            <div className="card-header">
+                <div className="d-flex justify-content-between align-items-center">
+                    <h5 className="mb-0">Communications</h5>
+                </div>
+            </div>
+            
+            <div className="card-body p-0 flex-grow-1">
+                
+                {/* CITIZEN CHAT SECTION */}
+                {isTOSM(user) && (<div className="border-bottom">
+                    <div 
+                        className="d-flex justify-content-between align-items-center p-3 bg-primary bg-opacity-10 cursor-pointer"
+                        data-bs-toggle="collapse" 
+                        data-bs-target="#citizenChat"
+                        aria-expanded="true"
+                        style={{cursor: "pointer"}}
+                    >
+                        <div className="d-flex align-items-center">
+                            <i className="bi bi-broadcast-pin me-2 text-primary"></i>
+                            <span className="fw-semibold">Public Messages</span>
+                        </div>
+                        <i className="bi bi-chevron-down"></i>
+                    </div>
+
+                    <div className="collapse show" id="citizenChat">
+                        <div className="flex-grow-1 d-flex flex-column">
+                            {/* Messages Display */}
+                            <div className="flex-grow-1 overflow-auto mb-3 border-bottom p-3" style={{maxHeight: "calc(70vh - 250px)", backgroundColor: "#f0f8ff"}}>
+                                {(() => {
+                                    if (loadingMessages) {
+                                        return <div className="text-center text-muted">Loading messages...</div>;
+                                    }
+                                    const publicMessages = messages.filter(msg => !msg.isPrivate);
+                                    if (publicMessages.length === 0) {
+                                        return <div className="text-center text-muted">No public messages yet.</div>;
+                                    }
+                                    return (
                                         <div className="d-flex flex-column-reverse gap-2">
-                                            {messages.map((msg, index) => (
-                                                <div key={index} className="d-flex flex-column p-3 rounded shadow-sm"
-                                                     style={{backgroundColor: "white"}}>
+                                            {publicMessages.map((msg, index) => (
+                                                <div key={`${msg.timestamp}-${index}`} className="d-flex flex-column p-3 rounded shadow-sm"
+                                                     style={{backgroundColor: "#cde6ff"}}>
                                                     <div className="d-flex justify-content-between align-items-center mb-2">
                                                         <span className="fw-bold text-primary">
-                                                            <i className="bi bi-person-circle me-2"></i>
-                                                            {msg.staffUsername === user.username ? ("You") : (report.citizenUsername)}
+                                                            <i className="bi bi-person-circle me-2"></i>You
                                                         </span>
                                                         <span className="text-muted" style={{fontSize: "0.85rem"}}>
                                                             {new Date(msg.timestamp).toLocaleString()}
                                                         </span>
                                                     </div>
-                                                    <div className="ps-4">
+                                                    <div className="ps-4" style={{ whiteSpace: "pre-line" }}>
                                                         {msg.message}
                                                     </div>
                                                 </div>
                                             ))}
                                         </div>
-                                    )}
-                                </div>
+                                    );
+                                })()}
+                            </div>
 
-                                {/* Message Input */}
-                                <div className="mt-auto">
-                                    <form onSubmit={handleMessage}>
-                                        <div className="mb-2">
-                                            <textarea
-                                                className="form-control"
-                                                rows={3}
-                                                value={messageInput}
-                                                onChange={(e) => setMessageInput(e.target.value)}
-                                                required
-                                                placeholder="Type your message here..."
-                                                disabled={messageLoading}
-                                            />
-                                        </div>
-                                        {messageError && <div className="alert alert-danger py-2 mb-2">{messageError}</div>}
-                                        <button type="submit" className="btn btn-primary w-100"
-                                                disabled={messageLoading || !messageInput.trim()}>
-                                            <i className="bi bi-send me-2"></i>
-                                            {messageLoading ? "Sending..." : "Send Message"}
-                                        </button>
-                                    </form>
-                                </div>
+                            {/* Message Input */}
+                                <div className="mt-auto mb-3">
+                                    <form onSubmit={(e) => handleMessage(e, false)}>
+                                    <div className="mb-2">
+                                        <textarea
+                                            className="form-control"
+                                            rows={2}
+                                            value={publicMessage}
+                                            onChange={(e) => setPublicMessage(e.target.value)}
+                                            required
+                                                placeholder="Type your message here."
+                                            disabled={messageLoading}
+                                        />
+                                    </div>
+                                    {messageError && <div className="alert alert-danger py-2 mb-2">{messageError}</div>}
+                                    <button type="submit" className="btn btn-primary w-100"
+                                            disabled={messageLoading || !publicMessage.trim()}>
+                                        <i className="bi bi-send me-2"></i>{messageLoading ? "Sending..." : "Send Message"}
+                                    </button>
+                                </form>
                             </div>
                         </div>
-                    )}
+                    </div>
+                </div>)}
+
+                {/* INTERNAL MESSAGES SECTION */}
+                {((isTOSM(user) && report.assignedEM) || isEM(user)) && (<div>
+                    <div 
+                        className="d-flex justify-content-between align-items-center p-3 bg-warning bg-opacity-10 cursor-pointer"
+                        data-bs-toggle="collapse" 
+                        data-bs-target="#staffChat"
+                        aria-expanded="true"
+                        style={{cursor: "pointer"}}
+                    >
+                        <div className="d-flex align-items-center">
+                            <i className="bi bi-lock me-2 text-warning"></i>
+                            <span className="fw-semibold">Internal Notes</span>
+                        </div>
+                        <i className="bi bi-chevron-down"></i>
+                    </div>
+                    
+                    <div className="collapse show" id="staffChat">
+                        <div className="flex-grow-1 d-flex flex-column">
+                            {/* Messages Display */}
+                            <div className="flex-grow-1 overflow-auto mb-3 border-bottom p-3" style={{maxHeight: "calc(70vh - 250px)", backgroundColor: "#fffbf0"}}>
+                                {(() => {
+                                    if (loadingMessages) {
+                                        return <div className="text-center text-muted">Loading notes...</div>;
+                                    }
+                                    const privateMessages = messages.filter(msg => msg.isPrivate);
+                                    if (privateMessages.length === 0) {
+                                        return <div className="text-center text-muted">No internal notes yet.</div>;
+                                    }
+                                    return (
+                                        <div className="d-flex flex-column-reverse gap-2">
+                                            {privateMessages.map((msg, index) => (
+                                                <div key={`${msg.timestamp}-${index}`} className="d-flex flex-column p-3 rounded shadow-sm"
+                                                     style={{backgroundColor: "#fff3cd"}}>
+                                                    <div className="d-flex justify-content-between align-items-center mb-2">
+                                                        <span className="fw-bold text-warning">
+                                                            <i className="bi bi-person-circle me-2"></i>
+                                                            {(isTOSM(user) && msg.staffUsername === user.username)
+                                                                || (isEM(user) && msg.staffUsername === user.username) ? (
+                                                                "You"
+                                                            ) : (
+                                                                `${msg.staffUsername}`
+                                                            )}
+                                                        </span>
+                                                        <span className="text-muted" style={{fontSize: "0.85rem"}}>
+                                                            {new Date(msg.timestamp).toLocaleString()}
+                                                        </span>
+                                                    </div>
+                                                    <div className="ps-4" style={{ whiteSpace: "pre-line" }}>
+                                                        {msg.message}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    );
+                                })()}
+                            </div>
+
+                            {/* Message Input */}
+                            <div className="mt-auto">
+                                    <form onSubmit={(e) => handleMessage(e, true)}>
+                                    <div className="mb-2">
+                                        <textarea
+                                            className="form-control"
+                                            rows={2}
+                                            value={privateMessage}
+                                            onChange={(e) => setPrivateMessage(e.target.value)}
+                                            required
+                                            placeholder="Type your message here."
+                                            disabled={messageLoading}
+                                        />
+                                    </div>
+                                    {messageError && <div className="alert alert-danger py-2 mb-2">{messageError}</div>}
+                                    <button type="submit" className="btn btn-warning w-100"
+                                            disabled={messageLoading || !privateMessage.trim()}>
+                                        <i className="bi bi-send me-2"></i>{messageLoading ? "Sending..." : "Send Message"}
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                )}
+            </div>
+        </div>
+    )}
 
                     {/* RIGHT COLUMN — MANAGE REPORT (for MPRO) */}
                     {user && isMPRO(user) && report.status === ReportStatus.PENDING && (
@@ -447,20 +568,19 @@ return (
                                 <form onSubmit={handleUpdate}>
                                     <div className="mb-3">
                                         <label className="form-label fw-bold">
-                                            Category
-                                        </label>
-                                        <select
-                                            className="form-select"
-                                            value={categoryInput}
-                                            onChange={(e) => setCategoryInput(e.target.value)}
-                                        >
-                                            <option value="">Keep current: {report.category}</option>
-                                            {categoryOptions
-                                                .filter(([key]) => ![report.category, OfficeCategory.MOO].includes(OfficeCategory[key as keyof typeof OfficeCategory]))
-                                                .map(([key, label]) => (
-                                                    <option key={key} value={key}>{label}</option>
-                                                ))}
-                                        </select>
+                                            Category<select
+                                                className="form-select border rounded mt-1"
+                                                value={categoryInput}
+                                                onChange={(e) => setCategoryInput(e.target.value)}
+                                            >
+                                                <option value="">Keep current: {report.category}</option>
+                                                {categoryOptions
+                                                    .filter(([key]) => ![report.category, OfficeCategory.MOO].includes(OfficeCategory[key as keyof typeof OfficeCategory]))
+                                                    .map(([key, label]) => (
+                                                        <option key={key} value={key}>{label}</option>
+                                                    ))}
+                                            </select>
+                                        </label><br/>
                                         <small className="text-muted">
                                             Change category if needed before assignment.
                                         </small>
@@ -482,17 +602,17 @@ return (
                             {statusInput === ReportStatus.REJECTED && (
                                 <form onSubmit={handleUpdate}>
                                     <div className="mb-3">
-                                        <label className="form-label fw-bold">
+                                        <label className="form-label fw-bold w-100">
                                             Reason <span className="text-danger">*</span>
-                                        </label>
-                                        <textarea
-                                            className="form-control"
-                                            rows={4}
-                                            value={commentInput}
-                                            onChange={(e) => setCommentInput(e.target.value)}
-                                            required
-                                            placeholder="Explain why this report is being rejected."
-                                        />
+                                            <textarea
+                                                className="form-control mt-1"
+                                                rows={4}
+                                                value={commentInput}
+                                                onChange={(e) => setCommentInput(e.target.value)}
+                                                required
+                                                placeholder="Explain why this report is being rejected."
+                                            />
+                                        </label><br/>
                                         <small className="text-muted">
                                             This comment will be visible to the citizen who submitted the report.
                                         </small>

@@ -1,9 +1,11 @@
 import request from "supertest";
 import { app } from "@app";
-import { beforeAllE2e, afterAllE2e } from "@test/e2e/lifecycle";
+import { beforeAllE2e, afterAllE2e, beforeEachE2e, DEFAULT_CITIZENS } from "@test/e2e/lifecycle";
 import { TestDataSource } from "../setup/test-datasource";
 import { CitizenDAO } from "@dao/citizenDAO";
 import bcrypt from "bcrypt";
+import { PendingVerificationDAO } from "@models/dao/pendingVerificationDAO";
+import { PendingVerificationRepository } from "@repositories/pendingVerificationRepository";
 
 describe("Authentication API E2E Tests", () => {
     beforeAll(async () => {
@@ -15,7 +17,7 @@ describe("Authentication API E2E Tests", () => {
     });
 
     beforeEach(async () => {
-        await TestDataSource.getRepository(CitizenDAO).clear();
+        await beforeEachE2e();
     });
 
     describe("POST /api/v1/auth/register - Citizen Registration", () => {
@@ -33,7 +35,7 @@ describe("Authentication API E2E Tests", () => {
                 });
 
             expect(res.status).toBe(201);
-            expect(res.body).toHaveProperty('email', 'newuser@example.com');
+            expect(res.body).not.toHaveProperty('email');
             expect(res.body).toHaveProperty('username', 'newuser');
             expect(res.body).toHaveProperty('name', 'New');
             expect(res.body).toHaveProperty('surname', 'User');
@@ -43,10 +45,11 @@ describe("Authentication API E2E Tests", () => {
             // Verify in database
             const savedCitizen = await TestDataSource
                 .getRepository(CitizenDAO)
-                .findOneBy({ email: "newuser@example.com" });
+                .findOneBy({ username: "newuser" });
             
             expect(savedCitizen).toBeTruthy();
-            expect(savedCitizen?.email).toBe("newuser@example.com");
+            expect(savedCitizen?.email).toBeNull();
+            expect(savedCitizen?.username).toBe("newuser");
             expect(savedCitizen?.password).not.toBe("password123"); // must be hashed
             
             // Verify password was hashed
@@ -54,45 +57,14 @@ describe("Authentication API E2E Tests", () => {
             expect(isMatch).toBe(true);
         });
 
-        it("should register a new citizen with all optional fields", async () => {
+        it("should fail when email already exists (using default citizen)", async () => {
             const res = await request(app)
                 .post("/api/v1/auth/register")
                 .send({
-                    email: "fulluser@example.com",
-                    username: "fulluser",
-                    name: "Full",
+                    email: DEFAULT_CITIZENS.citizen1.email, 
+                    username: "newusername",
+                    name: "Test",
                     surname: "User",
-                    password: "password123",
-                    receive_emails: false,
-                    telegram_username: "@fulluser"
-                });
-
-            expect(res.status).toBe(201);
-            expect(res.body.receive_emails).toBe(false);
-            expect(res.body.telegram_username).toBe("@fulluser");
-        });
-
-        it("should fail when email already exists", async () => {
-            // First registration
-            await request(app)
-                .post("/api/v1/auth/register")
-                .send({
-                    email: "dup@example.com",
-                    username: "dupuser",
-                    name: "Dup",
-                    surname: "User",
-                    password: "password123",
-                    receive_emails: false
-                });
-
-            // Second registration with same email
-            const res = await request(app)
-                .post("/api/v1/auth/register")
-                .send({
-                    email: "dup@example.com",
-                    username: "dupuser2",
-                    name: "Dup2",
-                    surname: "User2",
                     password: "password123",
                     receive_emails: false
                 });
@@ -100,24 +72,12 @@ describe("Authentication API E2E Tests", () => {
             expect(res.status).toBeGreaterThanOrEqual(400);
         });
 
-        it("should fail when username already exists", async () => {
-            // First registration
-            await request(app)
-                .post("/api/v1/auth/register")
-                .send({
-                    email: "user1@example.com",
-                    username: "dupusername",
-                    name: "User",
-                    surname: "One",
-                    password: "password123"
-                });
-
-            // Second registration with same username
+        it("should fail when username already exists (using default citizen)", async () => {
             const res = await request(app)
                 .post("/api/v1/auth/register")
                 .send({
-                    email: "user2@example.com",
-                    username: "dupusername",
+                    email: "newemail@example.com",
+                    username: DEFAULT_CITIZENS.citizen1.username, 
                     name: "User",
                     surname: "Two",
                     password: "password123"
@@ -142,7 +102,7 @@ describe("Authentication API E2E Tests", () => {
 
             const savedCitizen = await TestDataSource
                 .getRepository(CitizenDAO)
-                .findOneBy({ email: "hashtest@example.com" });
+                .findOneBy({ username: "hashuser" });
 
             expect(savedCitizen).toBeTruthy();
             expect(savedCitizen?.password).not.toBe(plainPassword);
@@ -164,7 +124,8 @@ describe("Authentication API E2E Tests", () => {
                 });
 
             expect(res.status).toBe(201);
-            expect(res.body.email).toBe("minimal@example.com");
+            expect(res.body.email).toBeUndefined();
+            expect(res.body.username).toBe("minimaluser");
         });
 
         it("should return 400 when email is missing", async () => {
@@ -254,31 +215,17 @@ describe("Authentication API E2E Tests", () => {
     });
 
     describe("POST /api/v1/auth/login - Citizen Login", () => {
-        beforeEach(async () => {
-            // Create a test user for login tests
-            await request(app)
-                .post("/api/v1/auth/register")
-                .send({
-                    email: "logintest@example.com",
-                    username: "loginuser",
-                    name: "Login",
-                    surname: "Test",
-                    password: "testpassword123",
-                    receive_emails: true
-                });
-        });
-
         it("should login successfully with correct credentials", async () => {
             const res = await request(app)
                 .post("/api/v1/auth/login?type=CITIZEN")
                 .send({
-                    username: "loginuser",
-                    password: "testpassword123"
+                    username: DEFAULT_CITIZENS.citizen1.username,
+                    password: DEFAULT_CITIZENS.citizen1.password
                 });
 
             expect(res.status).toBe(200);
-            expect(res.body).toHaveProperty('username', 'loginuser');
-            expect(res.body).toHaveProperty('email', 'logintest@example.com');
+            expect(res.body).toHaveProperty('username', DEFAULT_CITIZENS.citizen1.username);
+            expect(res.body).toHaveProperty('email', DEFAULT_CITIZENS.citizen1.email);
             expect(res.body).not.toHaveProperty('password');
         });
 
@@ -286,7 +233,7 @@ describe("Authentication API E2E Tests", () => {
             const res = await request(app)
                 .post("/api/v1/auth/login?type=CITIZEN")
                 .send({
-                    username: "loginuser",
+                    username: DEFAULT_CITIZENS.citizen1.username,
                     password: "wrongpassword"
                 });
 
@@ -308,8 +255,8 @@ describe("Authentication API E2E Tests", () => {
             const res = await request(app)
                 .post("/api/v1/auth/login")
                 .send({
-                    username: "loginuser",
-                    password: "testpassword123"
+                    username: DEFAULT_CITIZENS.citizen1.username,
+                    password: DEFAULT_CITIZENS.citizen1.password
                 });
 
             expect(res.status).toBeGreaterThanOrEqual(400);
@@ -319,8 +266,8 @@ describe("Authentication API E2E Tests", () => {
             const res = await request(app)
                 .post("/api/v1/auth/login?type=INVALID")
                 .send({
-                    username: "loginuser",
-                    password: "testpassword123"
+                    username: DEFAULT_CITIZENS.citizen1.username,
+                    password: DEFAULT_CITIZENS.citizen1.password
                 });
 
             expect(res.status).toBeGreaterThanOrEqual(400);
@@ -341,7 +288,7 @@ describe("Authentication API E2E Tests", () => {
             const res = await request(app)
                 .post("/api/v1/auth/login?type=CITIZEN")
                 .send({
-                    username: "loginuser"
+                    username: DEFAULT_CITIZENS.citizen1.username
                 });
 
             expect(res.status).toBe(400);
@@ -360,25 +307,14 @@ describe("Authentication API E2E Tests", () => {
 
     describe("DELETE /api/v1/auth/logout - Logout", () => {
         it("should logout successfully", async () => {
-            // Register and login first
-            await request(app)
-                .post("/api/v1/auth/register")
-                .send({
-                    email: "logout@example.com",
-                    username: "logoutuser",
-                    name: "Logout",
-                    surname: "Test",
-                    password: "password123"
-                });
-
+            // Login with default citizen
             const loginRes = await request(app)
                 .post("/api/v1/auth/login?type=CITIZEN")
                 .send({
-                    username: "logoutuser",
-                    password: "password123"
+                    username: DEFAULT_CITIZENS.citizen2.username,
+                    password: DEFAULT_CITIZENS.citizen2.password
                 });
 
-            // Use the session cookie from login
             const cookies = loginRes.headers['set-cookie'];
 
             const res = await request(app)
@@ -399,22 +335,12 @@ describe("Authentication API E2E Tests", () => {
 
     describe("GET /api/v1/auth/me - Get current user", () => {
         it("should return current user when authenticated", async () => {
-            // Register and login
-            await request(app)
-                .post("/api/v1/auth/register")
-                .send({
-                    email: "me@example.com",
-                    username: "meuser",
-                    name: "Me",
-                    surname: "Test",
-                    password: "password123"
-                });
-
+            // Login with default citizen
             const loginRes = await request(app)
                 .post("/api/v1/auth/login?type=CITIZEN")
                 .send({
-                    username: "meuser",
-                    password: "password123"
+                    username: DEFAULT_CITIZENS.citizen3.username,
+                    password: DEFAULT_CITIZENS.citizen3.password
                 });
 
             const cookies = loginRes.headers['set-cookie'];
@@ -424,15 +350,70 @@ describe("Authentication API E2E Tests", () => {
                 .set('Cookie', cookies);
 
             expect(res.status).toBe(200);
-            expect(res.body).toHaveProperty('username', 'meuser');
-            expect(res.body).toHaveProperty('email', 'me@example.com');
+            expect(res.body).toHaveProperty('username', DEFAULT_CITIZENS.citizen3.username);
+            expect(res.body).toHaveProperty('email', DEFAULT_CITIZENS.citizen3.email);
+            expect(res.body).not.toHaveProperty('password');
         });
-
+        
         it("should fail when not authenticated", async () => {
             const res = await request(app)
                 .get("/api/v1/auth/me");
 
             expect(res.status).toBeGreaterThanOrEqual(401);
+        });
+    });
+
+    describe("POST /api/v1/auth/verify-email - Email Verification", () => {
+
+        it("should return 400 when code is missing", async () => {
+            const res = await request(app)
+                .post("/api/v1/auth/verify-email")
+                .send({ code: "" });
+    
+            expect(res.status).toBe(400);
+            expect(res.body).toHaveProperty("error");
+        });
+    
+        it("should return 404 when code is invalid", async () => {
+            const res = await request(app)
+                .post("/api/v1/auth/verify-email")
+                .send({ code: "INVALID_CODE_123" });
+    
+            expect(res.status).toBe(404);
+            expect(res.body).toHaveProperty("message");
+            expect(res.body.message).toMatch(/invalid|expired/i);
+        });
+    
+        it("should verify email successfully", async () => {
+            const citizenRepo = TestDataSource.getRepository(CitizenDAO);
+            const pvRepo = TestDataSource.getRepository(PendingVerificationDAO);
+            const pendingRepo = new PendingVerificationRepository();
+        
+            const citizen = await citizenRepo.findOneBy({
+                username: DEFAULT_CITIZENS.citizen1.username
+            });
+        
+            expect(citizen).not.toBeNull();
+        
+            const pending = await pendingRepo.createPendingVerification(
+                citizen!,
+                "verified@example.com",
+                "email"
+            );
+        
+            const res = await request(app)
+                .post("/api/v1/auth/verify-email")
+                .send({ code: pending.verificationCode });
+        
+            expect(res.status).toBe(200);
+        
+            const updatedCitizen = await citizenRepo.findOneBy({ id: citizen!.id });
+            expect(updatedCitizen?.email).toBe("verified@example.com");
+        
+            const leftover = await pvRepo.find();
+            const stillExists = leftover.find(p => p.verificationCode === pending.verificationCode);
+        
+            expect(stillExists).toBeUndefined();
         });
     });
 });

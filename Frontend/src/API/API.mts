@@ -60,6 +60,34 @@ const municipalityRegister = async (newStaff: NewStaff): Promise<Staff> => {
     return handleAPIError(response, 'Municipality Registration');
 }
 
+const updateTOSMOffices = async (username: string, offices: string[]): Promise<Staff> => {
+    const response = await fetch(`${BACKEND_URL}/staffs/${username}/offices`, {
+        method: 'PATCH',
+        headers: { "Content-Type": "application/json" },
+        credentials: 'include',
+        body: JSON.stringify({offices})
+    })
+
+    if(response.ok) {
+        return await response.json();
+    }
+
+    return handleAPIError(response, "TOSM Offices Update")
+}
+
+const getAllTOSM = async (): Promise<Staff[]> => {
+    const response = await fetch(`${BACKEND_URL}/staffs/tosm`,{
+        method: 'GET',
+        credentials: 'include'
+    })
+
+    if (response.ok){
+        return await response.json()
+    }
+
+    return handleAPIError(response, "Get All TOSM")
+}
+
 const login = async (credentials: Credentials, type: 'CITIZEN' | 'STAFF'): Promise<User> => {
     const response = await fetch(`${BACKEND_URL}/auth/login?type=${type}`, {
         method: 'POST',
@@ -192,7 +220,7 @@ const updateReport = async (
     const endpoint =
         role === "Municipal Public Relations Officer"
             ? `/reports/${id}/manage`
-            : `/reports/${id}/work`;
+            : `/reports/${id}/updateStatus`;
 
     const response = await fetch(`${BACKEND_URL}${endpoint}`, {
         method: "PATCH",
@@ -206,15 +234,56 @@ const updateReport = async (
 };
 
 const assignReportToSelf = async (reportId: number): Promise<Report> => {
-    const response = await fetch(`${BACKEND_URL}/reports/${reportId}/work`, {
+    const response = await fetch(`${BACKEND_URL}/reports/${reportId}/assignSelf`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ status: "IN_PROGRESS" }),
+        body: JSON.stringify({}), // Just assign, don't change status
     });
 
     if (response.ok) return await response.json();
     return handleAPIError(response, "Assign Report");
+};
+
+const getEMStaffByCategory = async (category: string): Promise<Staff[]> => {
+    // Convert category name to category code
+    const categoryCodeMap: Record<string, string> = {
+        "Municipal Organization": "MOO",
+        "Water Supply": "WSO",
+        "Architectural Barriers": "ABO",
+        "Sewer System": "SSO",
+        "Public Lighting": "PLO",
+        "Waste": "WO",
+        "Road Signs and Traffic Lights": "RSTLO",
+        "Roads and Urban Furnishings": "RUFO",
+        "Public Green Areas and Playgrounds": "PGAPO",
+    };
+
+    const categoryCode = categoryCodeMap[category] || category;
+
+    const response = await fetch(`${BACKEND_URL}/staffs/external?category=${encodeURIComponent(categoryCode)}`, {
+        credentials: "include",
+    });
+
+    if (response.ok) return await response.json();
+    return handleAPIError(response, "Get EM Staff");
+};
+
+const assignReportToMaintainer = async (report: Report, username: string): Promise<Report> => {
+
+    // Use the first available EM
+    const response = await fetch(`${BACKEND_URL}/reports/${report.id}/assignExternal`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+            staffEM: username
+            // No status change - keeps report in ASSIGNED status
+        }),
+    });
+
+    if (response.ok) return await response.json();
+    return handleAPIError(response, "Assign Report to Maintainer");
 };
 
 const getNotifications = async (): Promise<Notification[]> => {
@@ -236,12 +305,12 @@ const markNotificationAsRead = async (notificationId: number): Promise<null> => 
     return handleAPIError(response, "Mark Notification as Read");
 }
 
-const createMessage = async (reportId: number, message: string): Promise<Report> => {
+const createMessage = async (reportId: number, message: string, isPrivate: boolean): Promise<Report> => {
     const response = await fetch(`${BACKEND_URL}/reports/${reportId}/messages`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ message }),
+        body: JSON.stringify({ message, isPrivate }),
     });
     if (response.ok) return await response.json();
     return handleAPIError(response, "Create Message");
@@ -285,5 +354,39 @@ const updateCitizenProfile = async (
     return handleAPIError(response, 'Update Citizen Profile');
 };
 
-const API = { login, register, getUserInfo, logout, municipalityRegister, getOffices, createReport, getReports, getMapReports, getReportById, updateReport, assignReportToSelf, getNotifications, markNotificationAsRead, createMessage, getAllMessages, updateCitizenProfile };
+const verifyTelegram = async(tgUsername: string): Promise<{code: string}> => {
+    const response = await fetch(`${BACKEND_URL}/auth/createTelegramVerification`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ username: tgUsername.replace('@', '') })
+    })
+
+    if (response.ok ) return await response.json()
+    return handleAPIError(response, 'Telegram Verification');
+}
+
+const verifyEmail = async (code: string): Promise<void> => {
+    const response = await fetch(`${BACKEND_URL}/auth/verify-email`, {
+        method: 'POST',
+        headers: { "Content-Type": "application/json" },
+        credentials: 'include',
+        body: JSON.stringify({ code }),
+    });
+
+    if (response.ok) return;
+    return handleAPIError(response, 'Email Verification');
+};
+
+const resendVerificationEmail = async (): Promise<void> => {
+    const response = await fetch(`${BACKEND_URL}/auth/resend-verification-email`, {
+        method: 'POST',
+        credentials: 'include',
+    });
+    
+    if (response.ok) return;
+    return handleAPIError(response, 'Resend Verification Email');
+};
+
+const API = { login, register, getUserInfo, logout, municipalityRegister, updateTOSMOffices, getAllTOSM, getOffices, createReport, getReports, getMapReports, getReportById, updateReport, assignReportToSelf, getEMStaffByCategory, assignReportToMaintainer, getNotifications, markNotificationAsRead, createMessage, getAllMessages, updateCitizenProfile, verifyEmail, verifyTelegram, resendVerificationEmail };
 export default API;

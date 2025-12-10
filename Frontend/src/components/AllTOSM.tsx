@@ -1,0 +1,223 @@
+import { useEffect, useState } from "react";
+import API from "../API/API.mts";
+import type { Staff, Office } from "../models/Models";
+import { ROLE_OFFICE_MAP } from "../models/Models";
+import {Button, Container, Table, Alert, Form, Row, Col, Modal, ModalHeader, ModalBody, ModalFooter, ModalTitle} from "react-bootstrap";
+
+function AdminTOSMPage() {
+    const [tosms, setTosms] = useState<Staff[]>([]);
+    const [error, setError] = useState("");
+    const [success, setSuccess] = useState("");
+    const [selected, setSelected] = useState<Staff | null>(null);
+    const [officeNames, setOfficeNames] = useState<string[]>([]);
+
+    const [offices, setOffices] = useState<Office[]>([]);
+    const [filteredOffices, setFilteredOffices] = useState<Office[]>([]);
+
+    useEffect(() => {
+        API.getAllTOSM()
+            .then(setTosms)
+            .catch(() => setError("Failed to load TOSM list"));
+    }, []);
+
+    useEffect(() => {
+        API.getOffices()
+            .then(setOffices)
+            .catch(err => {
+                console.error("Failed to fetch offices:", err);
+                setError("Failed to load offices");
+            });
+    }, []);
+
+    useEffect(() => {
+        if (offices.length === 0) {
+            setFilteredOffices([]);
+            return;
+        }
+
+        const allowedNames = ROLE_OFFICE_MAP.TOSM;
+        const filtered = offices.filter(office =>
+            allowedNames.some(name => office.name.toLowerCase() === name.toLowerCase())
+        );
+        setFilteredOffices(filtered);
+    }, [offices]);
+
+    const handleEdit = (staff: Staff) => {
+        setSelected(staff);
+
+        if (staff.officeNames && staff.officeNames.length > 0) {
+            setOfficeNames([...staff.officeNames]);
+        } else {
+            setOfficeNames([""]);
+        }
+
+        setError("");
+        setSuccess("");
+    };
+
+    const handleSave = async () => {
+        if (!selected) return;
+
+        const cleaned = officeNames.filter(name => name && name.trim() !== "");
+        if (cleaned.length === 0) {
+            setError("At least one office must be selected.");
+            return;
+        }
+
+        try {
+            const updated = await API.updateTOSMOffices(selected.username, cleaned);
+
+            setTosms(prev =>
+                prev.map(s => s.username === updated.username ? updated : s)
+            );
+
+            setSelected(null);
+            setOfficeNames([]);
+            setSuccess("Offices updated successfully.");
+            setError("");
+        } catch (err) {
+            console.error(err);
+            setError("Failed to update offices");
+        }
+    };
+
+    const handleClose = () => {
+        setSelected(null);
+        setOfficeNames([]);
+    }
+
+    return (
+        <Container className="py-4">
+            <h2 className="mb-4">Technical Office Staff Members</h2>
+
+            {error && <Alert variant="danger">{error}</Alert>}
+            {success && <Alert variant="success">{success}</Alert>}
+
+                <Table responsive bordered hover>
+                    <thead>
+                    <tr className="text-center">
+                        <th>Username</th>
+                        <th>Name</th>
+                        <th>Surname</th>
+                        <th>Offices</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {tosms.map((s) => (
+                        <tr key={s.username}>
+                            <td className="text-center">{s.username}</td>
+                            <td className="text-center">{s.name}</td>
+                            <td className="text-center">{s.surname}</td>
+                            <td>
+                                {s.officeNames.map((o) => (
+                                    <span key={o} className="badge text-black me-1 border">
+                                        {o}
+                                    </span>
+                                ))}
+                            </td>
+                            <td className="text-center">
+                                <Button
+                                    size="sm"
+                                    variant="primary"
+                                    onClick={() => handleEdit(s)}
+                                >
+                                    Edit
+                                </Button>
+                            </td>
+                        </tr>
+                    ))}
+                </tbody>
+            </Table>
+
+            <Modal className="mt-lg-2 pb-5 px-0 px-lg-3 overflow-hidden" show={selected !== null} onHide={handleClose} centered fullscreen="sm-down" dialogClassName="ms-0 ms-lg-auto">
+                <ModalHeader className="pt-3" closeButton>
+                    <ModalTitle>Edit Offices for {selected?.username}</ModalTitle>
+                </ModalHeader>
+                <ModalBody style={{ overflowY: 'auto' }}>
+                    {officeNames.map((selectedName, index) => {
+                        const availableOffices = filteredOffices.filter(
+                            (office) =>
+                                !officeNames.includes(office.name) ||
+                                office.name === selectedName
+                        );
+
+                        return (
+                            <Row key={`${selectedName}-${index}`} className="align-items-center">
+                                <Col xs={10} className="px-0 px-lg-3">
+                                    <Form.Group className="mb-3" controlId={`editOffice${index}`}>
+                                        <Form.Label>{`Office ${index + 1}`}</Form.Label>
+                                        <Form.Select
+                                            value={selectedName}
+                                            onChange={(e) => {
+                                                const updated = [...officeNames];
+                                                updated[index] = e.target.value;
+                                                setOfficeNames(updated);
+                                            }}
+                                            required
+                                        >
+                                            <option value="">Select an office...</option>
+                                            {availableOffices.map((office) => (
+                                                <option key={office.id} value={office.name}>
+                                                    {office.name}
+                                                </option>
+                                            ))}
+                                        </Form.Select>
+                                    </Form.Group>
+                                </Col>
+
+                                {index > 0 && (
+                                    <Col xs={2} className="px-0 px-lg-3">
+                                        <Button
+                                            className="px-3 py-2"
+                                            variant="danger"
+                                            onClick={() => {
+                                                const updated = [...officeNames];
+                                                updated.splice(index, 1);
+                                                setOfficeNames(updated);
+                                            }}
+                                        >
+                                            –
+                                        </Button>
+                                    </Col>
+                                )}
+                            </Row>
+                        );
+                    })}
+
+                    {filteredOffices.length > officeNames.length && (
+                        <Button
+                            className="mb-3"
+                            variant="secondary"
+                            disabled={
+                                officeNames.length === 0 ||
+                                officeNames.at(-1) === ""
+                            }
+                            onClick={() => {
+                                if (
+                                    officeNames.length === 0 ||
+                                    officeNames.at(-1) === ""
+                                ) return;
+
+                                setOfficeNames(prev => [...prev, ""]);
+                            }}
+                        >
+                            Add another office
+                        </Button>
+                    )}
+                </ModalBody>
+                <ModalFooter>
+                    <Button variant="secondary" onClick={handleClose}>
+                        Cancel
+                    </Button>
+                    <Button variant="success" onClick={handleSave}>
+                        Save
+                    </Button>
+                </ModalFooter>
+            </Modal>
+        </Container>
+    );
+}
+
+export default AdminTOSMPage;

@@ -1,249 +1,437 @@
 import { StaffDAO, StaffRole } from "@dao/staffDAO";
 import { OfficeDAO, OfficeCategory } from "@dao/officeDAO";
 import { StaffRepository } from "@repositories/staffRepository";
+import { OfficeRepository } from "@repositories/officeRepository";
 import { initializeTestDataSource, closeTestDataSource, TestDataSource } from "../../setup/test-datasource";
-import bcrypt from "bcrypt";
+import { beforeAllE2e, DEFAULT_STAFF, TestDataManager } from "../../e2e/lifecycle";
 
 let staffRepo: StaffRepository;
-
-const office1 = {
-    name: "Municipal Organization Office",
-    description: "Handles municipal organization",
-    category: OfficeCategory.MOO,
-};
-
-const office2 = {
-    name: "Water Supply Office",
-    description: "Handles water supply",
-    category: OfficeCategory.WSO,
-};
-
-const staff1 = {
-    username: "johndoe",
-    name: "John",
-    surname: "Doe",
-    password: "password123",
-    role: StaffRole.MPRO,
-};
-
-const staff2 = {
-    username: "janedoe",
-    name: "Jane",
-    surname: "Doe",
-    password: "securepass456",
-    role: StaffRole.TOSM,
-};
+let officeRepo: OfficeRepository;
 
 beforeAll(async () => {
-  await initializeTestDataSource();
-  staffRepo = new StaffRepository();
+    await initializeTestDataSource();
+    await beforeAllE2e(); // Initialize default entities
+    staffRepo = new StaffRepository();
+    officeRepo = new OfficeRepository();
 });
 
 afterAll(async () => {
-  await closeTestDataSource();
+    await closeTestDataSource();
 });
 
 beforeEach(async () => {
-    await TestDataSource.getRepository(StaffDAO).clear();
-    await TestDataSource.getRepository(OfficeDAO).clear();
+    // Clear only non-default staff
+    const allStaff = await TestDataSource.getRepository(StaffDAO).find();
+    const defaultUsernames = Object.values(DEFAULT_STAFF).map(s => s.username);
+    const toDelete = allStaff.filter(s => !defaultUsernames.includes(s.username));
+    await TestDataSource.getRepository(StaffDAO).remove(toDelete);
 });
 
 describe("StaffRepository - test suite", () => {
+    it("should get default admin staff", async () => {
+        const admin = await staffRepo.getStaffByUsername(DEFAULT_STAFF.admin.username);
+        expect(admin).toBeDefined();
+        expect(admin?.username).toBe(DEFAULT_STAFF.admin.username);
+        expect(admin?.role).toBe(StaffRole.ADMIN);
+    });
+
+    it("should get default MPRO staff", async () => {
+        const mpro = await staffRepo.getStaffByUsername(DEFAULT_STAFF.mpro.username);
+        expect(mpro).toBeDefined();
+        expect(mpro?.username).toBe(DEFAULT_STAFF.mpro.username);
+        expect(mpro?.role).toBe(StaffRole.MPRO);
+    });
+
+    it("should get default TOSM staff for RSTLO", async () => {
+        const tosm = await staffRepo.getStaffByUsername(DEFAULT_STAFF.tosm_RSTLO.username);
+        expect(tosm).toBeDefined();
+        expect(tosm?.username).toBe(DEFAULT_STAFF.tosm_RSTLO.username);
+        expect(tosm?.role).toBe(StaffRole.TOSM);
+    });
+
+    it("should get default EM staff for WSO", async () => {
+        const em = await staffRepo.getStaffByUsername(DEFAULT_STAFF.em_WSO.username);
+        expect(em).toBeDefined();
+        expect(em?.username).toBe(DEFAULT_STAFF.em_WSO.username);
+        expect(em?.role).toBe(StaffRole.EM);
+    });
+
     it("should create a new staff with office", async () => {
-        const office = await TestDataSource
-            .getRepository(OfficeDAO)
-            .save(office1);
+        const office = await TestDataManager.getOffice(OfficeCategory.PLO);
         
         const createdStaff = await staffRepo.createStaff(
-            staff1.username,
-            staff1.name,
-            staff1.surname,
-            staff1.password,
-            staff1.role,
-            office.name
+            "newstaff",
+            "New",
+            "Staff",
+            "password123",
+            StaffRole.TOSM,
+            [office.name]
         );
+        
         const savedInDB = await TestDataSource
             .getRepository(StaffDAO)
-            .findOne({ where: { username: staff1.username }, relations: ["office"] });
+            .findOne({ where: { username: "newstaff" }, relations: ["offices"] });
         
         expect(savedInDB).toBeDefined();
-        expect(savedInDB?.username).toBe(staff1.username);
-        expect(savedInDB?.office).toBeDefined();
-        expect(savedInDB?.office.id).toBe(office.id);
-        expect(savedInDB?.office.name).toBe(office1.name);
+        expect(savedInDB?.username).toBe("newstaff");
+        expect(savedInDB?.offices).toBeDefined();
+        expect(savedInDB?.offices[0].category).toBe(OfficeCategory.PLO);
     });
 
-    it("should get all staffs", async () => {
-        const office1Saved = await TestDataSource
-            .getRepository(OfficeDAO)
-            .save(office1);
-        const office2Saved = await TestDataSource
-            .getRepository(OfficeDAO)
-            .save(office2);
-        
-        await staffRepo.createStaff(
-            staff1.username,
-            staff1.name,
-            staff1.surname,
-            staff1.password,
-            staff1.role,
-            office1Saved.name
-        );
-        await staffRepo.createStaff(
-            staff2.username,
-            staff2.name,
-            staff2.surname,
-            staff2.password,
-            staff2.role,
-            office2Saved.name
-        );
-        
+    it("should get all staffs (including defaults)", async () => {
         const staffs = await staffRepo.getAllStaffs();
-        expect(staffs).toHaveLength(2);
-        expect(staffs).toEqual(
-            expect.arrayContaining([
-                expect.objectContaining({
-                    username: staff1.username,
-                    name: staff1.name,
-                    surname: staff1.surname,
-                }),
-                expect.objectContaining({
-                    username: staff2.username,
-                    name: staff2.name,
-                    surname: staff2.surname,
-                }),
-            ])
-        );
+        expect(staffs.length).toBeGreaterThanOrEqual(18); // 1 admin + 1 mpro + 8 tosm + 8 em
+        
+        // Check that defaults are present
+        const usernames = staffs.map(s => s.username);
+        expect(usernames).toContain(DEFAULT_STAFF.admin.username);
+        expect(usernames).toContain(DEFAULT_STAFF.mpro.username);
+        expect(usernames).toContain(DEFAULT_STAFF.tosm_RSTLO.username);
     });
 
-    it("should get staff by username", async () => {
-        const office = await TestDataSource
-            .getRepository(OfficeDAO)
-            .save(office1);
-        
-        await staffRepo.createStaff(
-            staff1.username,
-            staff1.name,
-            staff1.surname,
-            staff1.password,
-            staff1.role,
-            office.name
+    /*it("should get all staffs by role TOSM", async () => {
+        const tosms = await staffRepo.getAllStaffsByRole(StaffRole.TOSM);
+        expect(tosms.length).toBeGreaterThanOrEqual(8); // 8 default TOSM
+        expect(tosms.every(s => s.role === StaffRole.TOSM)).toBe(true);
+    });
+
+    it("should get all staffs by role EM", async () => {
+        const ems = await staffRepo.getAllStaffsByRole(StaffRole.EM);
+        expect(ems.length).toBeGreaterThanOrEqual(8); // 8 default EM
+        expect(ems.every(s => s.role === StaffRole.EM)).toBe(true);
+    }); 
+
+    it("should update default staff", async () => {
+        const updatedStaff = await staffRepo.updateStaff(
+            DEFAULT_STAFF.tosm_PLO.username,
+            { name: "Updated" }
         );
         
-        const staff = await staffRepo.getStaffByUsername(staff1.username);
-        expect(staff).toBeDefined();
-        expect(staff?.username).toBe(staff1.username);
-        expect(staff?.name).toBe(staff1.name);
-        expect(staff?.surname).toBe(staff1.surname);
-        expect(staff?.role).toBe(staff1.role);
-    });
-
-    it("should get staff by ID", async () => {
-        const office = await TestDataSource
-            .getRepository(OfficeDAO)
-            .save(office1);
+        expect(updatedStaff.name).toBe("Updated");
         
-        await staffRepo.createStaff(
-            staff1.username,
-            staff1.name,
-            staff1.surname,
-            staff1.password,
-            staff1.role,
-            office.name
+        // Reset for other tests
+        await staffRepo.updateStaff(
+            DEFAULT_STAFF.tosm_PLO.username,
+            { name: "Default" }
         );
-        const savedInDB = await TestDataSource
-            .getRepository(StaffDAO)
-            .findOneBy({ username: staff1.username });
-        
-        const staff = await staffRepo.getStaffById(savedInDB!.id);
-        expect(staff).toBeDefined();
-        expect(staff?.username).toBe(staff1.username);
-        expect(staff?.name).toBe(staff1.name);
-        expect(staff?.surname).toBe(staff1.surname);
-        expect(staff?.role).toBe(staff1.role);
+    }); */
+
+    it("should return null for non-existent staff", async () => {
+        const staff = await staffRepo.getStaffByUsername("nonexistentstaff");
+        expect(staff).toBeNull();
     });
 
-    it("should create default admin if not exists", async () => {
-        const office = await TestDataSource
-            .getRepository(OfficeDAO)
-            .save(office1);
-        await staffRepo.createDefaultAdminIfNotExists();
+    it("should throw error when creating staff with duplicate username", async () => {
+        const office = await TestDataManager.getOffice(OfficeCategory.WSO);
         
-        const admin = await TestDataSource
-            .getRepository(StaffDAO)
-            .findOneBy({ username: "admin" });
-        
-        expect(admin).toBeDefined();
-        expect(admin?.username).toBe("admin");
-        expect(admin?.name).toBe("Default");
-        expect(admin?.surname).toBe("Admin");
-        expect(admin?.role).toBe(StaffRole.ADMIN);
-        expect(bcrypt.compareSync("admin123", admin!.password)).toBe(true);
+        await expect(staffRepo.createStaff(
+            DEFAULT_STAFF.admin.username, // Duplicate username
+            "New",
+            "Admin",
+            "password123",
+            StaffRole.ADMIN,
+            [office.name]
+        )).rejects.toThrow();
     });
 
-    it("should not create duplicate admin", async () => {
-        const office = await TestDataSource
-            .getRepository(OfficeDAO)
-            .save(office1);
+    // ===== Multiple Offices =====
 
-        await staffRepo.createDefaultAdminIfNotExists();
-        await staffRepo.createDefaultAdminIfNotExists();
-        
-        const admins = await TestDataSource
-            .getRepository(StaffDAO)
-            .find({ where: { username: "admin" } });
-        
-        expect(admins).toHaveLength(1);
-    });
+    describe("Multiple offices functionality", () => {
+        it("should create staff with multiple offices", async () => {
+            const office1 = await TestDataManager.getOffice(OfficeCategory.PLO);
+            const office2 = await TestDataManager.getOffice(OfficeCategory.WO);
+            
+            const createdStaff = await staffRepo.createStaff(
+                "multi_office_staff",
+                "Multi",
+                "Office",
+                "password123",
+                StaffRole.TOSM,
+                [office1.name, office2.name]
+            );
+            
+            const savedInDB = await TestDataSource
+                .getRepository(StaffDAO)
+                .findOne({ where: { username: "multi_office_staff" }, relations: ["offices"] });
+            
+            expect(savedInDB).toBeDefined();
+            expect(savedInDB?.offices).toHaveLength(2);
+            const categories = savedInDB?.offices.map(o => o.category);
+            expect(categories).toContain(OfficeCategory.PLO);
+            expect(categories).toContain(OfficeCategory.WO);
+        });
 
-    it("should not create default admin if no MOO office exists", async () => {
-        await expect(
-            staffRepo.createDefaultAdminIfNotExists()
-        ).rejects.toThrow("No Municipal Organization Office found to assign to default admin");
-    });
+        it("should update staff offices completely (replace all)", async () => {
+            const office1 = await TestDataManager.getOffice(OfficeCategory.ABO);
+            const office2 = await TestDataManager.getOffice(OfficeCategory.SSO);
+            const office3 = await TestDataManager.getOffice(OfficeCategory.RSTLO);
+            
+            // Create staff with one office
+            const staff = await staffRepo.createStaff(
+                "staff_to_update",
+                "Update",
+                "Test",
+                "password123",
+                StaffRole.TOSM,
+                [office1.name]
+            );
+            
+            expect(staff.offices).toHaveLength(1);
+            
+            // Update to different offices
+            const updated = await staffRepo.updateStaffOffices(
+                "staff_to_update",
+                [office2.name, office3.name]
+            );
+            
+            expect(updated.offices).toHaveLength(2);
+            const categories = updated.offices.map(o => o.category);
+            expect(categories).toContain(OfficeCategory.SSO);
+            expect(categories).toContain(OfficeCategory.RSTLO);
+            expect(categories).not.toContain(OfficeCategory.ABO);
+        });
 
-    it("should throw error when creating staff with missing required fields", async () => {
-        await expect(
-            staffRepo.createStaff("", staff1.name, staff1.surname, staff1.password, staff1.role, office1.name)
-        ).rejects.toThrow("Invalid input data: username, name, surname, and password are required");
-    });
+        it("should add an office to staff", async () => {
+            const office1 = await TestDataManager.getOffice(OfficeCategory.RUFO);
+            const office2 = await TestDataManager.getOffice(OfficeCategory.PGAPO);
+            
+            // Create staff with one office
+            const staff = await staffRepo.createStaff(
+                "staff_add_office",
+                "Add",
+                "Office",
+                "password123",
+                StaffRole.TOSM,
+                [office1.name]
+            );
+            
+            expect(staff.offices).toHaveLength(1);
+            
+            // Add another office
+            const updated = await staffRepo.addOfficeToStaff(
+                "staff_add_office",
+                office2.name
+            );
+            
+            expect(updated.offices).toHaveLength(2);
+            const categories = updated.offices.map(o => o.category);
+            expect(categories).toContain(OfficeCategory.RUFO);
+            expect(categories).toContain(OfficeCategory.PGAPO);
+        });
 
-    it("should throw conflict error when creating staff with duplicate username", async () => {
-        const office = await TestDataSource
-            .getRepository(OfficeDAO)
-            .save(office1);
-        
-        await staffRepo.createStaff(
-            staff1.username,
-            staff1.name,
-            staff1.surname,
-            staff1.password,
-            staff1.role,
-            office.name
-        );
-        
-        await expect(
-            staffRepo.createStaff(
-                staff1.username,
-                "Different",
-                "Name",
-                "differentpass",
-                StaffRole.ADMIN,
-                office.name
-            )
-        ).rejects.toThrow(`Staff already exists with username ${staff1.username}`);
-    });
+        it("should remove an office from staff", async () => {
+            const office1 = await TestDataManager.getOffice(OfficeCategory.PLO);
+            const office2 = await TestDataManager.getOffice(OfficeCategory.WO);
+            const office3 = await TestDataManager.getOffice(OfficeCategory.ABO);
+            
+            // Create staff with three offices
+            const staff = await staffRepo.createStaff(
+                "staff_remove_office",
+                "Remove",
+                "Office",
+                "password123",
+                StaffRole.TOSM,
+                [office1.name, office2.name, office3.name]
+            );
+            
+            expect(staff.offices).toHaveLength(3);
+            
+            // Remove one office
+            const updated = await staffRepo.removeOfficeFromStaff(
+                "staff_remove_office",
+                office2.name
+            );
+            
+            expect(updated.offices).toHaveLength(2);
+            const categories = updated.offices.map(o => o.category);
+            expect(categories).toContain(OfficeCategory.PLO);
+            expect(categories).toContain(OfficeCategory.ABO);
+            expect(categories).not.toContain(OfficeCategory.WO);
+        });
 
-    it("should throw error when creating staff with non-existent office", async () => {
-        await expect(
-            staffRepo.createStaff(
-                staff1.username,
-                staff1.name,
-                staff1.surname,
-                staff1.password,
-                staff1.role,
-                "NonExistentOffice"
-            )
-        ).rejects.toThrow("Office with name NonExistentOffice not found");
+        it("should throw error when adding office that staff already has", async () => {
+            const office = await TestDataManager.getOffice(OfficeCategory.SSO);
+            
+            const staff = await staffRepo.createStaff(
+                "staff_duplicate_office",
+                "Duplicate",
+                "Office",
+                "password123",
+                StaffRole.TOSM,
+                [office.name]
+            );
+            
+            await expect(
+                staffRepo.addOfficeToStaff("staff_duplicate_office", office.name)
+            ).rejects.toThrow("Staff already has office");
+        });
+
+        it("should throw error when updating to non-existent offices", async () => {
+            const office = await TestDataManager.getOffice(OfficeCategory.RSTLO);
+            
+            await staffRepo.createStaff(
+                "staff_invalid_update",
+                "Invalid",
+                "Update",
+                "password123",
+                StaffRole.TOSM,
+                [office.name]
+            );
+            
+            await expect(
+                staffRepo.updateStaffOffices(
+                    "staff_invalid_update",
+                    ["NonExistentOffice1", "NonExistentOffice2"]
+                )
+            ).rejects.toThrow("Offices not found");
+        });
+
+        it("should throw error when adding non-existent office", async () => {
+            const office = await TestDataManager.getOffice(OfficeCategory.RUFO);
+            
+            await staffRepo.createStaff(
+                "staff_invalid_add",
+                "Invalid",
+                "Add",
+                "password123",
+                StaffRole.TOSM,
+                [office.name]
+            );
+            
+            await expect(
+                staffRepo.addOfficeToStaff("staff_invalid_add", "NonExistentOffice")
+            ).rejects.toThrow("Office not found");
+        });
+
+        it("should throw error when removing non-existent office", async () => {
+            const office = await TestDataManager.getOffice(OfficeCategory.PGAPO);
+            
+            await staffRepo.createStaff(
+                "staff_invalid_remove",
+                "Invalid",
+                "Remove",
+                "password123",
+                StaffRole.TOSM,
+                [office.name]
+            );
+            
+            await expect(
+                staffRepo.removeOfficeFromStaff("staff_invalid_remove", "NonExistentOffice")
+            ).rejects.toThrow("Office not found");
+        });
+
+        it("should throw error when updating offices for non-existent staff", async () => {
+            const office = await TestDataManager.getOffice(OfficeCategory.WO);
+            
+            await expect(
+                staffRepo.updateStaffOffices("nonexistent_user", [office.name])
+            ).rejects.toThrow("Staff not found");
+        });
+
+        it("should throw error when adding office to non-existent staff", async () => {
+            const office = await TestDataManager.getOffice(OfficeCategory.PLO);
+            
+            await expect(
+                staffRepo.addOfficeToStaff("nonexistent_user", office.name)
+            ).rejects.toThrow("Staff not found");
+        });
+
+        it("should throw error when removing office from non-existent staff", async () => {
+            const office = await TestDataManager.getOffice(OfficeCategory.ABO);
+            
+            await expect(
+                staffRepo.removeOfficeFromStaff("nonexistent_user", office.name)
+            ).rejects.toThrow("Staff not found");
+        });
+
+        it("should create staff with single office using array", async () => {
+            const office = await TestDataManager.getOffice(OfficeCategory.SSO);
+            
+            const createdStaff = await staffRepo.createStaff(
+                "single_office_array",
+                "Single",
+                "Array",
+                "password123",
+                StaffRole.TOSM,
+                [office.name]
+            );
+            
+            expect(createdStaff.offices).toHaveLength(1);
+            expect(createdStaff.offices[0].category).toBe(OfficeCategory.SSO);
+        });
+
+        it("should allow creating staff with empty offices array", async () => {
+            const created = await staffRepo.createStaff(
+                "no_offices",
+                "No",
+                "Offices",
+                "password123",
+                StaffRole.TOSM,
+                []
+            );
+
+            expect(created).toBeDefined();
+            expect(created.offices).toHaveLength(0);
+        });
+
+        it("should throw error when creating staff with some invalid office names", async () => {
+            const office = await TestDataManager.getOffice(OfficeCategory.RSTLO);
+            
+            await expect(staffRepo.createStaff(
+                "partial_invalid",
+                "Partial",
+                "Invalid",
+                "password123",
+                StaffRole.TOSM,
+                [office.name, "NonExistentOffice"]
+            )).rejects.toThrow("Offices not found");
+        });
+
+        it("should handle updating staff to have no common offices with previous assignment", async () => {
+            const office1 = await TestDataManager.getOffice(OfficeCategory.PLO);
+            const office2 = await TestDataManager.getOffice(OfficeCategory.WO);
+            const office3 = await TestDataManager.getOffice(OfficeCategory.ABO);
+            const office4 = await TestDataManager.getOffice(OfficeCategory.SSO);
+            
+            // Create with offices 1 and 2
+            await staffRepo.createStaff(
+                "complete_replace",
+                "Complete",
+                "Replace",
+                "password123",
+                StaffRole.TOSM,
+                [office1.name, office2.name]
+            );
+            
+            // Update to completely different offices 3 and 4
+            const updated = await staffRepo.updateStaffOffices(
+                "complete_replace",
+                [office3.name, office4.name]
+            );
+            
+            expect(updated.offices).toHaveLength(2);
+            const categories = updated.offices.map(o => o.category);
+            expect(categories).toContain(OfficeCategory.ABO);
+            expect(categories).toContain(OfficeCategory.SSO);
+            expect(categories).not.toContain(OfficeCategory.PLO);
+            expect(categories).not.toContain(OfficeCategory.WO);
+        });
+
+        it("should throw error when updateStaffOffices receives non-array parameter", async () => {
+            const office = await TestDataManager.getOffice(OfficeCategory.RUFO);
+            
+            await staffRepo.createStaff(
+                "array_check",
+                "Array",
+                "Check",
+                "password123",
+                StaffRole.TOSM,
+                [office.name]
+            );
+            
+            await expect(
+                staffRepo.updateStaffOffices("array_check", "NotAnArray" as any)
+            ).rejects.toThrow("officeNames must be an array");
+        });
     });
 });

@@ -1,9 +1,19 @@
 import { Request, Response, NextFunction } from 'express';
 import { login } from '@controllers/authController';
 import { UnauthorizedError } from '@models/errors/UnauthorizedError';
+import { beforeAllE2e, DEFAULT_CITIZENS, DEFAULT_STAFF } from "../../e2e/lifecycle";
+import { initializeTestDataSource, closeTestDataSource } from "../../setup/test-datasource";
 
-// Mock implementations
 jest.mock('@controllers/authController');
+
+beforeAll(async () => {
+    await initializeTestDataSource();
+    await beforeAllE2e();
+});
+
+afterAll(async () => {
+    await closeTestDataSource();
+});
 
 describe('Auth Routes Tests', () => {
     let mockRequest: Partial<Request>;
@@ -13,8 +23,8 @@ describe('Auth Routes Tests', () => {
     beforeEach(() => {
         mockRequest = {
             body: {
-                username: 'testUser',
-                password: 'testPassword'
+                username: DEFAULT_CITIZENS.citizen1.username,
+                password: DEFAULT_CITIZENS.citizen1.password
             },
             logout: jest.fn()
         };
@@ -28,10 +38,10 @@ describe('Auth Routes Tests', () => {
     });
 
     describe('POST /login', () => {
-        it('should successfully login user', async () => {
+        it('should successfully login default citizen', async () => {
             const mockLoginResponse = {
                 token: 'mock-token',
-                user: { username: 'testUser' }
+                user: { username: DEFAULT_CITIZENS.citizen1.username }
             };
             
             (login as jest.Mock).mockResolvedValueOnce(mockLoginResponse);
@@ -40,6 +50,24 @@ describe('Auth Routes Tests', () => {
 
             expect(login).toHaveBeenCalled();
             expect(nextFunction).not.toHaveBeenCalled();
+        });
+
+        it('should successfully login default staff', async () => {
+            mockRequest.body = {
+                username: DEFAULT_STAFF.admin.username,
+                password: DEFAULT_STAFF.admin.password
+            };
+
+            const mockLoginResponse = {
+                token: 'mock-token',
+                user: { username: DEFAULT_STAFF.admin.username }
+            };
+            
+            (login as jest.Mock).mockResolvedValueOnce(mockLoginResponse);
+
+            await login(mockRequest as Request, mockResponse as Response, nextFunction);
+
+            expect(login).toHaveBeenCalled();
         });
 
         it('should handle login failure', async () => {
@@ -63,11 +91,9 @@ describe('Auth Routes Tests', () => {
 
     describe('DELETE /logout', () => {
         it('should successfully logout user', () => {
-            // Simula req.logout che non dà errore
             (mockRequest.logout as jest.Mock).mockImplementation((callback) => callback());
 
-            // Simula la logica della route delete /logout
-            (mockRequest.logout as jest.Mock).mock.calls[0]?.[0](); // esegue il callback senza errore
+            (mockRequest.logout as jest.Mock).mock.calls[0]?.[0]();
             const err = undefined;
             if (err) {
                 mockResponse.status!(500);
@@ -85,7 +111,6 @@ describe('Auth Routes Tests', () => {
             const error = new Error('Logout failed');
             (mockRequest.logout as jest.Mock).mockImplementation((callback) => callback(error));
 
-            // Simula la logica del route handler
             const err = error;
             if (err) {
                 mockResponse.status!(500);
@@ -102,55 +127,68 @@ describe('Auth Routes Tests', () => {
     
     describe("AuthRoutes - /me endpoint", () => {
         const isAuthenticated = (roles: string[]) => {
-        return (req: any, res: any, next: any) => {
-            if (!req.isAuthenticated || !req.isAuthenticated()) {
-                return res.status(401).json({ message: "Unauthorized" });
-            }
+            return (req: any, res: any, next: any) => {
+                if (!req.isAuthenticated || !req.isAuthenticated()) {
+                    return res.status(401).json({ message: "Unauthorized" });
+                }
 
-            if (!roles.includes(req.user?.type)) {
-                return res.status(403).json({ message: "Forbidden" });
-            }
+                if (!roles.includes(req.user?.type)) {
+                    return res.status(403).json({ message: "Forbidden" });
+                }
 
-            next();
+                next();
+            };
         };
-    };
 
-    it("should allow access when authenticated", () => {
-        const req = {
-            user: { id: 1, type: "CITIZEN" },
-            isAuthenticated: () => true
-        } as any;
-        const res = { status: jest.fn().mockReturnThis(), json: jest.fn() } as any;
-        const next = jest.fn();
+        it("should allow access when authenticated as default citizen", () => {
+            const req = {
+                user: { username: DEFAULT_CITIZENS.citizen1.username, type: "CITIZEN" },
+                isAuthenticated: () => true
+            } as any;
+            const res = { status: jest.fn().mockReturnThis(), json: jest.fn() } as any;
+            const next = jest.fn();
 
-        isAuthenticated(["CITIZEN", "STAFF"])(req, res, next);
+            isAuthenticated(["CITIZEN", "STAFF"])(req, res, next);
 
-        expect(next).toHaveBeenCalled();
-    });
+            expect(next).toHaveBeenCalled();
+        });
 
-    it("should return 401 when unauthenticated", () => {
-        const req = { isAuthenticated: () => false } as any;
-        const res = { status: jest.fn().mockReturnThis(), json: jest.fn() } as any;
-        const next = jest.fn();
+        it("should allow access when authenticated as default staff", () => {
+            const req = {
+                user: { username: DEFAULT_STAFF.admin.username, type: "STAFF" },
+                isAuthenticated: () => true
+            } as any;
+            const res = { status: jest.fn().mockReturnThis(), json: jest.fn() } as any;
+            const next = jest.fn();
 
-        isAuthenticated(["CITIZEN", "STAFF"])(req, res, next);
+            isAuthenticated(["CITIZEN", "STAFF"])(req, res, next);
 
-        expect(res.status).toHaveBeenCalledWith(401);
-        expect(res.json).toHaveBeenCalledWith({ message: "Unauthorized" });
-    });
+            expect(next).toHaveBeenCalled();
+        });
 
-    it("should return 403 for unauthorized role", () => {
-        const req = {
-            isAuthenticated: () => true,
-            user: { type: "UNKNOWN" }
-        } as any;
-        const res = { status: jest.fn().mockReturnThis(), json: jest.fn() } as any;
-        const next = jest.fn();
+        it("should return 401 when unauthenticated", () => {
+            const req = { isAuthenticated: () => false } as any;
+            const res = { status: jest.fn().mockReturnThis(), json: jest.fn() } as any;
+            const next = jest.fn();
 
-        isAuthenticated(["CITIZEN", "STAFF"])(req, res, next);
+            isAuthenticated(["CITIZEN", "STAFF"])(req, res, next);
 
-        expect(res.status).toHaveBeenCalledWith(403);
-        expect(res.json).toHaveBeenCalledWith({ message: "Forbidden" });
-    });
+            expect(res.status).toHaveBeenCalledWith(401);
+            expect(res.json).toHaveBeenCalledWith({ message: "Unauthorized" });
+        });
+
+        it("should return 403 for unauthorized role", () => {
+            const req = {
+                isAuthenticated: () => true,
+                user: { type: "UNKNOWN" }
+            } as any;
+            const res = { status: jest.fn().mockReturnThis(), json: jest.fn() } as any;
+            const next = jest.fn();
+
+            isAuthenticated(["CITIZEN", "STAFF"])(req, res, next);
+
+            expect(res.status).toHaveBeenCalledWith(403);
+            expect(res.json).toHaveBeenCalledWith({ message: "Forbidden" });
+        });
     });
 });

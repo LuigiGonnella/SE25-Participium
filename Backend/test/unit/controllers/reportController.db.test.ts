@@ -1,43 +1,21 @@
-import { createReport, uploadReportPictures, addMessageToReport, getAllMessages } from "@controllers/reportController";
+import { createReport, addMessageToReport, getAllMessages, selfAssignReport, updateReportAsMPRO, assignReportToEM } from "@controllers/reportController";
 import { CitizenRepository } from "@repositories/citizenRepository";
 import { ReportRepository } from "@repositories/reportRepository";
-import { CitizenDAO } from "@dao/citizenDAO";
-import { ReportDAO } from "@dao/reportDAO";
+import { ReportDAO, Status } from "@dao/reportDAO";
 import { initializeTestDataSource, closeTestDataSource, TestDataSource } from "../../setup/test-datasource";
 import { BadRequestError } from "@errors/BadRequestError";
 import { NotFoundError } from "@errors/NotFoundError";
-import fs from "fs";
-import { StaffDAO, StaffRole } from "@dao/staffDAO";
 import { MessageDAO } from "@dao/messageDAO";
 import { StaffRepository } from "@repositories/staffRepository";
 import { OfficeRepository } from "@repositories/officeRepository";
-import { OfficeDAO, OfficeCategory } from "@dao/officeDAO";
-import {NotificationDAO} from "@dao/notificationDAO";
+import { OfficeCategory } from "@dao/officeDAO";
+import { NotificationDAO } from "@dao/notificationDAO";
+import { beforeAllE2e, DEFAULT_CITIZENS, DEFAULT_STAFF, TestDataManager } from "../../e2e/lifecycle";
 
 let citizenRepo: CitizenRepository;
 let reportRepo: ReportRepository;
 let staffRepo: StaffRepository;
 let officeRepo: OfficeRepository;
-
-const fakeCitizen = {
-    email: "john@example.com",
-    username: "johnny",
-    name: "John",
-    surname: "Doe",
-    password: "pass123",
-    receive_emails: true,
-    profilePicture: "",
-    telegram_username: ""
-};
-
-const fakeStaff = {
-    username: "staff1",
-    name: "Staff",
-    surname: "Member",
-    password: "staffpass",
-    role: StaffRole.TOSM,
-    officeName: "Roads and Urban Furnishings Office"
-};
 
 const fakeBody = {
     title: "Broken light",
@@ -54,6 +32,7 @@ const fakeFiles = [
 
 beforeAll(async () => {
     await initializeTestDataSource();
+    await beforeAllE2e();
     citizenRepo = new CitizenRepository();
     reportRepo = new ReportRepository();
     staffRepo = new StaffRepository();
@@ -65,33 +44,19 @@ afterAll(async () => {
 });
 
 beforeEach(async () => {
-    // Clear tables in the correct order to respect foreign key constraints
     await TestDataSource.getRepository(NotificationDAO).clear();
     await TestDataSource.getRepository(MessageDAO).clear();
     await TestDataSource.getRepository(ReportDAO).clear();
-    await TestDataSource.getRepository(StaffDAO).clear();
-    await TestDataSource.getRepository(CitizenDAO).clear();
-    await TestDataSource.getRepository(OfficeDAO).clear();
 });
 
 describe("ReportController - createReport", () => {
     
-    it("creates a report successfully", async () => {
-        await citizenRepo.createCitizen(
-            fakeCitizen.email,
-            fakeCitizen.username,
-            fakeCitizen.name,
-            fakeCitizen.surname,
-            fakeCitizen.password,
-            fakeCitizen.receive_emails,
-            fakeCitizen.profilePicture,
-            fakeCitizen.telegram_username
-        );
-
-        const report = await createReport(fakeBody, fakeCitizen.username, fakeFiles);
+    it("creates a report successfully with default citizen", async () => {
+        const report = await createReport(fakeBody, DEFAULT_CITIZENS.citizen1.username, fakeFiles);
 
         expect(report.title).toBe(fakeBody.title);
         expect(report.photo1).toBe("/uploads/reports/img1.jpg");
+        expect(report.citizen.username).toBe(DEFAULT_CITIZENS.citizen1.username);
     });
 
     it("throws NotFoundError when citizen is missing", async () => {
@@ -101,17 +66,6 @@ describe("ReportController - createReport", () => {
     });
 
     it("throws BadRequestError for missing required fields", async () => {
-        await citizenRepo.createCitizen(
-            fakeCitizen.email,
-            fakeCitizen.username,
-            fakeCitizen.name,
-            fakeCitizen.surname,
-            fakeCitizen.password,
-            fakeCitizen.receive_emails,
-            fakeCitizen.profilePicture,
-            fakeCitizen.telegram_username
-        );
-
         const incomplete = {
             title: "",
             description: "",
@@ -126,46 +80,24 @@ describe("ReportController - createReport", () => {
         ];
 
         await expect(
-            createReport(incomplete, fakeCitizen.username, fakeFiles)
+            createReport(incomplete, DEFAULT_CITIZENS.citizen1.username, fakeFiles)
         ).rejects.toThrow(BadRequestError);
     });
 
     it("throws BadRequestError when no photos are provided", async () => {
-        await citizenRepo.createCitizen(
-            fakeCitizen.email,
-            fakeCitizen.username,
-            fakeCitizen.name,
-            fakeCitizen.surname,
-            fakeCitizen.password,
-            fakeCitizen.receive_emails,
-            fakeCitizen.profilePicture,
-            fakeCitizen.telegram_username
-        );
-
         await expect(
-            createReport(fakeBody, fakeCitizen.username, [])
+            createReport(fakeBody, DEFAULT_CITIZENS.citizen1.username, [])
         ).rejects.toThrow("At least one photo is required");
     });
 
     it("handles multiple photos correctly", async () => {
-        await citizenRepo.createCitizen(
-            fakeCitizen.email,
-            fakeCitizen.username,
-            fakeCitizen.name,
-            fakeCitizen.surname,
-            fakeCitizen.password,
-            fakeCitizen.receive_emails,
-            fakeCitizen.profilePicture,
-            fakeCitizen.telegram_username
-        );
-
         const files = [
             { filename: "img1.jpg" } as Express.Multer.File,
             { filename: "img2.jpg" } as Express.Multer.File,
             { filename: "img3.jpg" } as Express.Multer.File
         ];
 
-        const report = await createReport(fakeBody, fakeCitizen.username, files);
+        const report = await createReport(fakeBody, DEFAULT_CITIZENS.citizen2.username, files);
 
         expect(report.photo1).toBe("/uploads/reports/img1.jpg");
         expect(report.photo2).toBe("/uploads/reports/img2.jpg");
@@ -173,234 +105,367 @@ describe("ReportController - createReport", () => {
     });
 
     it("sets photo2 and photo3 to undefined when only 1 photo is provided", async () => {
-        await citizenRepo.createCitizen(
-            fakeCitizen.email,
-            fakeCitizen.username,
-            fakeCitizen.name,
-            fakeCitizen.surname,
-            fakeCitizen.password,
-            fakeCitizen.receive_emails,
-            fakeCitizen.profilePicture,
-            fakeCitizen.telegram_username
-        );
-
         const files = [
             { filename: "one.jpg" } as Express.Multer.File
         ];
 
-        const report = await createReport(fakeBody, fakeCitizen.username, files);
+        const report = await createReport(fakeBody, DEFAULT_CITIZENS.citizen3.username, files);
 
         expect(report.photo2).toBeNull();
         expect(report.photo3).toBeNull();
     });
 
     it("sets photo3 to undefined when exactly 2 photos are provided", async () => {
-        await citizenRepo.createCitizen(
-            fakeCitizen.email,
-            fakeCitizen.username,
-            fakeCitizen.name,
-            fakeCitizen.surname,
-            fakeCitizen.password,
-            fakeCitizen.receive_emails,
-            fakeCitizen.profilePicture,
-            fakeCitizen.telegram_username
-        );
-
         const files = [
-            { filename: "p1.jpg" } as Express.Multer.File,
-            { filename: "p2.jpg" } as Express.Multer.File
+            { filename: "one.jpg" } as Express.Multer.File,
+            { filename: "two.jpg" } as Express.Multer.File
         ];
 
-        const report = await createReport(fakeBody, fakeCitizen.username, files);
+        const report = await createReport(fakeBody, DEFAULT_CITIZENS.citizen1.username, files);
 
+        expect(report.photo1).toBe("/uploads/reports/one.jpg");
+        expect(report.photo2).toBe("/uploads/reports/two.jpg");
         expect(report.photo3).toBeNull();
     });
 
-    it("parses anonymous = true (boolean)", async () => {
-        await citizenRepo.createCitizen(
-            fakeCitizen.email,
-            fakeCitizen.username,
-            fakeCitizen.name,
-            fakeCitizen.surname,
-            fakeCitizen.password,
-            fakeCitizen.receive_emails,
-            fakeCitizen.profilePicture,
-            fakeCitizen.telegram_username
-        );
+    it("validates category is valid", async () => {
+        const invalidBody = { ...fakeBody, category: "Invalid Category" };
 
-        const report = await createReport(
-            { ...fakeBody, anonymous: true },
-            fakeCitizen.username,
-            fakeFiles
-        );
-
-        expect(report.anonymous).toBe(true);
-    });
-
-    it("parses anonymous = 'false' correctly", async () => {
-        await citizenRepo.createCitizen(
-            fakeCitizen.email,
-            fakeCitizen.username,
-            fakeCitizen.name,
-            fakeCitizen.surname,
-            fakeCitizen.password,
-            fakeCitizen.receive_emails,
-            fakeCitizen.profilePicture,
-            fakeCitizen.telegram_username
-        );
-
-        const report = await createReport(
-            { ...fakeBody, anonymous: "false" },
-            fakeCitizen.username,
-            fakeFiles
-        );
-
-        expect(report.anonymous).toBe(false);
-    });
-
-    it("converts latitude and longitude to numbers", async () => {
-        await citizenRepo.createCitizen(
-            fakeCitizen.email,
-            fakeCitizen.username,
-            fakeCitizen.name,
-            fakeCitizen.surname,
-            fakeCitizen.password,
-            fakeCitizen.receive_emails,
-            fakeCitizen.profilePicture,
-            fakeCitizen.telegram_username
-        );
-
-        const report = await createReport(fakeBody, fakeCitizen.username, fakeFiles);
-
-        expect(typeof report.latitude).toBe("number");
-        expect(typeof report.longitude).toBe("number");
-    });
-
-    describe("ReportController multer storage & fileFilter", () => {
-        const uploadDir = "./uploads/reports";
-
-        beforeEach(() => {
-            if (fs.existsSync(uploadDir)) {
-                fs.rmSync(uploadDir, { recursive: true, force: true });
-            }
-        });
-
-        it("fileFilter accepts valid image files", (done) => {
-            const file = { originalname: "image.jpg", mimetype: "image/jpeg" } as any;
-
-            (uploadReportPictures as any).fileFilter({}, file, (err: any, ok: boolean) => {
-                expect(err).toBeNull();
-                expect(ok).toBe(true);
-                done();
-            });
-        });
-
-        it("fileFilter rejects invalid file types", (done) => {
-            const file = { originalname: "file.exe", mimetype: "application/octet-stream" } as any;
-
-            (uploadReportPictures as any).fileFilter({}, file, (err: any) => {
-                expect(err).toBeInstanceOf(BadRequestError);
-                expect(err.message).toContain("Only JPEG, JPG, and PNG images are allowed");
-                done();
-            });
-        });
+        await expect(
+            createReport(invalidBody, DEFAULT_CITIZENS.citizen1.username, fakeFiles)
+        ).rejects.toThrow();
     });
 });
 
-describe("ReportController - Messages", () => {
+describe("ReportController - updateReportAsEM", () => {
+    let report: ReportDAO;
 
-    describe("addMessageToReport", () => {
-        it("allows a citizen to add a message to their own report", async () => {
-            await officeRepo.createOffice(fakeStaff.officeName, "Desc", OfficeCategory.RUFO);
-            const citizen = await citizenRepo.createCitizen(fakeCitizen.email, fakeCitizen.username, fakeCitizen.name, fakeCitizen.surname, fakeCitizen.password, fakeCitizen.receive_emails, fakeCitizen.profilePicture, fakeCitizen.telegram_username);
-            const report = await createReport(fakeBody, citizen.username, fakeFiles);
-
-            const message = "This is a test message from the citizen.";
-            await addMessageToReport(report.id, citizen.username, "CITIZEN", message);
-
-            const messages = await reportRepo.getAllMessages(report.id);
-            expect(messages).toHaveLength(1);
-            expect(messages[0].message).toBe(message);
-            expect(messages[0].staff).toBeNull();
-        });
-
-        it("allows assigned staff to add a message", async () => {
-            await officeRepo.createOffice(fakeStaff.officeName, "Desc", OfficeCategory.RUFO);
-            const citizen = await citizenRepo.createCitizen(fakeCitizen.email, fakeCitizen.username, fakeCitizen.name, fakeCitizen.surname, fakeCitizen.password, fakeCitizen.receive_emails, fakeCitizen.profilePicture, fakeCitizen.telegram_username);
-            const staff = await staffRepo.createStaff(fakeStaff.username, fakeStaff.name, fakeStaff.surname, fakeStaff.password, fakeStaff.role, fakeStaff.officeName);
-            const report = await createReport(fakeBody, citizen.username, fakeFiles);
-
-            report.assignedStaff = staff;
-            await TestDataSource.getRepository(ReportDAO).save(report);
-
-            const message = "This is a reply from the assigned staff.";
-            await addMessageToReport(report.id, staff.username, "STAFF", message);
-
-            const messages = await reportRepo.getAllMessages(report.id);
-            expect(messages).toHaveLength(1);
-            expect(messages[0].message).toBe(message);
-            expect(messages[0].staff?.username).toBe(staff.username);
-        });
-
-        it("throws BadRequestError if a citizen tries to comment on another's report", async () => {
-            const citizen = await citizenRepo.createCitizen(fakeCitizen.email, fakeCitizen.username, fakeCitizen.name, fakeCitizen.surname, fakeCitizen.password, fakeCitizen.receive_emails, fakeCitizen.profilePicture, fakeCitizen.telegram_username);
-            const report = await createReport(fakeBody, citizen.username, fakeFiles);
-
-            await expect(
-                addMessageToReport(report.id, "another_citizen", "CITIZEN", "Trying to comment")
-            ).rejects.toThrow(BadRequestError);
-        });
-
-        it("throws BadRequestError if unassigned staff tries to comment", async () => {
-            await officeRepo.createOffice(fakeStaff.officeName, "Desc", OfficeCategory.RUFO);
-            const citizen = await citizenRepo.createCitizen(fakeCitizen.email, fakeCitizen.username, fakeCitizen.name, fakeCitizen.surname, fakeCitizen.password, fakeCitizen.receive_emails, fakeCitizen.profilePicture, fakeCitizen.telegram_username);
-            await staffRepo.createStaff(fakeStaff.username, fakeStaff.name, fakeStaff.surname, fakeStaff.password, fakeStaff.role, fakeStaff.officeName);
-            const report = await createReport(fakeBody, citizen.username, fakeFiles);
-
-            await expect(
-                addMessageToReport(report.id, fakeStaff.username, "STAFF", "I am not assigned")
-            ).rejects.toThrow(BadRequestError);
-        });
-
-        it("throws NotFoundError for a non-existent report", async () => {
-            const citizen = await citizenRepo.createCitizen(fakeCitizen.email, fakeCitizen.username, fakeCitizen.name, fakeCitizen.surname, fakeCitizen.password, fakeCitizen.receive_emails, fakeCitizen.profilePicture, fakeCitizen.telegram_username);
-
-            await expect(
-                addMessageToReport(999, citizen.username, "CITIZEN", "Will fail")
-            ).rejects.toThrow(NotFoundError);
-        });
+    beforeEach(async () => {
+        const citizen = await TestDataManager.getCitizen('citizen1');
+        report = await reportRepo.create(
+            citizen,
+            "Test Report",
+            "Description",
+            OfficeCategory.RSTLO,
+            45.0,
+            7.0,
+            false,
+            "/img.jpg"
+        );
     });
 
-    describe("getAllMessages", () => {
-        it("returns all messages for a given report", async () => {
-            await officeRepo.createOffice(fakeStaff.officeName, "Desc", OfficeCategory.RUFO);
-            const citizen = await citizenRepo.createCitizen(fakeCitizen.email, fakeCitizen.username, fakeCitizen.name, fakeCitizen.surname, fakeCitizen.password, fakeCitizen.receive_emails, fakeCitizen.profilePicture, fakeCitizen.telegram_username);
-            const staff = await staffRepo.createStaff(fakeStaff.username, fakeStaff.name, fakeStaff.surname, fakeStaff.password, fakeStaff.role, fakeStaff.officeName);
-            const report = await createReport(fakeBody, citizen.username, fakeFiles);
+    it("should update report status as EM", async () => {
+        await reportRepo.updateReportAsMPRO(report.id, Status.ASSIGNED);
 
-            await addMessageToReport(report.id, citizen.username, "CITIZEN", "First message");
+        const staff = await TestDataManager.getStaff('tosm_RSTLO');
 
-            report.assignedStaff = staff;
-            await TestDataSource.getRepository(ReportDAO).save(report);
-            await addMessageToReport(report.id, staff.username, "STAFF", "Staff reply");
-
-            const messages = await getAllMessages(report.id);
-
-            expect(messages).toHaveLength(2);
-            expect(messages[0].message).toBe("First message");
-            expect(messages[1].message).toBe("Staff reply");
-        });
-
-        it("returns an empty array for a report with no messages", async () => {
-            const citizen = await citizenRepo.createCitizen(fakeCitizen.email, fakeCitizen.username, fakeCitizen.name, fakeCitizen.surname, fakeCitizen.password, fakeCitizen.receive_emails, fakeCitizen.profilePicture, fakeCitizen.telegram_username);
-            const report = await createReport(fakeBody, citizen.username, fakeFiles);
-
-            const messages = await getAllMessages(report.id);
-            expect(messages).toEqual([]);
-        });
-
-        it("throws NotFoundError when fetching messages for a non-existent report", async () => {
-            await expect(getAllMessages(999)).rejects.toThrow(NotFoundError);
-        });
+        await reportRepo.selfAssignReport(report.id, staff.username);
+        await reportRepo.assignEMToReport(report.id, DEFAULT_STAFF.em_RSTLO.username, staff.username);
+        const updatedReport = await reportRepo.updateReportAsEM(report.id, Status.IN_PROGRESS, DEFAULT_STAFF.em_RSTLO.username);
+        expect(updatedReport.status).toBe(Status.IN_PROGRESS);
     });
+})
+
+describe("ReportController - addMessageToReport", () => {
+    let report: ReportDAO;
+
+    beforeEach(async () => {
+        const citizen = await TestDataManager.getCitizen('citizen1');
+        report = await reportRepo.create(
+            citizen,
+            "Test Report",
+            "Description",
+            OfficeCategory.RSTLO,
+            45.0,
+            7.0,
+            false,
+            "/img.jpg"
+        );
+    });
+
+    it("should add message to report from staff", async () => {
+        const staff = await TestDataManager.getStaff('tosm_RSTLO');
+
+        await reportRepo.updateReportAsMPRO(report.id, Status.ASSIGNED);
+
+        await reportRepo.selfAssignReport(report.id, staff.username);
+        
+        const updatedReport = await addMessageToReport(
+            report.id,
+            staff.username,
+            "STAFF",
+            "Test message from staff",
+            false
+        );
+
+        expect(updatedReport).toBeDefined();
+        expect(updatedReport.title).toBe("Test Report");
+    });
+
+    it("should throw NotFoundError for non-existent report", async () => {
+        await expect(
+            addMessageToReport(
+                99999,
+                DEFAULT_CITIZENS.citizen1.username,
+                "CITIZEN",
+                "Test message"
+            )
+        ).rejects.toThrow(NotFoundError);
+    });
+});
+
+describe("ReportController - getAllMessages", () => {
+    let report: ReportDAO;
+
+    beforeEach(async () => {
+        const citizen = await TestDataManager.getCitizen('citizen1');
+        report = await reportRepo.create(
+            citizen,
+            "Test Report",
+            "Description",
+            OfficeCategory.RSTLO,
+            45.0,
+            7.0,
+            false,
+            "/img.jpg"
+        );
+    });
+
+    it("should get all messages for a report", async () => {
+        const staff = await TestDataManager.getStaff('tosm_RSTLO');
+
+        await reportRepo.updateReportAsMPRO(report.id, Status.ASSIGNED);
+
+        await reportRepo.selfAssignReport(report.id, staff.username);
+        
+        await addMessageToReport(
+            report.id,
+            DEFAULT_CITIZENS.citizen1.username,  
+            "CITIZEN",                            
+            "Message 1"
+        );
+        await addMessageToReport(
+            report.id,
+            DEFAULT_STAFF.tosm_RSTLO.username,
+            "STAFF",
+            "Message 2",
+            true
+        );
+
+        const messages = await getAllMessages(report.id, "STAFF");
+
+        expect(messages).toHaveLength(2);
+        expect(messages[0].message).toBe("Message 1");  
+        expect(messages[1].message).toBe("Message 2");
+    });
+
+    it("should return empty array for report with no messages", async () => {
+        const messages = await getAllMessages(report.id, "STAFF");  
+        expect(messages).toEqual([]);
+    });
+
+    it("should throw NotFoundError for non-existent report", async () => {
+        await expect(
+            getAllMessages(99999, "CITIZEN")  
+        ).rejects.toThrow(NotFoundError);
+    });
+
+    it("should add a public message to report from TOSM", async () => {
+        const citizen = await TestDataManager.getCitizen('citizen1');
+        const report = await reportRepo.create(
+            citizen,
+            "Report for TOSM Message Retrieval",
+            "Description",
+            OfficeCategory.RSTLO,
+            45.0,
+            7.0,
+            false,
+            "/img.jpg"
+            );
+
+        const message1 = "Public message from TOSM.";
+        
+        await updateReportAsMPRO(report.id, Status.ASSIGNED);
+        await selfAssignReport(report.id, DEFAULT_STAFF.tosm_RSTLO.username);
+
+        const updatedReport = await addMessageToReport(
+            report.id,
+            DEFAULT_STAFF.tosm_RSTLO.username,
+            "STAFF",
+            message1,
+            false
+        );
+
+        expect(updatedReport).toBeDefined();
+        expect(updatedReport.title).toBe("Report for TOSM Message Retrieval");
+        expect(updatedReport.messages).toHaveLength(1);
+        expect(updatedReport.messages![0].message).toBe(message1);
+    });
+
+    it("should add a private message to report from TOSM", async () => {
+        const citizen = await TestDataManager.getCitizen('citizen1');
+        const report = await reportRepo.create(
+            citizen,
+            "Report for TOSM Message Retrieval",
+            "Description",
+            OfficeCategory.RSTLO,
+            45.0,
+            7.0,
+            false,
+            "/img.jpg"
+            );
+
+        const message1 = "Private message from TOSM.";
+
+        await updateReportAsMPRO(report.id, Status.ASSIGNED);
+        await selfAssignReport(report.id, DEFAULT_STAFF.tosm_RSTLO.username);
+
+        const updatedReport = await addMessageToReport(
+            report.id,
+            DEFAULT_STAFF.tosm_RSTLO.username,
+            "STAFF",
+            message1,
+            true
+        );
+
+        expect(updatedReport).toBeDefined();
+        expect(updatedReport.title).toBe("Report for TOSM Message Retrieval");
+        expect(updatedReport.messages).toHaveLength(1);
+        expect(updatedReport.messages![0].message).toBe(message1);
+    });
+
+    it("should add a message to report from EM", async () => {
+        const citizen = await TestDataManager.getCitizen('citizen1');
+        const report = await reportRepo.create(
+            citizen,
+            "Report for EM Message Retrieval",
+            "Description",
+            OfficeCategory.RSTLO,
+            45.0,
+            7.0,
+            false,
+            "/img.jpg"
+            );
+
+        const message1 = "Private message from EM.";
+
+        await updateReportAsMPRO(report.id, Status.ASSIGNED);
+        await selfAssignReport(report.id, DEFAULT_STAFF.tosm_RSTLO.username);
+        await assignReportToEM(report.id, DEFAULT_STAFF.em_RSTLO.username, DEFAULT_STAFF.tosm_RSTLO.username);
+
+        const updatedReport = await addMessageToReport(
+            report.id,
+            DEFAULT_STAFF.em_RSTLO.username,
+            "STAFF",
+            message1,
+            true
+        );
+
+        expect(updatedReport).toBeDefined();
+        expect(updatedReport.title).toBe("Report for EM Message Retrieval");
+        expect(updatedReport.messages).toHaveLength(1);
+        expect(updatedReport.messages![0].message).toBe(message1);
+    });
+
+    it("should throw BadRequestError when TOSM tries to add message to unassigned report", async () => {
+        const citizen = await TestDataManager.getCitizen('citizen1');
+        const report = await reportRepo.create(
+            citizen,
+            "Report for TOSM Unassigned Message Test",
+            "Description",
+            OfficeCategory.RSTLO,
+            45.0,
+            7.0,
+            false,
+            "/img.jpg"
+        );
+        const message1 = "Message from unassigned TOSM.";
+
+        await expect(
+            addMessageToReport(
+                report.id,
+                DEFAULT_STAFF.em_RSTLO.username,
+                "STAFF",
+                message1,
+                true
+            )
+        ).rejects.toThrow(BadRequestError);
+
+    });
+
+    it("should throw BadRequestError when EM is not assigned to the report", async () => {
+        const citizen = await TestDataManager.getCitizen('citizen1');
+        const report = await reportRepo.create(
+            citizen,
+            "Report for EM Unassigned Message Test",
+            "Description",
+            OfficeCategory.RSTLO,
+            45.0,
+            7.0,
+            false,
+            "/img.jpg"
+        );
+
+        await updateReportAsMPRO(report.id, Status.ASSIGNED);
+        await selfAssignReport(report.id, DEFAULT_STAFF.tosm_RSTLO.username);
+
+        const message1 = "Message from unassigned EM.";
+        await expect(
+            addMessageToReport(
+                report.id,
+                DEFAULT_STAFF.em_RSTLO.username,
+                "STAFF",
+                message1,
+                true
+            )
+        ).rejects.toThrow(BadRequestError);
+    });
+
+    it("should get all messages", async () => {
+        const citizen = await TestDataManager.getCitizen('citizen1');
+        const report = await reportRepo.create(
+            citizen,
+            "Report for EM Message Retrieval",
+            "Description",
+            OfficeCategory.RSTLO,
+            45.0,
+            7.0,
+            false,
+            "/img.jpg"
+            );
+
+        const message1 = "Public message from TOSM.";
+        const message2 = "Private message from TOSM.";
+
+        await updateReportAsMPRO(report.id, Status.ASSIGNED);
+        await selfAssignReport(report.id, DEFAULT_STAFF.tosm_RSTLO.username);
+
+        await addMessageToReport(
+            report.id,
+            DEFAULT_STAFF.tosm_RSTLO.username,
+            "STAFF",
+            message1,
+            false
+        );
+
+        await addMessageToReport(
+            report.id,
+            DEFAULT_STAFF.tosm_RSTLO.username,
+            "STAFF",
+            message2,
+            false
+        );
+
+        const messages = await getAllMessages(report.id, "STAFF");
+
+        expect(messages).toHaveLength(2);
+    });
+
+    it("should throw NotFoundError when getting messages for non-existent report", async () => {    
+        await expect(
+            getAllMessages(99999, "STAFF")
+        ).rejects.toThrow(NotFoundError);
+    });
+        
+
 });

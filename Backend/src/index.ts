@@ -1,7 +1,8 @@
+import "dotenv/config";
 import { app } from "@app";
 import { CONFIG } from "@config";
 import { logError, logInfo } from "@services/loggingService";
-import { Server } from "http";
+import { Server } from "node:http";
 import "reflect-metadata";
 import { closeDatabase, initializeDatabase } from "@database";
 

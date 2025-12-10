@@ -56,7 +56,7 @@ export function mapStaffDAOToDTO(staffDAO: StaffDAO): StaffDTO {
     name: staffDAO.name,
     surname: staffDAO.surname,
     role: staffDAO.role,
-    officeName: staffDAO.office.name
+    officeNames: staffDAO.offices.map(o => o.name),
   }) as StaffDTO;
 }
 
@@ -65,6 +65,7 @@ export function mapOfficeDAOToDTO(officeDAO: OfficeDAO): OfficeDTO {
     name: officeDAO.name,
     description: officeDAO.description,
     category: officeDAO.category,
+    isExternal: officeDAO.isExternal,
     members: officeDAO.members?.map(member => mapStaffDAOToDTO(member))
   }) as OfficeDTO;
 }
@@ -84,6 +85,8 @@ export function mapReportDAOToDTO(reportDAO: ReportDAO): ReportDTO {
         photos: [reportDAO.photo1, reportDAO.photo2, reportDAO.photo3].filter(Boolean) as string[],
         comment: reportDAO.comment,
         assignedStaff: reportDAO.assignedStaff?.username,
+        isExternal: reportDAO.isExternal,
+        assignedEM: reportDAO.assignedEM?.username,
         messages: reportDAO.messages?.map(mapMessageToDTO)
     }) as ReportDTO;
 }
@@ -97,7 +100,7 @@ export function mapNotificationDAOToDTO(dao: NotificationDAO): Notification {
         title: dao.title,
         message: dao.message,
         isRead: dao.isRead,
-        reportId: dao.report.id,
+        reportId: dao.report?.id,
         citizenUsername: dao.citizen?.username,
         staffUsername: dao.staff?.username
     };
@@ -107,6 +110,7 @@ export function mapMessageToDTO(messageDAO: MessageDAO): MessageDTO {
     return removeNullAttributes({
         timestamp: messageDAO.timestamp.toISOString(),
         message: messageDAO.message,
-        staffUsername: messageDAO.staff?.username
+        staffUsername: messageDAO.staff?.username,
+        isPrivate: messageDAO.isPrivate
     }) as MessageDTO;
 }

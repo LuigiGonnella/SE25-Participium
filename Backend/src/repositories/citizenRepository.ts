@@ -3,12 +3,43 @@ import {CitizenDAO} from "@models/dao/citizenDAO";
 import {throwConflictIfFound} from "@utils";
 import {Repository} from "typeorm";
 import AppError from "@models/errors/AppError";
+import bcrypt from "bcrypt";
 
 export class CitizenRepository {
-    private repo: Repository<CitizenDAO>;
+    private readonly repo: Repository<CitizenDAO>;
 
     constructor() {
         this.repo = AppDataSource.getRepository(CitizenDAO);
+    }
+
+    async createDefaultCitizensIfNotExist(count: number = 3): Promise<void> {
+        for (let i = 1; i <= count; i++) {
+            const username = `cit_${i}`;
+            const email = `example${i}@example.com`;
+            const passwordPlain = `cit123`;
+
+            const existing = await this.repo.findOne({
+                where: [
+                    { email },
+                    { username }
+                ]
+            });
+
+            if (existing) {
+                console.log(`Default citizen ${username} already exists.`);
+            } else {
+                const newCitizen = this.repo.create({
+                    email,
+                    username,
+                    name: `Default${i}`,
+                    surname: "Citizen",
+                    password: bcrypt.hashSync(passwordPlain, 10),
+                    receive_emails: false,
+                });
+                await this.repo.save(newCitizen);
+                console.log(`Default citizen ${username} created with password 'cit123'.`);
+            }
+        }
     }
 
     // get all citizens
@@ -64,8 +95,9 @@ export class CitizenRepository {
             `Citizen already exists with username ${username}`,
         );
 
+        // Save citizen without email (email will be set after verification)
         return await this.repo.save({
-            email,
+            email: null, // Email is null until verified
             username,
             name,
             surname,
@@ -103,5 +135,9 @@ export class CitizenRepository {
         }
 
         return await this.repo.save(citizen);
+    }
+
+    async getCitizenByTelegramUsername(telegram_username: string): Promise<CitizenDAO | null> {
+        return await this.repo.findOne({ where: { telegram_username } });
     }
 }

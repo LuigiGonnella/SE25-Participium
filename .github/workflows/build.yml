@@ -1,10 +1,12 @@
 name: Build
 on:
- push:
-   branches:
-     - "main"
- pull_request:
-   types: [opened, synchronize, reopened]
+  push:
+    branches:
+      - "main"
+      - "dev"
+  pull_request:
+    types: [opened, synchronize, reopened]
+
 jobs:
   sonarqube:
     name: SonarQube Analysis
@@ -12,25 +14,31 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0 
+          fetch-depth: 0
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
       
       - name: Install Backend dependencies
         working-directory: ./Backend
         run: npm install
-      
-      - name: Backend Test and coverage
-        working-directory: ./Backend
-        run: npm run test:coverage
       
       - name: Install Frontend dependencies
         working-directory: ./Frontend
         run: npm install
       
       - name: SonarQube Scan
-        uses: SonarSource/sonarcloud-github-action@v2
-        with:
-          projectBaseDir: .
+        uses: SonarSource/sonarcloud-github-action@v3
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: "https://sonarcloud.io"
-          SONAR_ORGANIZATION: "luigigonnella"
+      
+      - name: Backend Test and coverage
+        working-directory: ./Backend
+        env:
+          DB_TYPE: sqlite
+          DB_DATABASE: ":memory:"
+          SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+        run: npm run test:coverage

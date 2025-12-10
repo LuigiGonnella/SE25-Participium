@@ -1,11 +1,10 @@
 import { AppDataSource } from "@database";
 import { OfficeCategory, OfficeDAO } from "@models/dao/officeDAO";
-import { throwConflictIfFound } from "@utils";
 import { Repository } from "typeorm";
-import AppError from "@models/errors/AppError";
+
 
 export class OfficeRepository {
-    private repo: Repository<OfficeDAO>;
+    private readonly repo: Repository<OfficeDAO>;
 
     constructor() {
         this.repo = AppDataSource.getRepository(OfficeDAO);
@@ -58,11 +57,63 @@ export class OfficeRepository {
                 name: "Public Green Areas and Playgrounds Office",
                 description: "Technical office responsible for maintenance of public green areas and playgrounds",
                 category: OfficeCategory.PGAPO
-            }
+            },
+
+            /*EXTERNAL COMPANY*/ 
+
+            {
+                name: "External Company - Water Supply",
+                description: "External company responsible for water supply and management",
+                category: OfficeCategory.WSO,
+                isExternal: true
+            },
+            {
+                name: "External Company - Architectural Barriers",
+                description: "External company responsible for removing architectural barriers in public spaces",
+                category: OfficeCategory.ABO,
+                isExternal: true
+            },
+            {
+                name: "External Company - Sewer System",
+                description: "External company responsible for sewer system maintenance and management",
+                category: OfficeCategory.SSO,
+                isExternal: true
+            },
+            {
+                name: "External Company - Public Lighting",
+                description: "External company responsible for public lighting systems",
+                category: OfficeCategory.PLO,
+                isExternal: true
+            },
+            {
+                name: "External Company - Waste",
+                description: "External company responsible for waste management and disposal",
+                category: OfficeCategory.WO,
+                isExternal: true
+            },
+            {
+                name: "External Company - Road Signs and Traffic Lights",
+                description: "External company responsible for road signs and traffic lights maintenance",
+                category: OfficeCategory.RSTLO,
+                isExternal: true
+            },
+            {
+                name: "External Company - Roads and Urban Furnishings",
+                description: "External company responsible for road maintenance and urban furnishings",
+                category: OfficeCategory.RUFO,
+                isExternal: true
+            },
+            {
+                name: "External Company - Public Green Areas and Playgrounds",
+                description: "External company responsible for maintenance of public green areas and playgrounds",
+                category: OfficeCategory.PGAPO,
+                isExternal: true
+            },
         ];
 
         for (const officeData of defaultOffices) {
-            const officeExists = await this.repo.exists({ where: { category: officeData.category } });
+            const isNewExternal = officeData.isExternal;
+            const officeExists = await this.repo.exists({ where: { category: officeData.category, isExternal: isNewExternal } });
             
             if (!officeExists) {
                 const office = this.repo.create(officeData);
@@ -73,7 +124,10 @@ export class OfficeRepository {
     }
 
     // get all offices
-    async getAllOffices(): Promise<OfficeDAO[]> {
+    async getAllOffices(isExternal?: boolean): Promise<OfficeDAO[]> {
+        if (isExternal !== undefined) {
+            return await this.repo.find({ where: { isExternal }, relations: ["members"] });
+        }
         return await this.repo.find({ relations: ["members"] });
     }
 
@@ -92,14 +146,17 @@ export class OfficeRepository {
         return await this.repo.findOne({ where: { category }, relations: ["members"] });
     }
 
+    /* TODO: check if this function down are correct */
+
     // create new office
+    /*
     async createOffice(
         name: string,
         description: string,
         category: OfficeCategory
     ): Promise<OfficeDAO> {
         if (!name || !category) {
-            throw new AppError("Invalid input data: name and category are required", 400);
+            throw new NotFoundError("Invalid input data: name and category are required");
         }
         
         name = name.trim();
@@ -109,28 +166,24 @@ export class OfficeRepository {
         }
 
         // Check if office with same name exists
-        throwConflictIfFound(
-            await this.repo.find({ where: { name }}),
-            () => true,
-            `Office already exists with name ${name}`,
-        );
+        if(await this.repo.findOne({ where: { name }})){
+            throw new ConflictError(`Office already exists with name ${name}`);
+        }
 
         // Check if office with same category exists
-        throwConflictIfFound(
-            await this.repo.find({ where: { category }}),
-            () => true,
-            `Office already exists with category ${category}`,
-        );
+        if(await this.repo.findOne({ where: { category }})){
+            throw new ConflictError(`Office already exists with category ${category}`);
+        }
 
         return await this.repo.save({
             name,
             description,
             category
         });
-    }
+    }*/
 
     // update office
-    async updateOffice(
+    /* async updateOffice(
         id: number,
         name?: string,
         description?: string,
@@ -169,10 +222,10 @@ export class OfficeRepository {
         }
 
         return await this.repo.save(office);
-    }
+    } */
 
     // delete office
-    async deleteOffice(id: number): Promise<void> {
+    /* async deleteOffice(id: number): Promise<void> {
         const office = await this.getOfficeById(id);
         
         if (!office) {
@@ -188,5 +241,5 @@ export class OfficeRepository {
         }
 
         await this.repo.remove(office);
-    }
+    } */
 }

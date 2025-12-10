@@ -12,7 +12,7 @@ interface RegistrationFormProps {
     handleStaffRegistration?: (newStaff: NewStaff) => Promise<void>;
 }
 
-function RegistrationForm({ handleRegistration }: RegistrationFormProps) {
+function RegistrationForm({ handleRegistration }: Readonly<RegistrationFormProps>) {
     interface FormData {
         name: string;
         surname: string;
@@ -99,7 +99,7 @@ function RegistrationForm({ handleRegistration }: RegistrationFormProps) {
             confirmPassword: true
         });
 
-        if (Object.values(errors).some(error => error)) {
+        if (Object.values(errors).some(Boolean)) {
             return;
         }
 
@@ -117,7 +117,7 @@ function RegistrationForm({ handleRegistration }: RegistrationFormProps) {
             await handleRegistration?.(newCitizen);
             setIsHidden(false);
             setTimeout(() => {
-                navigate('/login');
+                navigate('/verify-email');
             }, 3000);
         } catch (err) {
             setErrorMessage('Error: ' + (err instanceof APIError ? err.details : err));
@@ -294,7 +294,7 @@ function RegistrationForm({ handleRegistration }: RegistrationFormProps) {
                         <Alert variant="success" hidden={isHidden} className="mt-2">
                             <Row className="align-items-center">
                                 <Col className="col-auto">
-                                    Registration successful! You will be redirected to the login page.
+                                    Registration successful! Check your email for the verification code. Redirecting to verification page...
                                 </Col>
                                 <Col>
                                     <Spinner active small />
@@ -308,7 +308,7 @@ function RegistrationForm({ handleRegistration }: RegistrationFormProps) {
     );
 }
 
-function MunicipalityRegistrationForm({ handleStaffRegistration }: RegistrationFormProps) {
+function MunicipalityRegistrationForm({ handleStaffRegistration }: Readonly<RegistrationFormProps>) {
     interface FormData {
         name: string;
         surname: string;
@@ -316,7 +316,7 @@ function MunicipalityRegistrationForm({ handleStaffRegistration }: RegistrationF
         password: string;
         confirmPassword: string;
         role: string;
-        officeName: string;
+        officeNames: string[];
     }
 
     interface FormErrors {
@@ -326,7 +326,7 @@ function MunicipalityRegistrationForm({ handleStaffRegistration }: RegistrationF
         password: boolean;
         confirmPassword: boolean;
         role: boolean;
-        officeName: boolean;
+        officeNames: boolean;
     }
 
     const [isPending, setIsPending] = useState(false);
@@ -345,7 +345,7 @@ function MunicipalityRegistrationForm({ handleStaffRegistration }: RegistrationF
         password: '',
         confirmPassword: '',
         role: '',
-        officeName: ''
+        officeNames: []
     });
 
     useEffect(() => {
@@ -359,7 +359,7 @@ function MunicipalityRegistrationForm({ handleStaffRegistration }: RegistrationF
     useEffect(() => {
         if (formData.role in StaffRole) {
             setShowOfficeSelect(true);
-            setTouched(prev => ({ ...prev, officeName: false }));
+            setTouched(prev => ({ ...prev, officeNames: false }));
 
             const allowed = ROLE_OFFICE_MAP[formData.role as keyof typeof ROLE_OFFICE_MAP];
             if (allowed && offices.length > 0) {
@@ -370,7 +370,17 @@ function MunicipalityRegistrationForm({ handleStaffRegistration }: RegistrationF
                 );
                 setFilteredOffices(filtered);
                 if (filtered.length === 1) {
-                    setFormData(prev => ({ ...prev, officeName: filtered[0].name }));
+                    setFormData(prev => ({
+                        ...prev,
+                        officeNames: [filtered[0].name]
+                    }));
+                }
+
+                else {
+                    setFormData(prev => ({
+                        ...prev,
+                        officeNames: [""]
+                    }));
                 }
             } else {
                 setFilteredOffices([]);
@@ -378,7 +388,7 @@ function MunicipalityRegistrationForm({ handleStaffRegistration }: RegistrationF
         } else {
             setShowOfficeSelect(false);
             setFilteredOffices([]);
-            setFormData(prev => ({ ...prev, officeName: '' }));
+            setFormData(prev => ({ ...prev, officeNames: [] }));
         }
     }, [formData.role, offices]);
 
@@ -394,7 +404,7 @@ function MunicipalityRegistrationForm({ handleStaffRegistration }: RegistrationF
                 return value !== formData.password;
             case 'role':
                 return value === '';
-            case 'officeName':
+            case 'officeNames':
                 return value === '' && filteredOffices.length > 0;
             default:
                 return false;
@@ -408,7 +418,7 @@ function MunicipalityRegistrationForm({ handleStaffRegistration }: RegistrationF
         password: validateField('password', formData.password),
         confirmPassword: validateField('confirmPassword', formData.confirmPassword),
         role: validateField('role', formData.role),
-        officeName: validateField('officeName', formData.officeName)
+        officeNames: formData.officeNames.length === 0
     };
 
     const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -429,7 +439,7 @@ function MunicipalityRegistrationForm({ handleStaffRegistration }: RegistrationF
                 [name]: value
             };
             if (name === 'role') {
-                next.officeName = '';
+                next.officeNames = [];
             }
             return next;
         });
@@ -451,10 +461,10 @@ function MunicipalityRegistrationForm({ handleStaffRegistration }: RegistrationF
             password: true,
             confirmPassword: true,
             role: true,
-            officeName: true
+            officeNames: true
         });
 
-        if (Object.values(errors).some(error => error)) return;
+        if (Object.values(errors).some(Boolean)) return;
 
         const newStaff: NewStaff = {
             name: formData.name,
@@ -462,7 +472,7 @@ function MunicipalityRegistrationForm({ handleStaffRegistration }: RegistrationF
             username: formData.username,
             password: formData.password,
             role: formData.role,
-            officeName: formData.officeName
+            officeNames: formData.officeNames
         };
 
         setIsPending(true);
@@ -476,7 +486,7 @@ function MunicipalityRegistrationForm({ handleStaffRegistration }: RegistrationF
                 password: '',
                 confirmPassword: '',
                 role: '',
-                officeName: ''
+                officeNames: []
             });
             setTouched({
                 name: false,
@@ -485,7 +495,7 @@ function MunicipalityRegistrationForm({ handleStaffRegistration }: RegistrationF
                 password: false,
                 confirmPassword: false,
                 role: false,
-                officeName: false
+                officeNames: false
             });
             setTimeout(() => {
                 setIsHidden(true);
@@ -614,35 +624,101 @@ function MunicipalityRegistrationForm({ handleStaffRegistration }: RegistrationF
                                 </Row>
 
                                 {showOfficeSelect && (
-                                    <Row>
-                                        <Col>
-                                            <Form.Group className="mb-3" controlId="formOffice">
-                                                <Form.Label>Office</Form.Label>
-                                                <Form.Select
-                                                    name="officeName"
-                                                    value={formData.officeName}
-                                                    onChange={handleSelectChange}
-                                                    onBlur={handleSelectBlur}
-                                                    isInvalid={touched.officeName && errors.officeName}
-                                                    required
-                                                >
-                                                    {filteredOffices.length > 1 && (
-                                                        <option disabled value="">
-                                                            Select an office...
-                                                        </option>
+                                    <>
+                                        {formData.officeNames.map((selected, index) => {
+                                            // Filter out already selected offices except the current one
+                                            const availableOffices = filteredOffices.filter(
+                                                (office) =>
+                                                    !formData.officeNames.includes(office.name) ||
+                                                    office.name === selected
+                                            );
+
+                                            return (
+                                                <Row key={`${selected}-${index}`} className="align-items-center">
+                                                    <Col xs={10}>
+                                                        <Form.Group className="mb-3" controlId={`formOffice${index}`}>
+                                                            <Form.Label>
+                                                                { 
+                                                                    formData.role === "TOSM"
+                                                                        ? `Office ${index + 1}`
+                                                                        : "Office"
+                                                                }
+                                                            </Form.Label>
+
+                                                            <Form.Select
+                                                                name="officeNames"
+                                                                value={selected}
+                                                                onChange={(e) => {
+                                                                    const updated = [...formData.officeNames];
+                                                                    updated[index] = e.target.value;
+                                                                    setFormData(prev => ({
+                                                                        ...prev,
+                                                                        officeNames: updated
+                                                                    }));
+                                                                    setTouched(prev => ({ ...prev, officeNames: true }));
+                                                                }}
+                                                                isInvalid={touched.officeNames && errors.officeNames}
+                                                                required
+                                                            >
+                                                                {availableOffices.length > 1 && (
+                                                                    <option value="">Select an office...</option>
+                                                                )}
+
+                                                                {availableOffices.map((office) => (
+                                                                    <option key={office.id} value={office.name}>
+                                                                        {office.name}
+                                                                    </option>
+                                                                ))}
+                                                            </Form.Select>
+
+                                                            <Form.Control.Feedback type="invalid">
+                                                                This field is required.
+                                                            </Form.Control.Feedback>
+                                                        </Form.Group>
+                                                    </Col>
+
+                                                    {/* Remove button for extra dropdowns */}
+                                                    {index > 0 && (
+                                                        <Col xs={2} className="mt-4">
+                                                            <Button
+                                                                variant="danger"
+                                                                onClick={() => {
+                                                                    const updated = [...formData.officeNames];
+                                                                    updated.splice(index, 1);
+                                                                    setFormData(prev => ({ ...prev, officeNames: updated }));
+                                                                }}
+                                                            >
+                                                                –
+                                                            </Button>
+                                                        </Col>
                                                     )}
-                                                    {filteredOffices.map(office => (
-                                                        <option key={office.id} value={office.name}>
-                                                            {office.name}
-                                                        </option>
-                                                    ))}
-                                                </Form.Select>
-                                                <Form.Control.Feedback type="invalid">
-                                                    This field is required.
-                                                </Form.Control.Feedback>
-                                            </Form.Group>
-                                        </Col>
-                                    </Row>
+                                                </Row>
+                                            );
+                                        })}
+
+                                        {/* Add another office — only for TOSM */}
+                                        {formData.role === "TOSM" && filteredOffices.length > formData.officeNames.length && (
+                                            <Button
+                                                className="mb-3"
+                                                variant="secondary"
+                                                disabled={
+                                                    formData.officeNames.length === 0 ||
+                                                    formData.officeNames.at(-1) === ""
+                                                }
+                                                onClick={() => {
+                                                    // Add empty dropdown only if previous is filled
+                                                    if (formData.officeNames.at(-1) !== "") {
+                                                        setFormData(prev => ({
+                                                            ...prev,
+                                                            officeNames: [...prev.officeNames, ""]
+                                                        }));
+                                                    }
+                                                }}
+                                            >
+                                                Add another office
+                                            </Button>
+                                        )}
+                                    </>
                                 )}
 
                                 <Button

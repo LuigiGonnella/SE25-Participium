@@ -1,5 +1,5 @@
 export interface Citizen {
-    email: string;
+    email: string | null;
     username: string;
     name: string;
     surname: string;
@@ -17,7 +17,7 @@ export interface Staff {
     surname: string;
     password: string;
     role: string;
-    officeName: string;
+    officeNames: string[];
     type: string;
 }
 
@@ -33,6 +33,10 @@ export function isMPRO(user: User | undefined): user is Staff {
 
 export function isTOSM(user: User | undefined): user is Staff {
     return isStaff(user) && user.role === 'Technical Office Staff Member';
+}
+
+export function isEM(user: User | undefined): user is Staff {
+    return isStaff(user) && user.role === 'External Maintainer';
 }
 
 export function isCitizen(user: User | undefined): user is Citizen {
@@ -58,14 +62,15 @@ export interface NewStaff {
     username: string;
     password: string;
     role: string;
-    officeName: string;
+    officeNames: string[];
 }
 
 export const StaffRole = {
     ADMIN: "Admin",
     MPRO: "Municipal Public Relations Officer",
     MA: "Municipal Administrator",
-    TOSM: "Technical Office Staff Member"
+    TOSM: "Technical Office Staff Member",
+    EM: "External Maintainer"
 }
 
 export interface Office {
@@ -87,6 +92,16 @@ export const ROLE_OFFICE_MAP = {
     "Road Signs and Traffic Lights Office",
     "Roads and Urban Furnishings Office",
     "Public Green Areas and Playgrounds Office"
+  ],
+  EM: [
+    "External Company - Water Supply",
+    "External Company - Architectural Barriers",
+    "External Company - Sewer System",
+    "External Company - Public Lighting",
+    "External Company - Waste",
+    "External Company - Road Signs and Traffic Lights",
+    "External Company - Roads and Urban Furnishings",
+    "External Company - Public Green Areas and Playgrounds",
   ]
 };
 
@@ -125,6 +140,8 @@ export interface Report {
     photos: string[];
     comment?: string;
     assignedStaff?: string;
+    assignedEM?: string;
+    isExternal: boolean;
     messages?: Message[];
 }
 
@@ -154,4 +171,5 @@ export interface Message {
     reportId: number,
     message: string,
     staffUsername: string
+    isPrivate: boolean
 }

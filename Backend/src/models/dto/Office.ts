@@ -31,6 +31,11 @@ export interface Office {
      */
     category: string;
     /**
+     * @type {boolean}
+     * @memberof Office
+     */
+    isExternal: boolean;
+    /**
      * Array of staff members belonging to this office.
      * @type {Array<Staff>}
      * @memberof Office
@@ -46,6 +51,7 @@ export function instanceOfOffice(value: object): value is Office {
     if (!('name' in value) || value['name'] === undefined) return false;
     if (!('description' in value) || value['description'] === undefined) return false;
     if (!('category' in value) || value['category'] === undefined) return false;
+    if (!('isExternal' in value) || value['isExternal'] === undefined) return false;
     return true;
 }
 
@@ -62,6 +68,7 @@ export function OfficeFromJSONTyped(json: any, ignoreDiscriminator: boolean): Of
         'name': json['name'],
         'description': json['description'],
         'category': json['category'],
+        'isExternal': json['isExternal'],
         'members': (json['members'] as Array<any>).map(StaffFromJSON),
     };
 }
@@ -80,6 +87,7 @@ export function OfficeToJSONTyped(value?: Office | null, ignoreDiscriminator: bo
         'name': value['name'],
         'description': value['description'],
         'category': value['category'],
+        'isExternal': value['isExternal'],
         'members': value['members'] == null ? undefined : (value['members'] as Array<any>).map(StaffToJSON),
     };
 }

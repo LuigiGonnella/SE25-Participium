@@ -1,5 +1,6 @@
 import { Column, Entity, PrimaryGeneratedColumn, OneToMany } from "typeorm";
 import { ReportDAO } from "./reportDAO";
+import {PendingVerificationDAO} from "@dao/pendingVerificationDAO";
 
 @Entity("citizen")
 export class CitizenDAO {
@@ -7,8 +8,8 @@ export class CitizenDAO {
     @PrimaryGeneratedColumn('increment', { type: 'int', unsigned: true })
     id: number;
 
-    @Column({ unique: true, nullable: false })
-    email: string;
+    @Column({ type: 'varchar', unique: true, nullable: true })
+    email: string | null;
 
     @Column({ unique: true, nullable: false })
     username: string;
@@ -34,4 +35,6 @@ export class CitizenDAO {
     @OneToMany(() => ReportDAO, (report) => report.citizen)
     reports: ReportDAO[];
 
+    @OneToMany(() => PendingVerificationDAO, (pendingVerification) => pendingVerification.citizen, { cascade: true })
+    pending_verifications: PendingVerificationDAO[];
 }

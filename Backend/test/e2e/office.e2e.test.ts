@@ -1,71 +1,67 @@
 import { OfficeCategory } from "@dao/officeDAO";
-import { StaffRole } from "@models/dao/staffDAO";
-import { OfficeRepository } from "@repositories/officeRepository";
-import { initializeTestDataSource, closeTestDataSource } from "../setup/test-datasource";
+import { beforeAllE2e, afterAllE2e, beforeEachE2e, DEFAULT_STAFF } from "@test/e2e/lifecycle";
 import request from "supertest";
-import { StaffRepository } from "@repositories/staffRepository";
-
 import { app } from "@app";
 
-let officeRepo: OfficeRepository;
-let staffRepo: StaffRepository;
-let authCookie: string;
-
-const office1 = {
-    name: "Municipal Organization Office",
-    description: "Handles municipal organization",
-    category: OfficeCategory.MOO,
-};
-
-const office2 = {
-    name: "Water Supply Office",
-    description: "Handles water supply",
-    category: OfficeCategory.WSO,
-};
-
-const staff1 = {
-    username: "peppevessicchio",
-    name: "Peppe",
-    surname: "Vessicchio",
-    password: "rip_maestro2025",
-    role: StaffRole.TOSM,
-};
+let adminCookie: string;
 
 
 beforeAll(async () => {
-    await initializeTestDataSource();
-    officeRepo = new OfficeRepository();
-    staffRepo = new StaffRepository();
+    await beforeAllE2e();
 
-    await officeRepo.createDefaultOfficesIfNotExist();
-    await staffRepo.createDefaultAdminIfNotExists();
-
+    // Login with default admin
     const loginResponse = await request(app)
         .post('/api/v1/auth/login?type=STAFF')
         .send({
-            username: "admin",
-            password: "admin123",
+            username: DEFAULT_STAFF.admin.username,
+            password: DEFAULT_STAFF.admin.password,
         })
         .expect(200);
 
-    authCookie = loginResponse.headers['set-cookie'][0]; 
+    adminCookie = loginResponse.headers['set-cookie'][0]; 
 });
 
 afterAll(async () => {
-    await closeTestDataSource();
+    await afterAllE2e();
+});
+
+beforeEach(async () => {
+    await beforeEachE2e();
 });
 
 describe("Office E2E Tests", () => {
     describe("GET /offices - Get all offices", () => {
-        it("should return an empty array when no offices exist", async () => {
+        it("should return only internal offices", async () => {
             const response = await request(app)
-                .get('/api/v1/offices')
-                .set('Cookie', authCookie)
+                .get('/api/v1/offices?isExternal=false')
+                .set('Cookie', adminCookie)
                 .expect(200);
 
             expect(response.body).toBeDefined();
             expect(Array.isArray(response.body)).toBe(true);
             expect(response.body.length).toBe(9);
+        });
+
+        it("should return only external offices", async () => {
+            const response = await request(app)
+                .get('/api/v1/offices?isExternal=true')
+                .set('Cookie', adminCookie)
+                .expect(200);
+
+            expect(response.body).toBeDefined();
+            expect(Array.isArray(response.body)).toBe(true);
+            expect(response.body.length).toBe(8);
+        });
+
+        it("should return every office", async () => {
+            const response = await request(app)
+                .get('/api/v1/offices')
+                .set('Cookie', adminCookie)
+                .expect(200);
+
+            expect(response.body).toBeDefined();
+            expect(Array.isArray(response.body)).toBe(true);
+            expect(response.body.length).toBe(17);
         });
         
     });

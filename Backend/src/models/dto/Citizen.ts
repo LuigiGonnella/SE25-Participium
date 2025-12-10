@@ -15,7 +15,7 @@ export interface Citizen {
      * @type {string}
      * @memberof Citizen
      */
-    email: string;
+    email: string | null;
     /**
      * 
      * @type {string}
@@ -81,8 +81,8 @@ export function CitizenFromJSONTyped(json: any, ignoreDiscriminator: boolean): C
         'username': json['username'],
         'name': json['name'],
         'surname': json['surname'],
-        'profilePicture': json['profilePicture'] == null ? undefined : json['profilePicture'],
-        'telegram_username': json['telegram_username'] == null ? undefined : json['telegram_username'],
+        'profilePicture': json['profilePicture'] ?? undefined,
+        'telegram_username': json['telegram_username'] ?? undefined,
         'receive_emails': json['receive_emails'],
     };
 }

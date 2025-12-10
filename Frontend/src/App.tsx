@@ -11,6 +11,7 @@ import ReportListPage from "./components/ReportListPage";
 import ReportDetailPage from "./components/ReportDetailPage";
 import StaffProfile from "./components/StaffProfile";
 import CitizenProfile from "./components/CitizenProfile";
+import EmailVerificationPage from "./components/EmailVerificationPage";
 import 'bootstrap-italia/dist/css/bootstrap-italia.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.min.css';
 import 'typeface-titillium-web/index.css';
@@ -22,14 +23,16 @@ import {
     type Credentials,
     type User,
     isStaff, StaffRole,
-    isMPRO, isTOSM, isCitizen
+    isMPRO, isTOSM, isCitizen, isEM
 } from "./models/Models.ts";
+import AdminTOSMPage from './components/AllTOSM.tsx';
 
 
 function App() {
     const [loggedIn, setLoggedIn] = useState<boolean>(false);
     const [user, setUser] = useState<User>();
     const [authChecked, setAuthChecked] = useState<boolean>(false);
+    const [refresh, setRefresh] = useState<boolean>(false);
 
     useEffect(() => {
         const checkAuth = async (): Promise<void> => {
@@ -38,6 +41,7 @@ function App() {
                 setLoggedIn(true);
                 setUser(user);
             } catch (err) {
+                console.error(err);
                 setLoggedIn(false);
                 setUser(undefined);
             } finally {
@@ -45,32 +49,20 @@ function App() {
             }
         };
         checkAuth();
-    }, []);
+    }, [refresh]);
 
     const handleLogin = async (credentials: Credentials, type: 'CITIZEN' | 'STAFF') => {
-        try {
-            const user = await API.login(credentials, type);
-            setLoggedIn(true);
-            setUser(user);
-        } catch (err) {
-            throw err;
-        }
+        const user = await API.login(credentials, type);
+        setLoggedIn(true);
+        setUser(user);
     };
 
     const handleRegistration = async (newCitizen: NewCitizen): Promise<void> => {
-        try {
-            await API.register(newCitizen);
-        } catch (err) {
-            throw err;
-        }
+        await API.register(newCitizen);
     };
 
     const handleMunicipalityRegistration = async (newStaff: NewStaff): Promise<void> => {
-        try {
-            await API.municipalityRegister(newStaff);
-        } catch (err) {
-            throw err;
-        }
+        await API.municipalityRegister(newStaff);
     };
 
     const handleLogout = async (): Promise<void> => {
@@ -79,19 +71,48 @@ function App() {
         setUser(undefined);
     };
 
+    const getLoginRedirect = () => {
+        if (isCitizen(user) && !user.email) {
+            return <Navigate replace to="/verify-email"/>;
+        }
+        return <Navigate replace to={isCitizen(user) ? "/map" : "/reports"}/>;
+    };
+
+    const getMapContent = () => {
+        if (!user?.email) {
+            return <Navigate replace to="/verify-email"/>;
+        }
+        return <TurinMaskedMap isLoggedIn={loggedIn} user={user}/>;
+    };
+
+    const getProfileContent = () => {
+        if (isStaff(user)) {
+            return <StaffProfile user={user} />;
+        }
+        if (!user?.email) {
+            return <Navigate replace to="/verify-email"/>;
+        }
+        return <CitizenProfile user={user} refresh={toggleRefresh} />;
+    };
+
+    const toggleRefresh = () => setRefresh(prev => !prev);
+
     return (
         <Routes>
             <Route element={<DefaultLayout loggedIn={loggedIn} user={user} handleLogout={handleLogout} loading={!authChecked}/>}>
                 <Route path="" element={!loggedIn || isCitizen(user) ? <HomePage/> : <Navigate replace to="/reports"/>}/>
                 <Route path="login" element={
-                    loggedIn ?
-                        <Navigate replace to={isCitizen(user) ? "/map" : "/reports"}/> :
-                        <LoginForm handleLogin={handleLogin}/>
+                    loggedIn ? getLoginRedirect() : <LoginForm handleLogin={handleLogin}/>
                 }/>
                 <Route path="registration" element={
                     loggedIn ?
                         <Navigate replace to="/"/> :
                         <RegistrationForm handleRegistration={handleRegistration}/>
+                }/>
+                <Route path="verify-email" element={
+                    (isCitizen(user) && !user.email || !loggedIn) ?
+                        <EmailVerificationPage refresh={toggleRefresh} /> :
+                        <Navigate replace to="/"/>
                 }/>
                 <Route path="municipality-registration" element={
                     (loggedIn && isStaff(user) && user.role === StaffRole.ADMIN) ?
@@ -99,24 +120,25 @@ function App() {
                         <Navigate replace to="/"/>
                 }/>
                 <Route path="/map" element={
-                    loggedIn && isCitizen(user) ?
-                    <TurinMaskedMap isLoggedIn={loggedIn} user={user}/> :
-                    <Navigate replace to="/"/>
+                    loggedIn && isCitizen(user) ? getMapContent() : <Navigate replace to="/"/>
                 }/>
                 <Route path="/reports" element={
-                    loggedIn && (isMPRO(user) || isTOSM(user)) ?
+                    loggedIn && (isMPRO(user) || isTOSM(user) || isEM(user)) ?
                         <ReportListPage user={user}/> :
                         <Navigate replace to={(isStaff(user) && user.role === StaffRole.ADMIN) ? "/municipality-registration" : "/login"}/>
                 }/>
                 <Route path="/reports/:id" element={
-                    loggedIn && (isMPRO(user) || isTOSM(user)) ?
+                    loggedIn && (isMPRO(user) || isTOSM(user) || isEM(user)) ?
                         <ReportDetailPage user={user} /> :
                         <Navigate replace to="/login"/>
                 }/>
                 <Route path="/profile" element={
-                    loggedIn && user ? (
-                        isStaff(user) ? <StaffProfile user={user} /> : <CitizenProfile user={user} />
-                    ) : <Navigate replace to="/login"/>
+                    loggedIn && user ? getProfileContent() : <Navigate replace to="/login"/>
+                }/>
+                <Route path="/tosms" element={
+                    loggedIn && isStaff(user) && user.role === StaffRole.ADMIN ? 
+                        <AdminTOSMPage />
+                    : <Navigate replace to="/"/>
                 }/>
                 <Route path="*" element={<Navigate replace to="/"/>}/>
             </Route>

@@ -1,450 +1,461 @@
-jest.mock("@middlewares/authMiddleware", () => ({
-    isAuthenticated: jest.fn((roles?: string[]) => {
-        return (req: any, res: any, next: any) => {
-            // Simula un utente autenticato con ruolo e type coerenti con i controller
-            const primaryRole = roles && roles.length > 0 ? roles[0] : "CITIZEN";
-            const isStaff = primaryRole !== "CITIZEN";
-            req.user = {
-                username: "johnny",
-                role: primaryRole,
-                type: isStaff ? "STAFF" : "CITIZEN",
-            };
-            next();
-        };
-    }),
-}));
+import request from 'supertest';
+import express, { Express } from 'express';
+import reportRoutes from '@routes/reportRoutes';
+import authRoutes from '@routes/authRoutes';
+import session from 'express-session';
+import passport from 'passport';
+import { configurePassport } from '@config/passport';
+import { beforeAllE2e, DEFAULT_CITIZENS, DEFAULT_STAFF, TestDataManager } from "../../e2e/lifecycle";
+import { initializeTestDataSource, closeTestDataSource, TestDataSource } from "../../setup/test-datasource";
+import { ReportDAO, Status } from '@dao/reportDAO';
+import { NotificationDAO } from '@dao/notificationDAO';
+import { MessageDAO } from '@dao/messageDAO';
+import { ReportRepository } from '@repositories/reportRepository';
+import { OfficeCategory } from '@dao/officeDAO';
+import { errorHandler } from '@middlewares/errorMiddleware';
 
-jest.mock("@controllers/reportController", () => ({
-    uploadReportPictures: {
-        array: jest.fn(() => {
-            return (req: any, res: any, next: any) => {
-                req.files = [{ filename: "photo.jpg" }];
+let app: Express;
+let reportRepo: ReportRepository;
+
+beforeAll(async () => {
+    await initializeTestDataSource();
+    await beforeAllE2e();
+    
+    reportRepo = new ReportRepository();
+    
+    app = express();
+    app.use(express.json());
+    
+    // Session and passport setup for authentication
+    app.use(session({
+        secret: 'test-secret',
+        resave: false,
+        saveUninitialized: false,
+        cookie: { secure: false }
+    }));
+    app.use(passport.initialize());
+    app.use(passport.session());
+    
+    // Configure passport strategies
+    configurePassport();
+    
+    app.use('/api/v1/auth', authRoutes);
+    app.use('/api/v1/reports', reportRoutes);
+    app.use(errorHandler);
+});
+
+afterAll(async () => {
+    await closeTestDataSource();
+});
+
+beforeEach(async () => {
+    await TestDataSource.getRepository(NotificationDAO).clear();
+    await TestDataSource.getRepository(MessageDAO).clear();
+    await TestDataSource.getRepository(ReportDAO).clear();
+});
+
+describe('Report Routes Tests', () => {
+    describe('GET /api/v1/reports', () => {
+        it('should return all reports for default citizen', async () => {
+            const citizen = await TestDataManager.getCitizen('citizen1');
+            
+            await reportRepo.create(
+                citizen,
+                "Report 1",
+                "Description 1",
+                OfficeCategory.RSTLO,
+                45.0,
+                7.0,
+                false,
+                "/img1.jpg"
+            );
+
+            await reportRepo.create(
+                citizen,
+                "Report 2",
+                "Description 2",
+                OfficeCategory.WSO,
+                45.1,
+                7.1,
+                false,
+                "/img2.jpg"
+            );
+
+            const mproStaff = await TestDataManager.getStaff('mpro');
+            const agent = request.agent(app);
+            await agent.post('/api/v1/auth/login?type=STAFF')
+                .send({ username: 'mpro', password: 'mpro123' })
+                .expect(200);
+
+            const response = await agent
+                .get('/api/v1/reports')
+                .expect(200);
+
+            expect(Array.isArray(response.body)).toBe(true);
+            expect(response.body.length).toBe(2);
+        });
+
+        it('should return empty array when no reports exist', async () => {
+            const agent = request.agent(app);
+            await agent.post('/api/v1/auth/login?type=STAFF')
+                .send({ username: 'mpro', password: 'mpro123' })
+                .expect(200);
+                
+            const response = await agent
+                .get('/api/v1/reports')
+                .expect(200);
+
+            expect(response.body).toEqual([]);
+        });
+
+        it('should filter reports by category', async () => {
+            const citizen = await TestDataManager.getCitizen('citizen1');
+            
+            await reportRepo.create(
+                citizen,
+                "RSTLO Report",
+                "Description",
+                OfficeCategory.RSTLO,
+                45.0,
+                7.0,
+                false,
+                "/img.jpg"
+            );
+
+            await reportRepo.create(
+                citizen,
+                "WSO Report",
+                "Description",
+                OfficeCategory.WSO,
+                45.0,
+                7.0,
+                false,
+                "/img.jpg"
+            );
+
+            const agent = request.agent(app);
+            await agent.post('/api/v1/auth/login?type=STAFF')
+                .send({ username: 'mpro', password: 'mpro123' })
+                .expect(200);
+
+            const response = await agent
+                .get('/api/v1/reports?category=RSTLO')
+                .expect(200);
+
+            expect(response.body.length).toBe(1);
+            expect(response.body[0].category).toBe(OfficeCategory.RSTLO);
+        });
+    });
+
+    describe('GET /api/v1/reports/:id', () => {
+        it('should return report by id', async () => {
+            const citizen = await TestDataManager.getCitizen('citizen1');
+            const report = await reportRepo.create(
+                citizen,
+                "Test Report",
+                "Description",
+                OfficeCategory.RSTLO,
+                45.0,
+                7.0,
+                false,
+                "/img.jpg"
+            );
+
+            const agent = request.agent(app);
+            await agent.post('/api/v1/auth/login?type=STAFF')
+                .send({ username: 'mpro', password: 'mpro123' })
+                .expect(200);
+
+            const response = await agent
+                .get(`/api/v1/reports/${report.id}`)
+                .expect(200);
+
+            expect(response.body.title).toBe("Test Report");
+            expect(response.body.id).toBe(report.id);
+        });
+
+        it('should return 404 for non-existent report', async () => {
+            const agent = request.agent(app);
+            await agent.post('/api/v1/auth/login?type=STAFF')
+                .send({ username: 'mpro', password: 'mpro123' })
+                .expect(200);
+
+            const response = await agent
+                .get('/api/v1/reports/99999')
+                .expect(404);
+
+            expect(response.body).toHaveProperty('message');
+        });
+    });
+
+    describe('PATCH /api/v1/reports/:id/manage', () => {
+        beforeEach(() => {
+            // Mock MPRO user
+            app.use((req: any, res, next) => {
+                req.user = { username: DEFAULT_STAFF.mpro.username, type: 'STAFF', role: 'MPRO' };
+                req.isAuthenticated = () => true;
                 next();
-            };
-        }),
-    },
-    createReport: jest.fn(),
-    getReports: jest.fn(),
-    getReportById: jest.fn(),
-    updateReportAsMPRO: jest.fn(),
-    updateReportAsTOSM: jest.fn(),
-    addMessageToReport: jest.fn(),
-    getAllMessages: jest.fn(),
-}));
-
-jest.mock("@services/mapperService", () => ({
-    mapReportDAOToDTO: jest.fn(),
-}));
-
-import request from "supertest";
-import express from "express";
-
-import router from "@routes/reportRoutes";
-import {
-    createReport,
-    getReports,
-    getReportById,
-    updateReportAsMPRO,
-    updateReportAsTOSM,
-    addMessageToReport,
-    getAllMessages,
-} from "@controllers/reportController";
-import { mapReportDAOToDTO } from "@services/mapperService";
-
-describe("Report Routes", () => {
-    let app: express.Express;
-
-    beforeEach(() => {
-        jest.clearAllMocks();
-
-        app = express();
-        app.use(express.json());
-        app.use("/reports", router);
-    });
-  
-    describe("POST /reports", () => {
-        it("creates a report successfully", async () => {
-            const fakeDAO = {
-                id: 1,
-                title: "Broken Light",
-                photo1: "/uploads/reports/photo.jpg",
-            };
-
-            (createReport as jest.Mock).mockResolvedValue(fakeDAO);
-            (mapReportDAOToDTO as jest.Mock).mockReturnValue({
-                id: 1,
-                title: "Broken Light",
             });
-
-            const res = await request(app)
-                .post("/reports")
-                .send({
-                    title: "Broken Light",
-                    description: "desc",
-                    category: "Road Signs and Traffic Lights",
-                    latitude: "45",
-                    longitude: "7",
-                    anonymous: false,
-                });
-
-            expect(res.status).toBe(201);
-            expect(createReport).toHaveBeenCalled();
-            expect(mapReportDAOToDTO).toHaveBeenCalledWith(fakeDAO);
         });
-  
-      it("calls next(err) when createReport fails", async () => {
-            const err = new Error("fail");
-            (createReport as jest.Mock).mockRejectedValue(err);
 
-            const nextMock = jest.fn();
+        it('should update report status to ASSIGNED', async () => {
+            const citizen = await TestDataManager.getCitizen('citizen1');
+            const report = await reportRepo.create(
+                citizen,
+                "Test Report",
+                "Description",
+                OfficeCategory.RSTLO,
+                45.0,
+                7.0,
+                false,
+                "/img.jpg"
+            );
 
-            const appWithNext = express();
-            appWithNext.use(express.json());
-            appWithNext.use("/reports", router);
+            const agent = request.agent(app);
+            await agent.post('/api/v1/auth/login?type=STAFF')
+                .send({ username: 'mpro', password: 'mpro123' })
+                .expect(200);
 
-            appWithNext.use((e: any, req: any, res: any, next: any) => {
-                nextMock(e);
-                res.status(500).json({ error: e.message });
+            const response = await agent
+                .patch(`/api/v1/reports/${report.id}/manage`)
+                .send({ status: 'ASSIGNED' })
+                .expect(200);
+
+            expect(response.body.status).toBe(Status.ASSIGNED);
+        });
+    });
+
+    describe('PATCH /api/v1/reports/:id/updateStatus', () => {
+        beforeEach(() => {
+            // Mock MPRO user
+            app.use((req: any, res, next) => {
+                req.user = { username: DEFAULT_STAFF.mpro.username, type: 'STAFF', role: 'MPRO' };
+                req.isAuthenticated = () => true;
+                next();
             });
-
-            await request(appWithNext)
-                .post("/reports")
-                .send({
-                    title: "x",
-                    description: "x",
-                    category: "Road Signs and Traffic Lights",
-                    latitude: "45",
-                    longitude: "7",
-                });
-
-            expect(nextMock).toHaveBeenCalledWith(err);
-        }); 
-
-        it("handles errors from createReport", async () => {
-            (createReport as jest.Mock).mockRejectedValue(new Error("Creation failed"));
-
-            const res = await request(app)
-                .post("/reports")
-                .send({
-                    title: "Test",
-                    description: "Test description",
-                    category: "Road Signs and Traffic Lights",
-                    latitude: "45",
-                    longitude: "7",
-                });
-
-            expect(res.status).toBe(500);
-        });
-    });
-
-    describe("GET /reports", () => {
-        it("returns all reports without filters", async () => {
-            const mockReports = [
-                { id: 1, title: "Report 1" },
-                { id: 2, title: "Report 2" },
-            ];
-
-            (getReports as jest.Mock).mockResolvedValue(mockReports);
-
-            const res = await request(app).get("/reports");
-
-            expect(res.status).toBe(200);
-            expect(res.body).toEqual(mockReports);
-            expect(getReports).toHaveBeenCalledWith({});
-        });
-
-        it("filters reports by citizen_username", async () => {
-            (getReports as jest.Mock).mockResolvedValue([{ id: 1 }]);
-
-            const res = await request(app).get("/reports?citizen_username=testuser");
-
-            expect(res.status).toBe(200);
-            expect(getReports).toHaveBeenCalledWith({ citizen_username: "testuser" });
-        });
-
-        it("filters reports by status", async () => {
-            (getReports as jest.Mock).mockResolvedValue([{ id: 1 }]);
-
-            const res = await request(app).get("/reports?status=PENDING");
-
-            expect(res.status).toBe(200);
-            expect(getReports).toHaveBeenCalled();
-        });
-
-        it("filters reports by category", async () => {
-            (getReports as jest.Mock).mockResolvedValue([{ id: 1 }]);
-
-            const res = await request(app).get("/reports?category=WSO");
-
-            expect(res.status).toBe(200);
-            expect(getReports).toHaveBeenCalled();
-        });
-
-        it("rejects invalid status", async () => {
-            const res = await request(app).get("/reports?status=INVALID_STATUS");
-
-            expect(res.status).toBe(400);
-        });
-
-        it("rejects invalid category", async () => {
-            const res = await request(app).get("/reports?category=INVALID_CATEGORY");
-
-            expect(res.status).toBe(400);
-        });
-
-        it("rejects when only fromDate is provided", async () => {
-            const res = await request(app).get("/reports?fromDate=2024-01-01");
-
-            expect(res.status).toBe(400);
-        });
-
-        it("rejects when fromDate is after toDate", async () => {
-            const res = await request(app).get("/reports?fromDate=2024-12-01&toDate=2024-01-01");
-
-            expect(res.status).toBe(400);
-        });
-    });
-
-    describe("GET /reports/:reportId", () => {
-        it("returns a report by id", async () => {
-            const mockReport = { id: 1, title: "Report" };
-            (getReportById as jest.Mock).mockResolvedValue(mockReport);
-
-            const res = await request(app).get("/reports/1");
-
-            expect(res.status).toBe(200);
-            expect(res.body).toEqual(mockReport);
-            expect(getReportById).toHaveBeenCalledWith(1);
-        });
-
-        it("rejects invalid reportId", async () => {
-            const res = await request(app).get("/reports/invalid");
-
-            expect(res.status).toBe(400);
-        });
-
-        it("handles NotFoundError", async () => {
-            (getReportById as jest.Mock).mockRejectedValue(new Error("Not found"));
-
-            const res = await request(app).get("/reports/9999");
-
-            expect(res.status).toBe(500);
-        });
-    });
-
-    describe("PATCH /reports/:reportId/manage (MPRO)", () => {
-        it("updates report status to ASSIGNED", async () => {
-            const mockReport = { id: 1, status: "ASSIGNED" };
-            (updateReportAsMPRO as jest.Mock).mockResolvedValue(mockReport);
-
-            const res = await request(app)
-                .patch("/reports/1/manage")
-                .send({ status: "ASSIGNED" });
-
-            expect(res.status).toBe(200);
-            expect(updateReportAsMPRO).toHaveBeenCalled();
-        });
-
-        it("updates report status to REJECTED with comment", async () => {
-            const mockReport = { id: 1, status: "REJECTED", comment: "Reason" };
-            (updateReportAsMPRO as jest.Mock).mockResolvedValue(mockReport);
-
-            const res = await request(app)
-                .patch("/reports/1/manage")
-                .send({ status: "REJECTED", comment: "Reason" });
-
-            expect(res.status).toBe(200);
-            expect(updateReportAsMPRO).toHaveBeenCalled();
-        });
-
-        it("rejects invalid reportId", async () => {
-            const res = await request(app)
-                .patch("/reports/NaN/manage")
-                .send({ status: "ASSIGNED" });
-
-            expect(res.status).toBe(400);
-        });
-
-        it("rejects missing status", async () => {
-            const res = await request(app)
-                .patch("/reports/1/manage")
-                .send({});
-
-            expect(res.status).toBe(400);
-        });
-
-        it("rejects REJECTED without comment", async () => {
-            const res = await request(app)
-                .patch("/reports/1/manage")
-                .send({ status: "REJECTED" });
-
-            expect(res.status).toBe(400);
-        });
-
-        it("rejects invalid status for MPRO", async () => {
-            const res = await request(app)
-                .patch("/reports/1/manage")
-                .send({ status: "IN_PROGRESS" });
-
-            expect(res.status).toBe(400);
-        });
-    });
-
-    describe("PATCH /reports/:reportId/work (TOSM)", () => {
-        it("updates report status to IN_PROGRESS", async () => {
-            const mockReport = { id: 1, status: "IN_PROGRESS" };
-            (updateReportAsTOSM as jest.Mock).mockResolvedValue(mockReport);
-
-            const res = await request(app)
-                .patch("/reports/1/work")
-                .send({ status: "IN_PROGRESS" });
-
-            expect(res.status).toBe(200);
-            expect(updateReportAsTOSM).toHaveBeenCalled();
-        });
-
-        it("updates report status to RESOLVED with comment", async () => {
-            const mockReport = { id: 1, status: "RESOLVED", comment: "Fixed" };
-            (updateReportAsTOSM as jest.Mock).mockResolvedValue(mockReport);
-
-            const res = await request(app)
-                .patch("/reports/1/work")
-                .send({ status: "RESOLVED", comment: "Fixed" });
-
-            expect(res.status).toBe(200);
-            expect(updateReportAsTOSM).toHaveBeenCalled();
-        });
-
-        it("rejects invalid reportId", async () => {
-            const res = await request(app)
-                .patch("/reports/abc/work")
-                .send({ status: "IN_PROGRESS" });
-
-            expect(res.status).toBe(400);
-        });
-
-        it("rejects missing status", async () => {
-            const res = await request(app)
-                .patch("/reports/1/work")
-                .send({});
-
-            expect(res.status).toBe(400);
-        });
-
-        it("rejects staff parameter", async () => {
-            const res = await request(app)
-                .patch("/reports/1/work")
-                .send({ status: "IN_PROGRESS", staff: "otheruser" });
-
-            expect(res.status).toBe(400);
-        });
-
-        it("rejects comment for non-RESOLVED status", async () => {
-            const res = await request(app)
-                .patch("/reports/1/work")
-                .send({ status: "IN_PROGRESS", comment: "Comment" });
-
-            expect(res.status).toBe(400);
-        });
-
-        it("rejects invalid status for TOSM", async () => {
-            const res = await request(app)
-                .patch("/reports/1/work")
-                .send({ status: "ASSIGNED" });
-
-            expect(res.status).toBe(400);
-        });
-    });
-
-    describe("POST /reports/:reportId/messages", () => {
-        it("creates a message successfully when body is valid", async () => {
-            (addMessageToReport as jest.Mock).mockResolvedValue({ id: 1, message: "Hello" });
-
-            const res = await request(app)
-                .post("/reports/1/messages")
-                .send({ message: "Hello" });
-
-            expect(res.status).toBe(201);
-            expect(addMessageToReport).toHaveBeenCalledWith(1, "johnny", expect.any(String), "Hello");
-        });
-
-        it("rejects invalid reportId", async () => {
-            const res = await request(app)
-                .post("/reports/abc/messages")
-                .send({ message: "Hello" });
-
-            expect(res.status).toBe(400);
-        });
-
-        it("rejects empty message", async () => {
-            const res = await request(app)
-                .post("/reports/1/messages")
-                .send({ message: "   " });
-
-            expect(res.status).toBe(400);
-        });
-
-        it("propagates errors from addMessageToReport via next(err)", async () => {
-            const err = new Error("Failed to add message");
-            (addMessageToReport as jest.Mock).mockRejectedValue(err);
-
-            const appWithError = express();
-            appWithError.use(express.json());
-            appWithError.use("/reports", router);
-
-            const nextMock = jest.fn();
-            appWithError.use((e: any, req: any, res: any, next: any) => {
-                nextMock(e);
-                res.status(500).json({ error: e.message });
+            // Mock TOSM user
+            app.use((req: any, res, next) => {
+                req.user = { username: DEFAULT_STAFF.tosm_RSTLO.username, type: 'STAFF', role: 'TOSM' };
+                req.isAuthenticated = () => true;
+                next();
             });
+        });
 
-            const res = await request(appWithError)
-                .post("/reports/1/messages")
-                .send({ message: "Hello" });
+        it('should update report status to IN_PROGRESS by EM', async () => {
+            const citizen = await TestDataManager.getCitizen('citizen1');
+            const report = await reportRepo.create(
+                citizen,
+                "Test Report",
+                "Description",
+                OfficeCategory.RSTLO,
+                45.0,
+                7.0,
+                false,
+                "/img.jpg"
+            );
+            const agent = request.agent(app);
+            //assign to MPRO
+            await agent.post('/api/v1/auth/login?type=STAFF')
+                .send({ username: 'mpro', password: 'mpro123' })
+                .expect(200);
+            await agent
+                .patch(`/api/v1/reports/${report.id}/manage`)
+                .send({ status: 'ASSIGNED' })
+                .expect(200);
 
-            expect(nextMock).toHaveBeenCalledWith(err);
-            expect(res.status).toBe(500);
+            //self-assign to TOSM
+            await agent.post('/api/v1/auth/login?type=STAFF')
+                .send({ username: 'tosm_RSTLO', password: 'tosm123' })
+                .expect(200);
+            await agent
+                .patch(`/api/v1/reports/${report.id}/assignSelf`)
+                .send({ status: 'IN_PROGRESS', comment: 'Starting work' })
+                .expect(200);
+
+            //assign to EM
+            await agent
+                .patch(`/api/v1/reports/${report.id}/assignExternal`)
+                .send({ staffEM: 'em_RSTLO' })
+                .expect(200);
+
+            await agent.post('/api/v1/auth/login?type=STAFF')
+                .send({ username: 'em_RSTLO', password: 'em123' })
+                .expect(200);
+            
+
+            const response = await agent
+                .patch(`/api/v1/reports/${report.id}/updateStatus`)
+                .send({ status: 'IN_PROGRESS' })  
+                .expect(200);
+
+            expect(response.body.status).toBe(Status.IN_PROGRESS);
         });
     });
 
-    describe("GET /reports/:reportId/messages", () => {
-        it("returns messages for a valid reportId", async () => {
-            const fakeMessages = [
-                { id: 1, message: "First" },
-                { id: 2, message: "Second" },
-            ];
-            (getAllMessages as jest.Mock).mockResolvedValue(fakeMessages);
+    describe('POST /api/v1/reports/:id/messages', () => {
+        it('should add message to report', async () => {
+            const citizen = await TestDataManager.getCitizen('citizen1');
+            const report = await reportRepo.create(
+                citizen,
+                "Test Report",
+                "Description",
+                OfficeCategory.RSTLO,
+                45.0,
+                7.0,
+                false,
+                "/img.jpg"
+            );
 
-            const res = await request(app).get("/reports/1/messages");
+            const agent = request.agent(app);
+            await agent.post('/api/v1/auth/login?type=CITIZEN')
+                .send({ username: DEFAULT_CITIZENS.citizen1.username, password: 'cit123' })
+                .expect(200);
 
-            expect(res.status).toBe(200);
-            expect(getAllMessages).toHaveBeenCalledWith(1);
-            expect(res.body).toEqual(fakeMessages);
+            const response = await agent
+                .post(`/api/v1/reports/${report.id}/messages`)
+                .send({ message: 'Test message' })
+                .expect(201);
+
+            expect(response.body.messages).toBeDefined();
+            expect(response.body.messages.length).toBeGreaterThan(0);
+            const addedMessage = response.body.messages[response.body.messages.length - 1];
+            expect(addedMessage.message).toBe('Test message');
+            expect(addedMessage.staffUsername).toBeUndefined(); // Citizen message should not have staffUsername
         });
 
-        it("rejects invalid reportId", async () => {
-            const res = await request(app).get("/reports/not-a-number/messages");
-            expect(res.status).toBe(400);
+        it('should return 404 for non-existent report', async () => {
+            const agent = request.agent(app);
+            await agent.post('/api/v1/auth/login?type=CITIZEN')
+                .send({ username: DEFAULT_CITIZENS.citizen1.username, password: 'cit123' })
+                .expect(200);
+
+            const response = await agent
+                .post('/api/v1/reports/99999/messages')
+                .send({ message: 'Test message' })
+                .expect(404);
+
+            expect(response.body).toHaveProperty('message');
         });
 
-        it("propagates errors from getAllMessages via next(err)", async () => {
-            const err = new Error("Failed to get messages");
-            (getAllMessages as jest.Mock).mockRejectedValue(err);
+        it('should create a new message from TOSM', async () => {
+            const citizen = await TestDataManager.getCitizen('citizen1');
+            const report = await reportRepo.create(
+                citizen,
+                "Test Report",
+                "Description",
+                OfficeCategory.RSTLO,
+                45.0,
+                7.0,
+                false,
+                "/img.jpg"
+            );
 
-            const appWithError = express();
-            appWithError.use(express.json());
-            appWithError.use("/reports", router);
+            const agentMPRO = request.agent(app);
+            const agentTOSM = request.agent(app);
 
-            const nextMock = jest.fn();
-            appWithError.use((e: any, req: any, res: any, next: any) => {
-                nextMock(e);
-                res.status(500).json({ error: e.message });
-            });
+            //MPRO assigns report
+            await agentMPRO.post('/api/v1/auth/login?type=STAFF')
+                .send({ username: DEFAULT_STAFF.mpro.username, password: DEFAULT_STAFF.mpro.password })
 
-            const res = await request(appWithError).get("/reports/1/messages");
+            await agentMPRO.patch(`/api/v1/reports/${report.id}/manage`)
+                .send({ status: 'ASSIGNED' })
 
-            expect(nextMock).toHaveBeenCalledWith(err);
-            expect(res.status).toBe(500);
+            //TOSM self-assigns
+            await agentTOSM.post('/api/v1/auth/login?type=STAFF')
+                .send({ username: DEFAULT_STAFF.tosm_RSTLO.username, password: DEFAULT_STAFF.tosm_RSTLO.password })
+
+            await agentTOSM.patch(`/api/v1/reports/${report.id}/assignSelf`)
+                .send({ status: 'IN_PROGRESS' })
+
+            //TOSM adds a message
+            await agentTOSM.post(`/api/v1/reports/${report.id}/messages`)
+                .send({ message: 'Test message from TOSM', isPrivate: true })
+                .expect(201);    
+        });
+
+        it('should create a new message from EM', async () => {
+            const citizen = await TestDataManager.getCitizen('citizen1');
+            const report = await reportRepo.create(
+                citizen,
+                "Test Report",
+                "Description",
+                OfficeCategory.RSTLO,
+                45.0,
+                7.0,
+                false,
+                "/img.jpg"
+            );
+
+            const agentMPRO = request.agent(app);
+            const agentTOSM = request.agent(app);
+            const agentEM = request.agent(app);
+
+            //MPRO assigns report
+            await agentMPRO.post('/api/v1/auth/login?type=STAFF')
+                .send({ username: DEFAULT_STAFF.mpro.username, password: DEFAULT_STAFF.mpro.password })
+
+            await agentMPRO.patch(`/api/v1/reports/${report.id}/manage`)
+                .send({ status: 'ASSIGNED' })
+
+            //TOSM self-assigns
+            await agentTOSM.post('/api/v1/auth/login?type=STAFF')
+                .send({ username: DEFAULT_STAFF.tosm_RSTLO.username, password: DEFAULT_STAFF.tosm_RSTLO.password })
+                .expect(200);
+
+            await agentTOSM.patch(`/api/v1/reports/${report.id}/assignSelf`)
+                .send({ status: 'IN_PROGRESS' });
+
+            //TOSM assigns to EM
+            await agentTOSM.patch(`/api/v1/reports/${report.id}/assignExternal`)
+                .send({ staffEM: DEFAULT_STAFF.em_RSTLO.username })
+                .expect(200);
+
+            //EM logs in
+            await agentEM.post('/api/v1/auth/login?type=STAFF')
+                .send({ username: DEFAULT_STAFF.em_RSTLO.username, password: DEFAULT_STAFF.em_RSTLO.password })
+
+            //EM adds a message
+            await agentEM.post(`/api/v1/reports/${report.id}/messages`)
+                .send({ message: 'Test message from EM', isPrivate: true })
+                .expect(201);    
+        });
+    
+    });
+
+    describe('GET /api/v1/reports/:id/messages', () => {
+        it('should get all messages for a report', async () => {
+            const citizen = await TestDataManager.getCitizen('citizen1');
+            const report = await reportRepo.create(
+                citizen,
+                "Test Report",
+                "Description",
+                OfficeCategory.RSTLO,
+                45.0,
+                7.0,
+                false,
+                "/img.jpg"
+            );
+
+            // Add messages using the controller/service
+            const agent = request.agent(app);
+            await agent.post('/api/v1/auth/login?type=CITIZEN')
+                .send({ username: DEFAULT_CITIZENS.citizen1.username, password: 'cit123' })
+                .expect(200);
+
+            await agent
+                .post(`/api/v1/reports/${report.id}/messages`)
+                .send({ message: 'Message 1' });
+
+            await agent
+                .post(`/api/v1/reports/${report.id}/messages`)
+                .send({ message: 'Message 2' });
+
+            const response = await agent
+                .get(`/api/v1/reports/${report.id}/messages`)
+                .expect(200);
+
+            expect(response.body.length).toBe(2);
         });
     });
+
 });

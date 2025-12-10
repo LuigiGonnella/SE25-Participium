@@ -1,9 +1,10 @@
-import {useEffect, useState} from 'react';
+import {type ChangeEvent, useEffect, useState} from 'react';
 import {Alert, Button, Card, Col, Container, Form, Row} from 'react-bootstrap';
 import {type NewReport, OfficeCategory} from '../models/Models';
 import API from '../API/API.mts';
 import {APIError} from "../services/ErrorHandler.ts";
 import type {LatLng} from "leaflet";
+import {convertToDMS} from "../utils/reportUtils.ts";
 
 interface ReportFormProps {
     coordinates: LatLng | null;
@@ -36,24 +37,8 @@ const ReportForm = ({ coordinates, street, toggleReportView }: ReportFormProps) 
     const [validated, setValidated] = useState(false);
     const [previewUrls, setPreviewUrls] = useState<string[]>([]);
 
-    const convertToDMS = (decimal: number, isLatitude: boolean): string => {
-        const absolute = Math.abs(decimal);
-        const degrees = Math.floor(absolute);
-        const minutesDecimal = (absolute - degrees) * 60;
-        const minutes = Math.floor(minutesDecimal);
-        const seconds = Math.round((minutesDecimal - minutes) * 60 * 10) / 10;
-
-        const direction = isLatitude
-            ? (decimal >= 0 ? 'N' : 'S')
-            : (decimal >= 0 ? 'E' : 'W');
-
-        return `${degrees}°${minutes.toString().padStart(2, '0')}'${seconds.toFixed(1)}" ${direction}`;
-    };
 
     useEffect(() => {
-        console.log(coordinates);
-        console.log(formData);
-        console.log(validated && (!formData.latitude || !formData.longitude || isNaN(parseFloat(formData.latitude)) || isNaN(parseFloat(formData.longitude))))
         if (coordinates) {
             setFormData(prev => ({
                 ...prev,
@@ -70,7 +55,7 @@ const ReportForm = ({ coordinates, street, toggleReportView }: ReportFormProps) 
         }
     }, [coordinates]);
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value, type } = e.target;
 
         if (type === 'checkbox') {
@@ -91,8 +76,8 @@ const ReportForm = ({ coordinates, street, toggleReportView }: ReportFormProps) 
                 return;
             }
 
-            const validTypes = ['image/png', 'image/jpeg', 'image/jpg'];
-            const invalidFiles = fileArray.filter(file => !validTypes.includes(file.type));
+            const validTypes = new Set(['image/png', 'image/jpeg', 'image/jpg']);
+            const invalidFiles = fileArray.filter(file => !validTypes.has(file.type));
             if (invalidFiles.length > 0) {
                 setError('Images must be in PNG, JPG, or JPEG format');
                 return;
@@ -129,9 +114,9 @@ const ReportForm = ({ coordinates, street, toggleReportView }: ReportFormProps) 
         setSuccess('');
 
 
-        const latitude = parseFloat(formData.latitude);
-        const longitude = parseFloat(formData.longitude);
-        const hasValidCoordinates = formData.latitude && formData.longitude && !isNaN(latitude) && !isNaN(longitude);
+        const latitude = Number.parseFloat(formData.latitude);
+        const longitude = Number.parseFloat(formData.longitude);
+        const hasValidCoordinates = formData.latitude && formData.longitude && !Number.isNaN(latitude) && !Number.isNaN(longitude);
 
         if (!form.checkValidity() || !hasValidCoordinates) {
             setValidated(true);
@@ -245,6 +230,8 @@ const ReportForm = ({ coordinates, street, toggleReportView }: ReportFormProps) 
                             <Col md={7}>
                                 <Form.Group className="mb-3">
                                     <Form.Label>Coordinates&nbsp;{coordinates && <span>({convertToDMS(coordinates.lat, true)} - {convertToDMS(coordinates.lng,false)})</span>}</Form.Label>
+                                    <div className="position-relative justify-content-center" style={{cursor: 'not-allowed'}}>
+                                        <i title="Auto-generated" className="bi bi-lock-fill position-absolute end-0 me-2 mt-2"/>
                                         <Form.Control
                                             readOnly
                                             type="text"
@@ -252,8 +239,10 @@ const ReportForm = ({ coordinates, street, toggleReportView }: ReportFormProps) 
                                             value={street}
                                             placeholder="Street Name"
                                             required
+                                            disabled
                                         />
-                                    {validated && (!formData.latitude || !formData.longitude || isNaN(parseFloat(formData.latitude)) || isNaN(parseFloat(formData.longitude))) &&
+                                    </div>
+                                    {validated && (!formData.latitude || !formData.longitude || Number.isNaN(Number.parseFloat(formData.latitude)) || Number.isNaN(Number.parseFloat(formData.longitude))) &&
                                         <Form.Control.Feedback type="invalid" className="d-block">
                                         Please select a point on the map.
                                     </Form.Control.Feedback>}

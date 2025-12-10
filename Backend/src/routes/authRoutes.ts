@@ -1,9 +1,20 @@
-import {register, uploadProfilePicture, registerMunicipalityUser, login} from '@controllers/authController';
-import {CitizenToJSON} from '@models/dto/Citizen';
+import {
+    register,
+    uploadProfilePicture,
+    registerMunicipalityUser,
+    login,
+    verifyTelegramUser,
+    createTelegramVerification,
+    verifyEmailUser,
+    createEmailVerification
+} from '@controllers/authController';
+import {Citizen, CitizenToJSON} from '@models/dto/Citizen';
 import {Router} from "express";
-import {isAuthenticated} from '@middlewares/authMiddleware';
+import {isAuthenticated, telegramBotAuth} from '@middlewares/authMiddleware';
 import { StaffToJSON } from '@models/dto/Staff';
 import { StaffRole } from '@models/dao/staffDAO';
+import { create } from 'domain';
+import { getCitizenByUsername } from '@controllers/citizenController';
 
 const router = Router();
 
@@ -12,19 +23,19 @@ router.post('/register', uploadProfilePicture.single('profilePicture'), async (r
         // Validate required fields
         const { email, username, name, surname, password } = req.body;
         
-        if (!email || !email.trim() || !email.includes('@')) {
+        if (!email?.trim() || !email.includes('@')) {
             return res.status(400).json({ error: 'Invalid or missing email' });
         }
-        if (!username || !username.trim()) {
+        if (!username?.trim()) {
             return res.status(400).json({ error: 'Invalid or missing username' });
         }
-        if (!name || !name.trim()) {
+        if (!name?.trim()) {
             return res.status(400).json({ error: 'Invalid or missing name' });
         }
-        if (!surname || !surname.trim()) {
+        if (!surname?.trim()) {
             return res.status(400).json({ error: 'Invalid or missing surname' });
         }
-        if (!password || !password.trim()) {
+        if (!password?.trim()) {
             return res.status(400).json({ error: 'Invalid or missing password' });
         }
         const citizen = await register(
@@ -51,7 +62,7 @@ router.post('/register-municipality', isAuthenticated([StaffRole.ADMIN]), async 
             req.body.surname,
             req.body.password,
             req.body.role,
-            req.body.officeName 
+            req.body.officeNames
         );
         res.status(201).json(StaffToJSON(staff)); // does not expose password
     } catch (error) {
@@ -64,10 +75,10 @@ router.post('/login', async (req, res, next) => {
         // Validate required fields
         const { username, password } = req.body;
         
-        if (!username || !username.trim()) {
+        if (!username?.trim()) {
             return res.status(400).json({ error: 'Invalid or missing username' });
         }
-        if (!password || !password.trim()) {
+        if (!password?.trim()) {
             return res.status(400).json({ error: 'Invalid or missing password' });
         }
 
@@ -88,6 +99,50 @@ router.delete('/logout', (req, res) => {
 
 router.get('/me', isAuthenticated(['CITIZEN', 'STAFF']), (req, res) => {
     res.status(200).json(req.user);
+});
+
+router.post('/createTelegramVerification', isAuthenticated(['CITIZEN']), async (req, res, next) => {
+    try {
+        const user = req.user as Citizen;
+        res.status(201).json({ code: await createTelegramVerification(user, req.body.username) });
+    } catch (error) {
+        next(error);
+    }
+});
+
+router.post('/verifyTelegramUser', telegramBotAuth, async (req, res, next) => {
+    try {
+        const { username, code } = req.body;
+        await verifyTelegramUser(username, code);
+        res.status(201).send();
+    } catch (error) {
+        next(error);
+    }
+});
+
+router.post('/verify-email', async (req, res, next) => {
+    try {
+        const { code } = req.body;
+
+        if (!code?.trim()) {
+            return res.status(400).json({ error: 'Invalid or missing verification code' });
+        }
+
+        await verifyEmailUser(code);
+        res.status(200).json({ message: 'Email verified successfully' });
+    } catch (error) {
+        next(error);
+    }
+});
+
+router.post('/resend-verification-email', isAuthenticated(['CITIZEN']), async (req, res, next) => {
+    try {
+        const user = req.user as Citizen;
+        await createEmailVerification(user.username);
+        res.status(200).json({ message: 'Verification email resent successfully' });
+    } catch (error) {
+        next(error);
+    }   
 });
 
 export default router;

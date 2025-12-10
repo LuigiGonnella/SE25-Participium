@@ -4,17 +4,19 @@ import {NotFoundError} from "@errors/NotFoundError";
 import {BadRequestError} from "@errors/BadRequestError";
 import {ReportDAO, Status} from "@dao/reportDAO";
 import multer from "multer";
-import fs from "fs";
-import path from "path";
-import { mapMessageToDTO, mapReportDAOToDTO } from "@services/mapperService";
-import { Report } from "@models/dto/Report";
-import { OfficeCategory } from "@models/dao/officeDAO";
-import {findOrThrowNotFound} from "@utils";
-import {StaffDAO} from "@dao/staffDAO";
-import { Message } from "@models/dto/Message";
+import fs from "node:fs";
+import path from "node:path";
+import {mapMessageToDTO, mapReportDAOToDTO} from "@services/mapperService";
+import {Report} from "@models/dto/Report";
+import {OfficeCategory} from "@models/dao/officeDAO";
+import {findOrThrowNotFound, isWithinTurin} from "@utils";
+import {StaffRole} from "@dao/staffDAO";
+import {Message} from "@models/dto/Message";
+import {StaffRepository} from "@repositories/staffRepository";
 
 const repo = new ReportRepository();
 const citizenRepo = new CitizenRepository();
+const staffRepo = new StaffRepository();
 
 const reportStorage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -77,10 +79,12 @@ export async function createReport(body: any, citizen: string, photos: Express.M
     const photo3 = photos[2] ? `/uploads/reports/${photos[2].filename}` : undefined;
 
     const isAnonymous = anonymous === 'true' || anonymous === true;
-    const lat = parseFloat(latitude);
-    const lon = parseFloat(longitude);
+    const lat = Number.parseFloat(latitude);
+    const lon = Number.parseFloat(longitude);
 
-    //TODO: must be inside Turin perimeter
+    if (!isWithinTurin(lat, lon)) {
+        throw new BadRequestError("Report location must be within Turin city boundaries");
+    }
 
     return await repo.create(
         citizenDAO,
@@ -96,8 +100,12 @@ export async function createReport(body: any, citizen: string, photos: Express.M
     );
 }
 
-export async function getReports(filters?: ReportFilters): Promise<Report[]> {
-    const reportDAOs = await repo.getReports(filters);
+export async function getReports(staffUsername: string, filters?: ReportFilters): Promise<Report[]> {
+    const staffDAO = await staffRepo.getStaffByUsername(staffUsername);
+    if (!staffDAO) {
+        throw new NotFoundError(`Staff with username ${staffUsername} not found`);
+    }
+    const reportDAOs = await repo.getReports(staffDAO, filters);
     return reportDAOs.map(mapReportDAOToDTO);
 }
 
@@ -111,51 +119,91 @@ export async function getReportById(reportId: number): Promise<Report> {
     return mapReportDAOToDTO(reportDAO);
 }
 
-export async function updateReportAsMPRO(reportId: number,
-                                    updatedStatus: Status,
-                                    comment?: string,
-                                    updatedCategory?: OfficeCategory,
-                                ): Promise<Report> {
+export async function updateReportAsMPRO(reportId: number, updatedStatus: Status, comment?: string, updatedCategory?: OfficeCategory): Promise<Report> {
     const updatedReportDAO = await repo.updateReportAsMPRO(reportId, updatedStatus, comment, updatedCategory);
     return mapReportDAOToDTO(updatedReportDAO);
 }
 
-export async function updateReportAsTOSM(reportId: number,
-                                    updatedStatus: Status,
-                                    comment?: string,
-                                    staffUsername?: string
-                                ): Promise<Report> {
-    const updatedReportDAO = await repo.updateReportAsTOSM(reportId, updatedStatus, comment, staffUsername);
+export async function selfAssignReport(reportId: number, staffUsername: string): Promise<Report> {
+    const updatedReportDAO = await repo.selfAssignReport(reportId, staffUsername);
     return mapReportDAOToDTO(updatedReportDAO);
 }
 
-export async function addMessageToReport(reportId: number, username: string, userType: 'CITIZEN' | 'STAFF', message: string): Promise<Report> {
-    const reportDAO = findOrThrowNotFound(
-        [await repo.getReportById(reportId)],
-        () => true,
-        `Report with id ${reportId} not found`
-    );
+export async function updateReportAsTOSM(reportId: number, updatedStatus: Status, staffUsername: string, comment?: string): Promise<Report> {
+    const updatedReportDAO = await repo.updateReportAsTOSM(reportId, updatedStatus, staffUsername, comment);
+    return mapReportDAOToDTO(updatedReportDAO);
+}
 
-    let assignedStaff: StaffDAO | undefined = undefined;
-    if (userType === 'STAFF') {
-        if(reportDAO.assignedStaff?.username !== username)
-            throw new BadRequestError(`Staff member ${username} is not assigned to report ${reportId}`);
-        assignedStaff = reportDAO.assignedStaff;
-    } else if (userType === 'CITIZEN' && reportDAO.citizen?.username !== username) {
-        throw new BadRequestError(`Citizen ${username} is not the owner of report ${reportId}`);
+export async function assignReportToEM(reportId: number, emUsername: string, staffUsername: string): Promise<Report> {
+    const updatedReportDAO = await repo.assignEMToReport(reportId, emUsername, staffUsername);
+    return mapReportDAOToDTO(updatedReportDAO);
+}
+
+export async function updateReportAsEM(reportId: number, updatedStatus: Status, staffUsername: string, comment?: string): Promise<Report> {
+    const updatedReportDAO = await repo.updateReportAsEM(reportId, updatedStatus, staffUsername, comment);
+    return mapReportDAOToDTO(updatedReportDAO);
+}
+
+async function handleStaffMessage(reportDAO: ReportDAO, username: string, message: string, isPrivate?: boolean): Promise<ReportDAO> {
+    const user = await staffRepo.getStaffByUsername(username);
+    if (!user) {
+        throw new NotFoundError(`Staff with username ${username} not found`);
     }
 
-    const updatedReportDAO = await repo.addMessageToReport(reportDAO, message, assignedStaff);
+    if (user.role === StaffRole.TOSM) {
+        if (!reportDAO.assignedStaff || reportDAO.assignedStaff.username !== user.username) {
+            throw new BadRequestError(`This report is not assigned to you`);
+        }
+        if (isPrivate === undefined) {
+            throw new BadRequestError(`isPrivate field must be specified for TOSM`);
+        }
+        return await repo.addMessageToReport(reportDAO, message, user, isPrivate);
+    }
 
-    return mapReportDAOToDTO(updatedReportDAO);
+    if (user.role === StaffRole.EM) {
+        if (!reportDAO.assignedEM || reportDAO.assignedEM.username !== user.username) {
+            throw new BadRequestError(`This report is not assigned to you`);
+        }
+        return await repo.addMessageToReport(reportDAO, message, user, true);
+    }
+
+    throw new BadRequestError(`Only TOSM and EM staff can add messages to reports`);
 }
 
-export async function getAllMessages(reportId: number): Promise<Message[]> {
+async function handleCitizenMessage(reportDAO: ReportDAO, username: string, message: string): Promise<ReportDAO> {
+    const user = await citizenRepo.getCitizenByUsername(username);
+    if (!user) {
+        throw new NotFoundError(`Citizen with username ${username} not found`);
+    }
+    if (reportDAO.citizen.username !== user.username) {
+        throw new BadRequestError(`Citizen ${username} is not the owner of report ${reportDAO.id}`);
+    }
+    return await repo.addMessageToReport(reportDAO, message);
+}
+
+export async function addMessageToReport(reportId: number, username: string, userType: 'CITIZEN' | 'STAFF', message: string, isPrivate?: boolean): Promise<Report> {
     const reportDAO = findOrThrowNotFound(
         [await repo.getReportById(reportId)],
         () => true,
         `Report with id ${reportId} not found`
     );
-    const messages = await repo.getAllMessages(reportId);
-    return messages.map(mapMessageToDTO);
+
+    const updatedReportDAO = userType === 'STAFF'
+        ? await handleStaffMessage(reportDAO, username, message, isPrivate)
+        : await handleCitizenMessage(reportDAO, username, message);
+
+    return mapReportDAOToDTO(updatedReportDAO);
+}
+
+export async function getAllMessages(reportId: number, userType: 'CITIZEN' | 'STAFF'): Promise<Message[]> {
+    const reportDAO = findOrThrowNotFound(
+        [await repo.getReportById(reportId)],
+        () => true,
+        `Report with id ${reportId} not found`
+    );
+
+    if (userType === 'CITIZEN') {
+        return (await repo.getAllPublicMessages(reportDAO.id)).map(mapMessageToDTO);
+    }
+    return (await repo.getAllMessages(reportDAO.id)).map(mapMessageToDTO);
 }
