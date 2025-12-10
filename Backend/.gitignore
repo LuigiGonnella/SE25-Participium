@@ -5,4 +5,3 @@
 uploads/
 *.http
 .env*
-/coverage

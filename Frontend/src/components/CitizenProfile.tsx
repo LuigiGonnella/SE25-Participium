@@ -67,6 +67,7 @@ export default function CitizenProfile({ user, refresh }: Readonly<CitizenProfil
             }
 
             await API.updateCitizenProfile(user.username, updates);
+            refresh();
             setSuccessMessage("Profile updated successfully!");
             setProfilePicFile(null);
         } catch (error: any) {
