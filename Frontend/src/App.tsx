@@ -70,14 +70,36 @@ function App() {
         setUser(undefined);
     };
 
+    const getLoginRedirect = () => {
+        if (isCitizen(user) && !user.email) {
+            return <Navigate replace to="/verify-email"/>;
+        }
+        return <Navigate replace to={isCitizen(user) ? "/map" : "/reports"}/>;
+    };
+
+    const getMapContent = () => {
+        if (!user?.email) {
+            return <Navigate replace to="/verify-email"/>;
+        }
+        return <TurinMaskedMap isLoggedIn={loggedIn} user={user}/>;
+    };
+
+    const getProfileContent = () => {
+        if (isStaff(user)) {
+            return <StaffProfile user={user} />;
+        }
+        if (!user?.email) {
+            return <Navigate replace to="/verify-email"/>;
+        }
+        return <CitizenProfile user={user} />;
+    };
+
     return (
         <Routes>
             <Route element={<DefaultLayout loggedIn={loggedIn} user={user} handleLogout={handleLogout} loading={!authChecked}/>}>
                 <Route path="" element={!loggedIn || isCitizen(user) ? <HomePage/> : <Navigate replace to="/reports"/>}/>
                 <Route path="login" element={
-                    loggedIn ?
-                        (isCitizen(user) && !user.email ? <Navigate replace to="/verify-email"/> : <Navigate replace to={isCitizen(user) ? "/map" : "/reports"}/>) :
-                        <LoginForm handleLogin={handleLogin}/>
+                    loggedIn ? getLoginRedirect() : <LoginForm handleLogin={handleLogin}/>
                 }/>
                 <Route path="registration" element={
                     loggedIn ?
@@ -95,9 +117,7 @@ function App() {
                         <Navigate replace to="/"/>
                 }/>
                 <Route path="/map" element={
-                    loggedIn && isCitizen(user) ?
-                    (user.email ? <TurinMaskedMap isLoggedIn={loggedIn} user={user}/> : <Navigate replace to="/verify-email"/>) :
-                    <Navigate replace to="/"/>
+                    loggedIn && isCitizen(user) ? getMapContent() : <Navigate replace to="/"/>
                 }/>
                 <Route path="/reports" element={
                     loggedIn && (isMPRO(user) || isTOSM(user) || isEM(user)) ?
@@ -110,9 +130,7 @@ function App() {
                         <Navigate replace to="/login"/>
                 }/>
                 <Route path="/profile" element={
-                    loggedIn && user ? (
-                        isStaff(user) ? <StaffProfile user={user} /> : (user.email ? <CitizenProfile user={user} /> : <Navigate replace to="/verify-email"/>)
-                    ) : <Navigate replace to="/login"/>
+                    loggedIn && user ? getProfileContent() : <Navigate replace to="/login"/>
                 }/>
                 <Route path="/tosms" element={
                     loggedIn && isStaff(user) && user.role === StaffRole.ADMIN ? 

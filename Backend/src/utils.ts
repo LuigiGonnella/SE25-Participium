@@ -82,7 +82,7 @@ export function validateOfficeCategory(category: string): OfficeCategory {
 
 export function validateReportId(reportId: unknown): number {
     const id = Number(reportId);
-    if (isNaN(id) || !Number.isInteger(id) || id <= 0) {
+    if (Number.isNaN(id) || !Number.isInteger(id) || id <= 0) {
         throw new BadRequestError("Invalid reportId.");
     }
     return id;
@@ -90,7 +90,7 @@ export function validateReportId(reportId: unknown): number {
 
 export function validateDate(dateStr: unknown, fieldName: string): Date {
     const date = new Date(String(dateStr));
-    if (isNaN(date.getTime())) {
+    if (Number.isNaN(date.getTime())) {
         throw new BadRequestError(`Invalid ${fieldName} format.`);
     }
     return date;

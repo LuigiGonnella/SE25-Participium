@@ -370,31 +370,35 @@ return (
                         <div className="flex-grow-1 d-flex flex-column">
                             {/* Messages Display */}
                             <div className="flex-grow-1 overflow-auto mb-3 border-bottom p-3" style={{maxHeight: "calc(70vh - 250px)", backgroundColor: "#f0f8ff"}}>
-                                {loadingMessages ? (
-                                    <div className="text-center text-muted">Loading messages...</div>
-                                ) : messages.filter(msg => !msg.isPrivate).length === 0 ? (
-                                    <div className="text-center text-muted">No public messages yet.</div>
-                                ) : (
-                                    <div className="d-flex flex-column-reverse gap-2">
-                                        {messages.filter(msg => !msg.isPrivate).map((msg, index) => (
-                                            <div key={index} className="d-flex flex-column p-3 rounded shadow-sm"
-                                                 style={{backgroundColor: "#cde6ff"}}>
-                                                <div className="d-flex justify-content-between align-items-center mb-2">
-                                                    <span className="fw-bold text-primary">
-                                                        <i className="bi bi-person-circle me-2"></i>
-                                                            You
-                                                    </span>
-                                                    <span className="text-muted" style={{fontSize: "0.85rem"}}>
-                                                        {new Date(msg.timestamp).toLocaleString()}
-                                                    </span>
+                                {(() => {
+                                    if (loadingMessages) {
+                                        return <div className="text-center text-muted">Loading messages...</div>;
+                                    }
+                                    const publicMessages = messages.filter(msg => !msg.isPrivate);
+                                    if (publicMessages.length === 0) {
+                                        return <div className="text-center text-muted">No public messages yet.</div>;
+                                    }
+                                    return (
+                                        <div className="d-flex flex-column-reverse gap-2">
+                                            {publicMessages.map((msg, index) => (
+                                                <div key={`${msg.timestamp}-${index}`} className="d-flex flex-column p-3 rounded shadow-sm"
+                                                     style={{backgroundColor: "#cde6ff"}}>
+                                                    <div className="d-flex justify-content-between align-items-center mb-2">
+                                                        <span className="fw-bold text-primary">
+                                                            <i className="bi bi-person-circle me-2"></i>You
+                                                        </span>
+                                                        <span className="text-muted" style={{fontSize: "0.85rem"}}>
+                                                            {new Date(msg.timestamp).toLocaleString()}
+                                                        </span>
+                                                    </div>
+                                                    <div className="ps-4" style={{ whiteSpace: "pre-line" }}>
+                                                        {msg.message}
+                                                    </div>
                                                 </div>
-                                                <div className="ps-4" style={{ whiteSpace: "pre-line" }}>
-                                                    {msg.message}
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
+                                            ))}
+                                        </div>
+                                    );
+                                })()}
                             </div>
 
                             {/* Message Input */}
@@ -414,8 +418,7 @@ return (
                                     {messageError && <div className="alert alert-danger py-2 mb-2">{messageError}</div>}
                                     <button type="submit" className="btn btn-primary w-100"
                                             disabled={messageLoading || !publicMessage.trim()}>
-                                        <i className="bi bi-send me-2"></i>
-                                            {messageLoading ? "Sending..." : "Send Message"}
+                                        <i className="bi bi-send me-2"></i>{messageLoading ? "Sending..." : "Send Message"}
                                     </button>
                                 </form>
                             </div>
@@ -494,8 +497,7 @@ return (
                                     {messageError && <div className="alert alert-danger py-2 mb-2">{messageError}</div>}
                                     <button type="submit" className="btn btn-warning w-100"
                                             disabled={messageLoading || !privateMessage.trim()}>
-                                        <i className="bi bi-send me-2"></i>
-                                            {messageLoading ? "Sending..." : "Send Message"}
+                                        <i className="bi bi-send me-2"></i>{messageLoading ? "Sending..." : "Send Message"}
                                     </button>
                                 </form>
                             </div>

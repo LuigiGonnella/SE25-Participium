@@ -144,7 +144,7 @@ function AdminTOSMPage() {
                         );
 
                         return (
-                            <Row key={index} className="align-items-center">
+                            <Row key={`${selectedName}-${index}`} className="align-items-center">
                                 <Col xs={10} className="px-0 px-lg-3">
                                     <Form.Group className="mb-3" controlId={`editOffice${index}`}>
                                         <Form.Label>{`Office ${index + 1}`}</Form.Label>
