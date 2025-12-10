@@ -15,6 +15,7 @@ import { PendingVerificationDAO } from '@dao/pendingVerificationDAO';
 import { initializeTestDataSource, closeTestDataSource, TestDataSource } from "../../setup/test-datasource";
 import { PendingVerificationRepository } from '@repositories/pendingVerificationRepository';
 import { BadRequestError } from '@models/errors/BadRequestError';
+import { Repository } from 'typeorm';
 
 
 beforeAll(async () => {
@@ -403,8 +404,8 @@ describe("AuthController - register", () => {
     let citizen: CitizenDAO;
 
     beforeEach(async () => {
-        citizenRepo = localDataSource.getRepository(CitizenDAO);
-        pvRepo = localDataSource.getRepository(PendingVerificationDAO);
+        citizenRepo = TestDataSource.getRepository(CitizenDAO);
+        pvRepo = TestDataSource.getRepository(PendingVerificationDAO);
         pendingRepo = new PendingVerificationRepository();
 
         await pvRepo.clear();
@@ -435,7 +436,7 @@ describe("AuthController - register", () => {
           .resolves.not.toThrow();
   
       const updatedCitizen = await citizenRepo.findOneBy({ id: citizen.id });
-      expect(updatedCitizen?.email).toBeNull();
+      expect(updatedCitizen?.email).toBe("verified@example.com");
   
       const leftover = await pvRepo.find();
       expect(leftover.length).toBe(0);
