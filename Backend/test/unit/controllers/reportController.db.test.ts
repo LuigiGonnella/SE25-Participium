@@ -137,6 +137,35 @@ describe("ReportController - createReport", () => {
     });
 });
 
+describe("ReportController - updateReportAsEM", () => {
+    let report: ReportDAO;
+
+    beforeEach(async () => {
+        const citizen = await TestDataManager.getCitizen('citizen1');
+        report = await reportRepo.create(
+            citizen,
+            "Test Report",
+            "Description",
+            OfficeCategory.RSTLO,
+            45.0,
+            7.0,
+            false,
+            "/img.jpg"
+        );
+    });
+
+    it("should update report status as EM", async () => {
+        await reportRepo.updateReportAsMPRO(report.id, Status.ASSIGNED);
+
+        const staff = await TestDataManager.getStaff('tosm_RSTLO');
+
+        await reportRepo.selfAssignReport(report.id, staff.username);
+        await reportRepo.assignEMToReport(report.id, DEFAULT_STAFF.em_RSTLO.username, staff.username);
+        const updatedReport = await reportRepo.updateReportAsEM(report.id, Status.IN_PROGRESS, DEFAULT_STAFF.em_RSTLO.username);
+        expect(updatedReport.status).toBe(Status.IN_PROGRESS);
+    });
+})
+
 describe("ReportController - addMessageToReport", () => {
     let report: ReportDAO;
 
