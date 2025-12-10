@@ -51,14 +51,14 @@ export async function checkUserVerification(ctx: ParticipiumContext): Promise<{v
             method: 'GET',
         });
 
-        if (!response.ok) {
+        if (response.ok) {
+            ctx.session.isVerified = true;
+            return {verified: true, status: response.status};
+        } else {
             ctx.session.isVerified = false;
             const data = await response.json();
             console.error(`Error checking verification: ${data.message}`);
             return {verified: false, status: response.status};
-        } else {
-            ctx.session.isVerified = true;
-            return {verified: true, status: response.status};
         }
     } catch (error) {
         console.error(`Network error: ${error}`);

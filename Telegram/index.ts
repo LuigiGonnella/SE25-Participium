@@ -203,7 +203,7 @@ const handleBackNavigation = (ctx: ParticipiumContext) => {
     }
 
     clearStepData(ctx, ctx.session.step as FlowStep);
-    const previousStep = history.pop()!;
+    const previousStep = history.pop();
     stepHistoryStore.set(key, history);
     ctx.session.step = previousStep;
     return sendStepPrompt(ctx, previousStep);
@@ -248,7 +248,7 @@ bot.command("verify", async (ctx) => {
     const code = parts[1];
 
     try {
-        const verified = await verifyUser(ctx.message!.from.username, code);
+        const verified = await verifyUser(ctx.message.from.username, code);
 
         if (verified) {
             ctx.session.isVerified = true;
