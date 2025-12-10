@@ -1201,8 +1201,102 @@ describe("Reports API E2E Tests", () => {
                 .expect(400);
         });
 
+        it("should get all messages", async () => {
+            await request(app)
+                .patch(`/api/v1/reports/${testReport1.id}/assignSelf`)
+                .set('Cookie', tosmCookie);
+
+            await request(app)
+                .patch(`/api/v1/reports/${testReport1.id}/assignExternal`)
+                .set('Cookie', tosmCookie)
+                .send({ staffEM: DEFAULT_STAFF.em_RSTLO.username });
+
+            const message1 = "Public message.";
+            const message2 = "Private message.";
+
+            await request(app)
+                .post(`/api/v1/reports/${testReport1.id}/messages`)
+                .set('Cookie', tosmCookie)
+                .send({
+                    message: message1,
+                    isPrivate: false
+                })
+
+            await request(app)
+                .post(`/api/v1/reports/${testReport1.id}/messages`)
+                .set('Cookie', tosmCookie)
+                .send({
+                    message: message2,
+                    isPrivate: true
+                });
+
+            const res = await request(app)
+                .get(`/api/v1/reports/${testReport1.id}/messages`)
+                .set('Cookie', tosmCookie)
+                .expect(200);
+            expect(res.body).toBeDefined();
+            expect(Array.isArray(res.body)).toBe(true);
+            expect(res.body.length).toBe(2);
+            const messages = res.body;
+            const fetchedMessage1 = messages.find((msg: any) => msg.message === message1);
+            const fetchedMessage2 = messages.find((msg: any) => msg.message === message2);
+            expect(fetchedMessage1).toBeDefined();
+            expect(fetchedMessage1.isPrivate).toBe(false);
+            expect(fetchedMessage2).toBeDefined();
+            expect(fetchedMessage2.isPrivate).toBe(true);
+        });
         
-        
+        it("should not allow citizen to get private messages", async () => {  
+            await request(app)
+                .patch(`/api/v1/reports/${testReport1.id}/assignSelf`)
+                .set('Cookie', tosmCookie);
+
+            await request(app)
+                .patch(`/api/v1/reports/${testReport1.id}/assignExternal`)
+                .set('Cookie', tosmCookie)
+                .send({ staffEM: DEFAULT_STAFF.em_RSTLO.username });
+
+            const message1 = "Public message.";
+            const message2 = "Private message.";
+
+            await request(app)
+                .post(`/api/v1/reports/${testReport1.id}/messages`)
+                .set('Cookie', tosmCookie)
+                .send({
+                    message: message1,
+                    isPrivate: false
+                })
+
+            await request(app)
+                .post(`/api/v1/reports/${testReport1.id}/messages`)
+                .set('Cookie', tosmCookie)
+                .send({
+                    message: message2,
+                    isPrivate: true
+                });
+
+            const res = await request(app)
+                .get(`/api/v1/reports/${testReport1.id}/messages`)
+                .set('Cookie', citizenCookie)
+                .expect(200);
+
+            expect(res.body).toBeDefined();
+            expect(Array.isArray(res.body)).toBe(true);
+            expect(res.body.length).toBe(1);
+            const messages = res.body;
+            const fetchedMessage1 = messages.find((msg: any) => msg.message === message1);
+            const fetchedMessage2 = messages.find((msg: any) => msg.message === message2);
+            expect(fetchedMessage1).toBeDefined();
+            expect(fetchedMessage1.isPrivate).toBe(false);
+            expect(fetchedMessage2).toBeUndefined();
+        });
+
+
+        it("should not allow to get messages if not authenticated", async () => {  
+            const res = await request(app)
+                .get(`/api/v1/reports/${testReport1.id}/messages`)
+                .expect(401);
+        });
         
     });
 });
