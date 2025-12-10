@@ -143,6 +143,8 @@ export class ReportRepository {
         if(!updatedCategory && updatedReport.category === OfficeCategory.MOO)
             throw new BadRequestError("Report cannot be assigned to Municipal Organization Office (MOO).");
 
+        const previousStatus = updatedReport.status;
+        
         await this.repo.update(
             {id: reportId},
             {
@@ -158,7 +160,7 @@ export class ReportRepository {
         });
 
         // Create notification for citizen if report status changed
-        if (result.citizen && updatedStatus !== result.status)
+        if (result.citizen && updatedStatus !== previousStatus)
             await this.notifyCitizen(result, updatedStatus, undefined, comment);
 
         return result;
