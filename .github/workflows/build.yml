@@ -25,15 +25,6 @@ jobs:
         working-directory: ./Backend
         run: npm install
       
-      - name: Backend Test and coverage
-        working-directory: ./Backend
-        env:
-          DB_TYPE: sqlite
-          DB_DATABASE: ":memory:"
-          SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
-          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
-        run: npm run test:coverage
-      
       - name: Install Frontend dependencies
         working-directory: ./Frontend
         run: npm install
@@ -42,3 +33,12 @@ jobs:
         uses: SonarSource/sonarcloud-github-action@v3
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      
+      - name: Backend Test and coverage
+        working-directory: ./Backend
+        env:
+          DB_TYPE: sqlite
+          DB_DATABASE: ":memory:"
+          SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+        run: npm run test:coverage
