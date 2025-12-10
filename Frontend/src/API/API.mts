@@ -378,5 +378,15 @@ const verifyEmail = async (code: string): Promise<void> => {
     return handleAPIError(response, 'Email Verification');
 };
 
-const API = { login, register, getUserInfo, logout, municipalityRegister, updateTOSMOffices, getAllTOSM, getOffices, createReport, getReports, getMapReports, getReportById, updateReport, assignReportToSelf, getEMStaffByCategory, assignReportToMaintainer, getNotifications, markNotificationAsRead, createMessage, getAllMessages, updateCitizenProfile, verifyEmail, verifyTelegram };
+const resendVerificationEmail = async (): Promise<void> => {
+    const response = await fetch(`${BACKEND_URL}/auth/resend-verification-email`, {
+        method: 'POST',
+        credentials: 'include',
+    });
+    
+    if (response.ok) return;
+    return handleAPIError(response, 'Resend Verification Email');
+};
+
+const API = { login, register, getUserInfo, logout, municipalityRegister, updateTOSMOffices, getAllTOSM, getOffices, createReport, getReports, getMapReports, getReportById, updateReport, assignReportToSelf, getEMStaffByCategory, assignReportToMaintainer, getNotifications, markNotificationAsRead, createMessage, getAllMessages, updateCitizenProfile, verifyEmail, verifyTelegram, resendVerificationEmail };
 export default API;

@@ -32,6 +32,7 @@ function App() {
     const [loggedIn, setLoggedIn] = useState<boolean>(false);
     const [user, setUser] = useState<User>();
     const [authChecked, setAuthChecked] = useState<boolean>(false);
+    const [refresh, setRefresh] = useState<boolean>(false);
 
     useEffect(() => {
         const checkAuth = async (): Promise<void> => {
@@ -48,7 +49,7 @@ function App() {
             }
         };
         checkAuth();
-    }, []);
+    }, [refresh]);
 
     const handleLogin = async (credentials: Credentials, type: 'CITIZEN' | 'STAFF') => {
         const user = await API.login(credentials, type);
@@ -91,8 +92,10 @@ function App() {
         if (!user?.email) {
             return <Navigate replace to="/verify-email"/>;
         }
-        return <CitizenProfile user={user} />;
+        return <CitizenProfile user={user} refresh={toggleRefresh} />;
     };
+
+    const toggleRefresh = () => setRefresh(prev => !prev);
 
     return (
         <Routes>
@@ -107,8 +110,8 @@ function App() {
                         <RegistrationForm handleRegistration={handleRegistration}/>
                 }/>
                 <Route path="verify-email" element={
-                    (isCitizen(user) && !user.email) ?
-                        <EmailVerificationPage /> :
+                    (isCitizen(user) && !user.email || !loggedIn) ?
+                        <EmailVerificationPage refresh={toggleRefresh} /> :
                         <Navigate replace to="/"/>
                 }/>
                 <Route path="municipality-registration" element={

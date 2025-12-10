@@ -93,4 +93,14 @@ export class PendingVerificationRepository {
             throw new InternalServerError("Failed to verify pending verification");
         }
     }
+
+    async getPendingVerification(citizenId: number, type: "email" | "telegram"): Promise<PendingVerificationDAO> {
+        return findOrThrowNotFound(
+            await this.repo.find({
+                where: { citizenId: citizenId, type: type}
+            }), 
+            () => true,
+            `No pending verification found for citizen ID ${citizenId} and type ${type}`
+        );
+    }
 }
