@@ -1105,6 +1105,8 @@ describe("Reports API E2E Tests", () => {
                     isPrivate: false
                 })
                 .expect(401);
+            
+            expect(res.body.message).toBe("Not authenticated");
         });
 
         it("should add a private message from TOSM to EM", async () => {
