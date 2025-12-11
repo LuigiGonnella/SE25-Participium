@@ -15,10 +15,43 @@ jest.mock("@services/emailService", () => ({
 
 describe("Citizen API E2E Tests", () => {
     let citizenRepo: CitizenRepository;
+    let citizen1Cookie: string;
+    let citizen2Cookie: string;
+    let citizen3Cookie: string;
 
     beforeAll(async () => {
         await beforeAllE2e();
         citizenRepo = new CitizenRepository();
+
+        // Login as citizen1
+        const citizen1Login = await request(app)
+            .post('/api/v1/auth/login?type=CITIZEN')
+            .send({
+                username: DEFAULT_CITIZENS.citizen1.username,
+                password: DEFAULT_CITIZENS.citizen1.password,
+            })
+            .expect(200);
+        citizen1Cookie = citizen1Login.headers['set-cookie'][0];
+
+        // Login as citizen2
+        const citizen2Login = await request(app)
+            .post('/api/v1/auth/login?type=CITIZEN')
+            .send({
+                username: DEFAULT_CITIZENS.citizen2.username,
+                password: DEFAULT_CITIZENS.citizen2.password,
+            })
+            .expect(200);
+        citizen2Cookie = citizen2Login.headers['set-cookie'][0];
+
+        // Login as citizen3
+        const citizen3Login = await request(app)
+            .post('/api/v1/auth/login?type=CITIZEN')
+            .send({
+                username: DEFAULT_CITIZENS.citizen3.username,
+                password: DEFAULT_CITIZENS.citizen3.password,
+            })
+            .expect(200);
+        citizen3Cookie = citizen3Login.headers['set-cookie'][0];
     });
 
     afterAll(async () => {
@@ -192,25 +225,42 @@ describe("Citizen API E2E Tests", () => {
         it("should update telegram_username for default citizen", async () => {
             const res = await request(app)
                 .patch(`/api/v1/citizens/${DEFAULT_CITIZENS.citizen1.username}`)
+                .set('Cookie', citizen1Cookie)
                 .send({ telegram_username: 'new_telegram' });
+            
+            expect(res.status).toBe(200);
+            expect(res.body).toHaveProperty('telegram_username', 'new_telegram');
         });
 
         it("should update receive_emails for default citizen", async () => {
             const res = await request(app)
                 .patch(`/api/v1/citizens/${DEFAULT_CITIZENS.citizen2.username}`)
+                .set('Cookie', citizen2Cookie)
                 .send({ receive_emails: false });
+            
+            expect(res.status).toBe(200);
+            expect(res.body).toHaveProperty('receive_emails', false);
         });
 
         it("should update profilePicture for default citizen", async () => {
             const res = await request(app)
                 .patch(`/api/v1/citizens/${DEFAULT_CITIZENS.citizen3.username}`)
+                .set('Cookie', citizen3Cookie)
                 .attach('profilePicture', Buffer.from([0x89, 0x50, 0x4E, 0x47]), 'profile.png');
+            
+            expect(res.status).toBe(200);
+            expect(res.body).toHaveProperty('profilePicture');
+            expect(res.body.profilePicture).toContain('/uploads/profiles/');
         });
 
         it("should return 403 when updating another citizen's profile", async () => { 
             const res = await request(app)
                 .patch(`/api/v1/citizens/anotheruser`)
+                .set('Cookie', citizen1Cookie)
                 .send({ telegram_username: 'hacker_telegram' });
+            
+            expect(res.status).toBe(403);
+            expect(res.body).toHaveProperty('error');
         });  
     });
 

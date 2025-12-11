@@ -93,7 +93,7 @@ export async function verifyUserMiddleware(ctx: ParticipiumContext, next: () => 
 export async function submitReport(ctx: ParticipiumContext): Promise<string> {
     const form = new FormData();
 
-    form.append("userId", ctx.message.from.username.toString());
+    form.append("telegram_username", ctx.message.from.username.toString());
     form.append("title", ctx.session.title);
     form.append("description", ctx.session.description);
     form.append("latitude", ctx.session.latitude.toString());
