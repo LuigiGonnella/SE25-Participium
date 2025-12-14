@@ -449,17 +449,4 @@ bot.on("photo", verifyUserMiddleware, async (ctx) => {
 
 bot.launch(() => {
     console.log("Bot started");
-    
-    // Set bot commands menu
-    bot.telegram.setMyCommands([
-        { command: 'start', description: 'Start the bot and check verification status' },
-        { command: 'verify', description: 'Verify your Telegram account with a code' },
-        { command: 'newreport', description: 'Create a new report' },
-        { command: 'myreports', description: 'View all your submitted reports' },
-        { command: 'reportstatus', description: 'Get details of a specific report (use /reportstatus <id>)' }
-    ]).then(() => {
-        console.log("Bot commands menu updated");
-    }).catch((err) => {
-        console.error("Failed to set bot commands:", err);
-    });
 });
