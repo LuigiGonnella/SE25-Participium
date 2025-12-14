@@ -93,7 +93,13 @@ export async function verifyUserMiddleware(ctx: ParticipiumContext, next: () => 
 export async function submitReport(ctx: ParticipiumContext): Promise<string> {
     const form = new FormData();
 
-    form.append("telegram_username", ctx.message.from.username.toString());
+    const username = ctx.from?.username || ctx.message?.from?.username;
+    if (!username) {
+        return "❌ Unable to retrieve your username.";
+    }
+
+    console.log(`Submitting report for Telegram username: ${username}`);
+    form.append("telegram_username", username);
     form.append("title", ctx.session.title);
     form.append("description", ctx.session.description);
     form.append("latitude", ctx.session.latitude.toString());
@@ -156,6 +162,25 @@ export async function downloadTelegramFile(fileId: string): Promise<Blob> {
     const blob = await fileDownload.blob();
 
     return new Blob([blob], { type: 'image/jpg' });
+}
+
+export async function getMyReports(telegram_username: string): Promise<any[]> {
+    try {
+        const response = await fetchWithAuth(`${BACKEND_URL}/reports/telegram/citizen/${encodeURIComponent(telegram_username)}`, {
+            method: 'GET',
+        });
+
+        if (!response.ok) {
+            const data = await response.json();
+            console.error(`Error fetching reports: ${data.message}`);
+            return [];
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error(`Network error: ${error}`);
+        return [];
+    }
 }
 
 export function isWithinTurin(lat: number, lon: number): boolean {

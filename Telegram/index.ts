@@ -1,7 +1,7 @@
 import { session, Telegraf } from "telegraf";
 import { ParticipiumContext, OfficeCategory } from "./models";
 import * as dotenv from "dotenv";
-import {verifyUserMiddleware, submitReport, verifyUser, checkUserVerification, isWithinTurin} from "./API";
+import {verifyUserMiddleware, submitReport, verifyUser, checkUserVerification, isWithinTurin, getMyReports} from "./API";
 
 dotenv.config();
 
@@ -273,6 +273,60 @@ bot.command("newreport", verifyUserMiddleware, async (ctx) => {
     return goToStep(ctx, "location", { skipHistory: true });
 });
 
+bot.command("myreports", verifyUserMiddleware, async (ctx) => {
+    const username = ctx.from?.username;
+    if (!username) {
+        return replyMarkdown(ctx, "❌ Unable to retrieve your username.");
+    }
+
+    console.log(`Fetching reports for Telegram username: ${username}`);
+
+    try {
+        const reports = await getMyReports(username);
+        console.log(`Found ${reports.length} reports for ${username}`);
+
+        if (reports.length === 0) {
+            return replyMarkdown(ctx, "📋 You have not submitted any reports yet.", {
+                reply_markup: { remove_keyboard: true },
+            });
+        }
+
+        let message = `📋 *Your Reports* (${reports.length} total)\n\n`;
+
+        reports.forEach((report: any, index: number) => {
+            const statusEmoji = {
+                'Pending': '⏳',
+                'Assigned': '📌',
+                'In Progress': '🔧',
+                'Suspended': '⏸️',
+                'Rejected': '❌',
+                'Resolved': '✅'
+            }[report.status] || '📄';
+
+            message += `${index + 1}. *Report #${report.id}*\n`;
+            message += `   ${statusEmoji} Status: *${report.status}*\n`;
+            message += `   Title: ${report.title}\n`;
+            message += `   Category: ${report.category}\n`;
+            message += `   Date: ${new Date(report.timestamp).toLocaleDateString()}\n`;
+            if (report.assignedStaff) {
+                message += `   👤 Assigned to: ${report.assignedStaff}\n`;
+            }
+            message += `\n`;
+        });
+
+        message += "_Use `/reportstatus <id>` to see details of a specific report._";
+
+        return replyMarkdown(ctx, message, {
+            reply_markup: { remove_keyboard: true },
+        });
+    } catch (error) {
+        console.error("Error fetching reports:", error);
+        return replyMarkdown(ctx, "❌ An error occurred while fetching your reports. Please try again later.", {
+            reply_markup: { remove_keyboard: true },
+        });
+    }
+});
+
 bot.on("location", verifyUserMiddleware, async (ctx) => {
     if (ctx.session.step !== "location") return;
 
@@ -395,4 +449,17 @@ bot.on("photo", verifyUserMiddleware, async (ctx) => {
 
 bot.launch(() => {
     console.log("Bot started");
+    
+    // Set bot commands menu
+    bot.telegram.setMyCommands([
+        { command: 'start', description: 'Start the bot and check verification status' },
+        { command: 'verify', description: 'Verify your Telegram account with a code' },
+        { command: 'newreport', description: 'Create a new report' },
+        { command: 'myreports', description: 'View all your submitted reports' },
+        { command: 'reportstatus', description: 'Get details of a specific report (use /reportstatus <id>)' }
+    ]).then(() => {
+        console.log("Bot commands menu updated");
+    }).catch((err) => {
+        console.error("Failed to set bot commands:", err);
+    });
 });

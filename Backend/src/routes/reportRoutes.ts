@@ -9,6 +9,7 @@ import {
     getMapReports,
     getReportById,
     getReports,
+    getReportsByCitizenUsername,
     selfAssignReport,
     updateReportAsEM,
     updateReportAsMPRO,
@@ -246,5 +247,18 @@ router.post('/telegram', telegramBotAuth, uploadReportPictures.array("photos", 3
         next(err);
     }
 })
+
+router.get('/telegram/citizen/:telegram_username', telegramBotAuth, async (req, res, next) => {
+    try {
+        const { telegram_username } = req.params;
+        const citizen = await getCitizenByTelegramUsername(telegram_username);
+        
+        const reports = await getReportsByCitizenUsername(citizen.username);
+        
+        res.status(200).json(reports);
+    } catch (err) {
+        next(err);
+    }
+});
 
 export default router;
