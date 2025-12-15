@@ -166,7 +166,7 @@ function App() {
                 <Route path="registration" element={getRegistrationElement()}/>
                 <Route path="verify-email" element={getVerifyEmailElement()}/>
                 <Route path="municipality-registration" element={getMunicipalityRegistrationElement()}/>
-                <Route path="/map" element={getMapElement()}/>
+                <Route path="/map" element={!isStaff(user) ? getMapElement() : <Navigate replace to="/"/>}/>
                 <Route path="/reports" element={getReportsElement()}/>
                 <Route path="/reports/:id" element={getReportDetailElement()}/>
                 <Route path="/profile" element={getProfileElement()}/>
