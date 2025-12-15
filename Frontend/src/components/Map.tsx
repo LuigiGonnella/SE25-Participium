@@ -305,7 +305,7 @@ export default function TurinMaskedMap({isLoggedIn, user}: Readonly<MapProps>) {
                     <Spinner active/>
                 </div>
             )}
-            <Col className={"d-flex flex-column justify-content-end" + (newReportMode || selectedReport ? " col-12 col-lg-7" : " col-12")}
+            <Col className={"d-flex flex-column justify-content-end position-relative" + (newReportMode || selectedReport || searchMode ? " col-12 col-lg-7" : " col-12")}
                  style={{pointerEvents: isLoaded ? 'auto' : 'none'}}>
                 <MapContainer
                     center={center}
@@ -367,33 +367,26 @@ export default function TurinMaskedMap({isLoggedIn, user}: Readonly<MapProps>) {
                     )}
                 </MapContainer>
 
+
+                <div
+                    className="position-absolute bottom-0 start-50 translate-middle-x mb-5 mb-lg-3 w-100 text-center d-flex justify-content-center gap-2"
+                    style={{zIndex: 1000}}>
                 {!newReportMode && isLoggedIn && isCitizen(user) && selectedCoordinates && (
                     <Button
-                        className="btn-primary rounded-5 position-absolute bottom-0 start-50 translate-middle-x mb-3"
-                        style={{zIndex: 1000}}
+                        className="btn-primary rounded-5"
                         onClick={() => { setNewReportMode(true); setSelectedReport(undefined); setSearchMode(false);}}
                     >
-                        <i className="bi bi-plus-lg">&nbsp;</i>New Report
+                        <i className="bi bi-plus-lg">&nbsp;</i>New
                     </Button>
                 )}
 
-                <button
-                    className="position-absolute top-0 start-0"
-                    style={{
-                        zIndex: 1000,
-                        width: "40px",
-                        height: "40px",
-                        marginLeft: "55px",
-                        marginTop: "10px",
-                        backgroundColor: "white",
-                        border: "2px solid rgba(0, 0, 0, 0.2)",
-                        borderRadius: "4px",
-                        fontSize: "16px",
-                    }}
-                    onClick={() => { setNewReportMode(false); setSelectedReport(undefined); setSearchMode(true); }}
+                <Button
+                        className="btn-primary rounded-5"
+                        onClick={() => { setNewReportMode(false); setSelectedReport(undefined); setSearchMode(true);}}
                     >
-                    <i className="bi bi-search font-weight-bold"></i>
-                </button>
+                        <i className="bi bi-search">&nbsp;</i>Search
+                </Button>
+                </div>
             </Col>
             {newReportMode && (
                 <Col className="col-12 col-lg-5 p-0 position-absolute position-lg-relative h-100"
@@ -433,7 +426,11 @@ export default function TurinMaskedMap({isLoggedIn, user}: Readonly<MapProps>) {
                      }}>
                     <ReportSearchPanel
                         reports={reports}
-                        closeSearchMode={() => setSearchMode(false)} 
+                        closeSearchMode={() => setSearchMode(false)}
+                        setCenter={setCenter}
+                        setZoom={setZoom}
+                        setSelectedReport={setSelectedReport}
+                        user={user}
                     />
                 </Col>
             )}
