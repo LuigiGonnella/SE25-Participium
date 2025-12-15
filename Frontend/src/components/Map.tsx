@@ -10,6 +10,7 @@ import ReportDetailsPanel from "./ReportDetailsPanel.tsx";
 import { useSearchParams } from "react-router";
 import API from "../API/API.mjs";
 import useSupercluster from "use-supercluster";
+import ReportSearchPanel from "./ReportSearchPanel.tsx";
 
 const DefaultIcon = L.icon({
     iconUrl: "/pin.png",
@@ -145,6 +146,69 @@ function MapClickHandler({ holes, setCoordinates, newReportMode, selectedReport}
     return null;
 }
 
+interface MapViewControllerProps {
+    center?: [number, number];
+    zoom?: number;
+    coordinates?: LatLng | null;
+    onViewChange?: (center: [number, number], zoom: number) => void;
+}
+
+export function MapViewController({ center, zoom, coordinates, onViewChange }: MapViewControllerProps) {
+    const map = useMap();
+
+    useMapEvents({
+        zoomend: () => {
+            if (onViewChange) {
+                const newCenter = map.getCenter();
+                const newZoom = map.getZoom();
+                onViewChange([newCenter.lat, newCenter.lng], newZoom);
+                if (map) {
+                    // Aggiunge un piccolo ritardo per assicurarsi che il layout sia aggiornato
+                    setTimeout(() => {
+                        map.invalidateSize();
+                    }, 100);
+                }
+            }
+        },
+        moveend: () => {
+            if (onViewChange) {
+                const newCenter = map.getCenter();
+                const newZoom = map.getZoom();
+                onViewChange([newCenter.lat, newCenter.lng], newZoom);
+                if (map) {
+                    // Aggiunge un piccolo ritardo per assicurarsi che il layout sia aggiornato
+                    setTimeout(() => {
+                        map.invalidateSize();
+                    }, 100);
+                }
+            }
+        }
+    });
+
+    useEffect(() => {
+        if (coordinates) {
+            map.setView([coordinates.lat, coordinates.lng], zoom || 18, {
+                animate: true,
+                duration: 0.5
+            });
+        } else if (center && zoom !== undefined) {
+            const currentCenter = map.getCenter();
+            const currentZoom = map.getZoom();
+            
+            if (currentCenter.lat !== center[0] || 
+                currentCenter.lng !== center[1] || 
+                currentZoom !== zoom) {
+                map.setView(center, zoom, {
+                    animate: true,
+                    duration: 0.5
+                });
+            }
+        }
+    }, [center, zoom, coordinates, map]);
+
+    return null;
+}
+
 export default function TurinMaskedMap({isLoggedIn, user}: Readonly<MapProps>) {
     const [searchParams, setSearchParams] = useSearchParams();
     const [isLoaded, setIsLoaded] = useState<boolean>(false);
@@ -154,6 +218,9 @@ export default function TurinMaskedMap({isLoggedIn, user}: Readonly<MapProps>) {
     const [turinGeoJSON, setTurinGeoJSON] = useState<any>(null);
     const [holes, setHoles] = useState<L.LatLngExpression[][]>([]);
     const [selectedReport, setSelectedReport] = useState<Report>();
+    const [searchMode, setSearchMode] = useState<boolean>(false);
+    const [center, setCenter] = useState<[number, number]>([45.0703, 7.6869]);
+    const [zoom, setZoom] = useState<number>(14);
     
     const [reports, setReports] = useState<Report[]>([]);
 
@@ -220,6 +287,11 @@ export default function TurinMaskedMap({isLoggedIn, user}: Readonly<MapProps>) {
 
     const markerRef = useRef<L.Marker>(null);
 
+    const handleViewChange = (newCenter: [number, number], newZoom: number) => {
+        setCenter(newCenter);
+        setZoom(newZoom);
+    };
+
     return (
         <Row className="d-flex flex-grow-1 position-relative vw-100 g-0">
             {!isLoaded && (
@@ -236,8 +308,8 @@ export default function TurinMaskedMap({isLoggedIn, user}: Readonly<MapProps>) {
             <Col className={"d-flex flex-column justify-content-end" + (newReportMode || selectedReport ? " col-12 col-lg-7" : " col-12")}
                  style={{pointerEvents: isLoaded ? 'auto' : 'none'}}>
                 <MapContainer
-                    center={[45.0703, 7.6869]}
-                    zoom={14}
+                    center={center}
+                    zoom={zoom}
                     minZoom={12}
                     maxZoom={18}
                     zoomControl={true}
@@ -248,6 +320,12 @@ export default function TurinMaskedMap({isLoggedIn, user}: Readonly<MapProps>) {
                         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                     />
                     {reports.length > 0 && <ClusterMarkers reports={reports} selectedReport={selectedReport} setSelectedReport={ setSelectedReport } setNewReportMode={ setNewReportMode } />}
+
+                    <MapViewController
+                        center={center}
+                        zoom={zoom}
+                        coordinates={selectedCoordinates}
+                        onViewChange={handleViewChange}/>
 
                     {isLoaded && (
                         <>
@@ -293,11 +371,29 @@ export default function TurinMaskedMap({isLoggedIn, user}: Readonly<MapProps>) {
                     <Button
                         className="btn-primary rounded-5 position-absolute bottom-0 start-50 translate-middle-x mb-3"
                         style={{zIndex: 1000}}
-                        onClick={() => { setNewReportMode(true); setSelectedReport(undefined); }}
+                        onClick={() => { setNewReportMode(true); setSelectedReport(undefined); setSearchMode(false);}}
                     >
                         <i className="bi bi-plus-lg">&nbsp;</i>New Report
                     </Button>
                 )}
+
+                <button
+                    className="position-absolute top-0 start-0"
+                    style={{
+                        zIndex: 1000,
+                        width: "40px",
+                        height: "40px",
+                        marginLeft: "55px",
+                        marginTop: "10px",
+                        backgroundColor: "white",
+                        border: "2px solid rgba(0, 0, 0, 0.2)",
+                        borderRadius: "4px",
+                        fontSize: "16px",
+                    }}
+                    onClick={() => { setNewReportMode(false); setSelectedReport(undefined); setSearchMode(true); }}
+                    >
+                    <i className="bi bi-search font-weight-bold"></i>
+                </button>
             </Col>
             {newReportMode && (
                 <Col className="col-12 col-lg-5 p-0 position-absolute position-lg-relative h-100"
@@ -324,6 +420,21 @@ export default function TurinMaskedMap({isLoggedIn, user}: Readonly<MapProps>) {
                          backgroundColor: 'white'
                      }}>                
                      <ReportDetailsPanel report={selectedReport} onClose={() => setSelectedReport(undefined)} />
+                </Col>
+            )}
+
+            {searchMode && (
+                <Col className="col-12 col-lg-5 p-0 position-absolute position-lg-relative h-100"
+                     style={{
+                         zIndex: 1000,
+                         top: 0,
+                         right: 0,
+                         backgroundColor: 'white'
+                     }}>
+                    <ReportSearchPanel
+                        reports={reports}
+                        closeSearchMode={() => setSearchMode(false)} 
+                    />
                 </Col>
             )}
 
