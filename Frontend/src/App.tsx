@@ -93,7 +93,7 @@ function App() {
     };
 
     const getMapContent = () => {
-        if (!user?.email) {
+        if (loggedIn && isCitizen(user) && !user?.email) {
             return <Navigate replace to="/verify-email"/>;
         }
         return <TurinMaskedMap isLoggedIn={loggedIn} user={user}/>;
@@ -134,7 +134,7 @@ function App() {
     };
 
     const getMapElement = () => {
-        return loggedIn && isCitizen(user) ? getMapContent() : <Navigate replace to="/"/>;
+        return getMapContent();
     };
 
     const getReportsElement = () => {
@@ -145,10 +145,7 @@ function App() {
     };
 
     const getReportDetailElement = () => {
-        if (loggedIn && canAccessReports(user) && user) {
-            return <ReportDetailPage user={user} />;
-        }
-        return <Navigate replace to="/login"/>;
+        return <ReportDetailPage user={user} />;
     };
 
     const getProfileElement = () => {
