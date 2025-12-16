@@ -261,4 +261,14 @@ router.get('/telegram/citizen/:telegram_username', telegramBotAuth, async (req, 
     }
 });
 
+router.get('/telegram/report/:reportId', telegramBotAuth, async (req, res, next) => {
+    try {
+        const reportId = validateReportId(req.params.reportId);
+        const report = await getReportById(reportId);
+        res.status(200).json(report);
+    } catch (err) {
+        next(err);
+    }
+});
+
 export default router;

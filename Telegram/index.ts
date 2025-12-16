@@ -1,7 +1,7 @@
 import { session, Telegraf } from "telegraf";
 import { ParticipiumContext, OfficeCategory } from "./models";
 import * as dotenv from "dotenv";
-import {verifyUserMiddleware, submitReport, verifyUser, checkUserVerification, isWithinTurin, getMyReports} from "./API";
+import {verifyUserMiddleware, submitReport, verifyUser, checkUserVerification, isWithinTurin, getMyReports, getReportDetails} from "./API";
 
 dotenv.config();
 
@@ -324,6 +324,65 @@ bot.command("myreports", verifyUserMiddleware, async (ctx) => {
         return replyMarkdown(ctx, "❌ An error occurred while fetching your reports. Please try again later.", {
             reply_markup: { remove_keyboard: true },
         });
+    }
+});
+
+const escapeMarkdown = (text: string | undefined): string => {
+    if (!text) return "";
+    return text.replace(/[_*[\]`]/g, '\\$&');
+};
+
+bot.command("reportstatus", verifyUserMiddleware, async (ctx) => {
+    const rawText = ctx.message.text.trim();
+    const parts = rawText.split(/\s+/);
+    if (parts.length !== 2) {
+        return replyMarkdown(ctx, "ℹ️ *Usage:*\n`/reportstatus <ID>`\n\nExample: `/reportstatus 12`");
+    }
+
+    const reportIdStr = parts[1];
+    const reportId = parseInt(reportIdStr, 10);
+
+    if (isNaN(reportId)) {
+        return replyMarkdown(ctx, "❌ Invalid Report ID. Please enter a valid number.");
+    }
+
+    try {
+        const report = await getReportDetails(reportId);
+
+        if (!report) {
+            return replyMarkdown(ctx, `❌ Report *#${reportId}* not found.`);
+        }
+        const statusEmoji = {
+            'Pending': '⏳',
+            'Assigned': '📌',
+            'In Progress': '🔧',
+            'Suspended': '⏸️',
+            'Rejected': '❌',
+            'Resolved': '✅'
+        }[report.status] || '📄';
+
+        let message = `📄 *Report #${report.id} Details*\n` +
+                      `━━━━━━━━━━━━━━━━━━━\n\n` +
+                      `*Title:* ${escapeMarkdown(report.title)}\n` +
+                      `*Category:* ${escapeMarkdown(report.category as string)}\n` +
+                      `*Date:* ${new Date(report.timestamp || Date.now()).toLocaleDateString()}\n\n` +
+                      `${statusEmoji} *Status:* ${escapeMarkdown(report.status)}\n`;
+
+        if (report.assignedStaff) {
+            message += `👤 *Assigned to:* ${escapeMarkdown(report.assignedStaff)}\n`;
+        }
+
+        if (report.comment) {
+            message += `\n💬 *Staff Comment:*\n_${escapeMarkdown(report.comment)}_\n`;
+        }
+        
+        message += `\n📝 *Description:*\n${escapeMarkdown(report.description)}`;
+
+        return replyMarkdown(ctx, message);
+
+    } catch (error) {
+        console.error("Error in reportstatus command:", error);
+        return replyMarkdown(ctx, "❌ An error occurred while retrieving the report status.");
     }
 });
 

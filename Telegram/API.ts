@@ -1,4 +1,4 @@
-import {defaultSession, ParticipiumContext} from "./models";
+import {defaultSession, ParticipiumContext, Report} from "./models";
 import * as turf from '@turf/turf';
 import turinBoundary from './data/turinBoundary.json';
 
@@ -180,6 +180,29 @@ export async function getMyReports(telegram_username: string): Promise<any[]> {
     } catch (error) {
         console.error(`Network error: ${error}`);
         return [];
+    }
+}
+
+export async function getReportDetails(reportId: number): Promise<Report | null> {
+    try {
+        const response = await fetchWithAuth(`${BACKEND_URL}/reports/telegram/report/${reportId}`, {
+            method: 'GET',
+        });
+
+        if (response.status === 404) {
+            return null;
+        }
+
+        if (!response.ok) {
+            const data = await response.json();
+            console.error(`Error fetching report details: ${data.message}`);
+            throw new Error(data.message || "Failed to fetch report");
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error(`Network error in getReportDetails: ${error}`);
+        return null;
     }
 }
 
