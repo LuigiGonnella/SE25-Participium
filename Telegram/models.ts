@@ -12,6 +12,21 @@ export enum OfficeCategory {
     MOO = "Other"
 }
 
+export interface Report {
+    id: number;
+    citizenUsername?: string;
+    timestamp?: string | Date; 
+    status: string;
+    title: string;
+    description: string;
+    category: OfficeCategory | string;
+    coordinates?: number[];
+    photos?: string[];
+    comment?: string;
+    assignedStaff?: string;
+    assignedEM?: string;
+}
+
 interface SessionData {
     isVerified: boolean;
     step: string | null;
@@ -38,3 +53,4 @@ export const defaultSession: SessionData = {
 export interface ParticipiumContext extends Context {
     session: SessionData;
 }
+

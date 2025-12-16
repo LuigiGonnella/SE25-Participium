@@ -207,3 +207,23 @@ export async function getAllMessages(reportId: number, userType: 'CITIZEN' | 'ST
     }
     return (await repo.getAllMessages(reportDAO.id)).map(mapMessageToDTO);
 }
+
+export async function getReportsByCitizenUsername(citizenUsername: string): Promise<Report[]> {
+    const citizenDAO = await citizenRepo.getCitizenByUsername(citizenUsername);
+    if (!citizenDAO) {
+        throw new NotFoundError(`Citizen with username ${citizenUsername} not found`);
+    }
+    
+    // Create a mock staff object with no restrictions for filtering
+    const mockStaff = { 
+        role: 'CITIZEN' as any,
+        offices: []
+    } as any;
+    
+    const filters: ReportFilters = {
+        citizen_username: citizenUsername
+    };
+    
+    const reportDAOs = await repo.getReports(mockStaff, filters);
+    return reportDAOs.map(mapReportDAOToDTO);
+}
