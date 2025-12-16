@@ -92,7 +92,7 @@ function App() {
         return <Navigate replace to={isCitizen(user) ? "/map" : "/reports"}/>;
     };
 
-    const getMapContent = () => {
+    const getMapElement = () => {
         if (loggedIn && isCitizen(user) && !user?.email) {
             return <Navigate replace to="/verify-email"/>;
         }
@@ -122,8 +122,8 @@ function App() {
     };
 
     const getVerifyEmailElement = () => {
-        return needsEmailVerification(user) || !loggedIn 
-            ? <EmailVerificationPage refresh={toggleRefresh} /> 
+        return needsEmailVerification(user) || !loggedIn
+            ? <EmailVerificationPage refresh={toggleRefresh} user={user}/>
             : <Navigate replace to="/"/>;
     };
 
@@ -131,10 +131,6 @@ function App() {
         return loggedIn && isAdmin(user)
             ? <MunicipalityRegistrationForm handleStaffRegistration={handleMunicipalityRegistration}/>
             : <Navigate replace to="/"/>;
-    };
-
-    const getMapElement = () => {
-        return getMapContent();
     };
 
     const getReportsElement = () => {
