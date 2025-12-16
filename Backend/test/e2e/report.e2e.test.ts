@@ -1051,6 +1051,9 @@ describe("Reports API E2E Tests", () => {
                 })
                 .expect(201);
 
+            expect(res.body).toBeDefined();
+            expect(res.body.id).toBe(testReport1.id);
+            expect(res.body.title).toBe("Broken Traffic Light");
         });
 
         it("should not allow TOSM to add a message to a report not assigned to them", async () => {
@@ -1062,29 +1065,11 @@ describe("Reports API E2E Tests", () => {
                     isPrivate: false
                 })
                 .expect(400);
+            
+            expectErrorResponse(res);
         });
 
-        //TODO: re-enable test if fixed
-        /*
-        it("should not allow TOSM to add a message to a RESOLVED report", async () => {
-            await request(app)
-                .patch(`/api/v1/reports/${testReport1.id}/assignSelf`)
-                .set('Cookie', tosmCookie);
 
-            await request(app)
-                .patch(`/api/v1/reports/${testReport1.id}/updateStatus`)
-                .set('Cookie', tosmCookie)
-                .send({ status: getStatusKey(Status.RESOLVED) });
-
-            const res = await request(app)
-                .post(`/api/v1/reports/${testReport1.id}/messages`)
-                .set('Cookie', tosmCookie)
-                .send({
-                    message: "This is a private message.",
-                    isPrivate: false
-                })
-                .expect(400);
-        });*/
 
         it("should not allow MPRO to add messages to reports", async () => {
             const res = await request(app)
@@ -1095,6 +1080,8 @@ describe("Reports API E2E Tests", () => {
                     isPrivate: false
                 })
                 .expect(400);
+            
+            expectErrorResponse(res);
         });
 
         it("should not allow Admin to add messages to reports", async () => {
@@ -1106,6 +1093,8 @@ describe("Reports API E2E Tests", () => {
                     isPrivate: false
                 })
                 .expect(400);
+            
+            expectErrorResponse(res);
         });
 
         it("should require authentication to add messages", async () => {
@@ -1116,6 +1105,8 @@ describe("Reports API E2E Tests", () => {
                     isPrivate: false
                 })
                 .expect(401);
+            
+            expect(res.body.message).toBe("Not authenticated");
         });
 
         it("should add a private message from TOSM to EM", async () => {
@@ -1136,6 +1127,10 @@ describe("Reports API E2E Tests", () => {
                     isPrivate: true
                 })
                 .expect(201);
+            
+            expect(res.body).toBeDefined();
+            expect(res.body.id).toBe(testReport1.id);
+            expect(res.body.isExternal).toBe(true);
         });
 
         it("should add a private message from EM to TOSM", async () => {
@@ -1156,6 +1151,10 @@ describe("Reports API E2E Tests", () => {
                     isPrivate: true
                 })
                 .expect(201);
+            
+            expect(res.body).toBeDefined();
+            expect(res.body.id).toBe(testReport1.id);
+            expect(res.body.isExternal).toBe(true);
         });
 
         it("should not allow EM to add a message to a report not assigned to them", async () => {
@@ -1171,6 +1170,8 @@ describe("Reports API E2E Tests", () => {
                     isPrivate: true
                 })
                 .expect(400);
+            
+            expectErrorResponse(res);
         });
 
         it("should not send a message with empty content", async () => {
@@ -1185,6 +1186,8 @@ describe("Reports API E2E Tests", () => {
                     isPrivate: false
                 })
                 .expect(400);
+            
+            expectErrorResponse(res);
         });
 
         it("should require isPrivate field when TOSM adds a message", async () => {
@@ -1204,6 +1207,8 @@ describe("Reports API E2E Tests", () => {
                     message: "Message without isPrivate field"
                 })
                 .expect(400);
+            
+            expectErrorResponse(res);
         });
 
         it("should get all messages", async () => {

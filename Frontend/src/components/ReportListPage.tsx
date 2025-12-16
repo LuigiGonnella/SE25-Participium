@@ -212,7 +212,7 @@ export default function ReportListPage({ user }: Readonly<ReportListProps>) {
                                                 })}
                                                 </span>
                                                 {r.isExternal && (
-                                                    <span className="badge bg-info text-dark" style={{ fontSize: "0.7rem" }}>
+                                                    <span className="badge bg-info text-white" style={{ fontSize: "0.7rem" }}>
                                                         External
                                                     </span>
                                                 )}

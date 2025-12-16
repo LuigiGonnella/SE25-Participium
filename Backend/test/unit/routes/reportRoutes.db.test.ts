@@ -368,9 +368,13 @@ describe('Report Routes Tests', () => {
                 .send({ status: 'IN_PROGRESS' })
 
             //TOSM adds a message
-            await agentTOSM.post(`/api/v1/reports/${report.id}/messages`)
+            const res = await agentTOSM.post(`/api/v1/reports/${report.id}/messages`)
                 .send({ message: 'Test message from TOSM', isPrivate: true })
-                .expect(201);    
+                .expect(201);
+            
+            expect(res.body).toBeDefined();
+            expect(res.body.id).toBe(report.id);
+            expect(res.body.title).toBe("Test Report");
         });
 
         it('should create a new message from EM', async () => {
@@ -415,9 +419,13 @@ describe('Report Routes Tests', () => {
                 .send({ username: DEFAULT_STAFF.em_RSTLO.username, password: DEFAULT_STAFF.em_RSTLO.password })
 
             //EM adds a message
-            await agentEM.post(`/api/v1/reports/${report.id}/messages`)
+            const res = await agentEM.post(`/api/v1/reports/${report.id}/messages`)
                 .send({ message: 'Test message from EM', isPrivate: true })
-                .expect(201);    
+                .expect(201);
+            
+            expect(res.body).toBeDefined();
+            expect(res.body.id).toBe(report.id);
+            expect(res.body.isExternal).toBe(true);
         });
     
     });

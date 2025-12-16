@@ -20,6 +20,51 @@ interface ReportDetailPageProps {
   user?: User;
 }
 
+// Helper function to check if user can update status
+function canUpdateStatus(user: User | undefined, report: Report): boolean {
+    return (isTOSM(user) && report.assignedStaff === user.username) ||
+           (isEM(user) && report.assignedEM === user.username);
+}
+
+// Helper function to check if user can see messages
+function canAccessMessages(user: User | undefined, report: Report): boolean {
+    return (isTOSM(user) && report.assignedStaff === user.username) ||
+           (isEM(user) && report.assignedEM === user.username);
+}
+
+// Helper function to check if user can manage report (MPRO)
+function canManageReport(user: User | undefined, report: Report): boolean {
+    return isMPRO(user) && report.status === ReportStatus.PENDING;
+}
+
+// Helper function to determine column width
+function getColumnWidth(user: User | undefined, report: Report): string {
+    if ((isTOSM(user) && report.assignedStaff === user.username) ||
+        report.status === ReportStatus.PENDING ||
+        (isEM(user) && report.assignedEM === user.username)) {
+        return "col-md-8";
+    }
+    return "col-12";
+}
+
+// Helper function to get street name from coordinates
+async function fetchStreetName(lat: number, lng: number): Promise<string> {
+    try {
+        const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`;
+        const res = await fetch(url);
+        const geoData = await res.json();
+
+        return (geoData.address?.road + (geoData.address?.house_number ? " " + geoData.address.house_number : "")) ||
+            geoData.address?.pedestrian ||
+            geoData.address?.footway ||
+            geoData.display_name ||
+            "Unknown location";
+    } catch (err) {
+        console.error("Reverse geocoding failed:", err);
+        return "Unknown location";
+    }
+}
+
 export default function ReportDetailPage({ user }: Readonly<ReportDetailPageProps>) {
   const { id } = useParams();
   const [report, setReport] = useState<Report | null>(null);
@@ -49,50 +94,64 @@ export default function ReportDetailPage({ user }: Readonly<ReportDetailPageProp
   const categoryOptions = Object.entries(OfficeCategory) as [string, string][];
 
   useEffect(() => {
+    const loadMessages = async (reportId: number) => {
+      setLoadingMessages(true);
+      try {
+        const msgs = await API.getAllMessages(reportId);
+        setMessages(msgs);
+      } catch (err) {
+        console.error("Failed to load messages:", err);
+      } finally {
+        setLoadingMessages(false);
+      }
+    };
+
+    const loadStreetName = async (coordinates: number[]) => {
+      if (coordinates?.length === 2) {
+        const [lat, lng] = coordinates;
+        const street = await fetchStreetName(lat, lng);
+        setStreetName(street);
+      }
+    };
+
     const load = async () => {
       try {
         const data = await API.getReportById(Number(id));
         setReport(data);
-
-        // Load messages
-        setLoadingMessages(true);
-        try {
-          const msgs = await API.getAllMessages(Number(id));
-          setMessages(msgs);
-        } catch (err) {
-          console.error("Failed to load messages:", err);
-        } finally {
-          setLoadingMessages(false);
-        }
-
-        if (data.coordinates?.length === 2) {
-          const [lat, lng] = data.coordinates;
-          try {
-            const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`;
-            const res = await fetch(url);
-            const geoData = await res.json();
-
-            const street =
-              (geoData.address?.road + (geoData.address?.house_number ? " " + geoData.address.house_number : "")) ||
-              geoData.address?.pedestrian ||
-              geoData.address?.footway ||
-              geoData.display_name ||
-              "Unknown location";
-
-            setStreetName(street);
-          } catch (err) {
-            console.error("Reverse geocoding failed:", err);
-            setStreetName("Unknown location");
-          }
-        }
+        
+        await Promise.all([
+          loadMessages(Number(id)),
+          loadStreetName(data.coordinates)
+        ]);
       } catch (err: any) {
         setError(err?.details || "Failed to load report");
       } finally {
         setLoading(false);
       }
     };
+    
     load();
   }, [id]);
+
+  const buildUpdatePayload = (): any | null => {
+    const payload: any = {};
+    
+    if (statusInput === ReportStatus.REJECTED) {
+      if (!commentInput.trim()) {
+        setError("Comment is required when rejecting a report");
+        return null;
+      }
+      payload.status = ReportStatus.REJECTED;
+      payload.comment = commentInput.trim();
+    } else if (statusInput === ReportStatus.ASSIGNED) {
+      payload.status = ReportStatus.ASSIGNED;
+      if (categoryInput) {
+        payload.category = categoryInput;
+      }
+    }
+    
+    return payload;
+  };
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -103,27 +162,15 @@ export default function ReportDetailPage({ user }: Readonly<ReportDetailPageProp
     setSuccess("");
 
     try {
-      const payload: any = {};
-      if (statusInput === ReportStatus.REJECTED) {
-        if (!commentInput.trim()) {
-          setError("Comment is required when rejecting a report");
-          setSaving(false);
-          return;
-        }
-        payload.status = ReportStatus.REJECTED;
-        payload.comment = commentInput.trim();
-      } else if (statusInput === ReportStatus.ASSIGNED) {
-        payload.status = ReportStatus.ASSIGNED;
-
-        if (categoryInput) {
-          payload.category = categoryInput;
-        }
+      const payload = buildUpdatePayload();
+      if (!payload) {
+        setSaving(false);
+        return;
       }
 
       const updated = await API.updateReport(report.id, payload, user.role);
       setReport(updated);
       setSuccess("Report updated successfully.");
-      // keep current values in the form
       setStatusInput("");
       setCategoryInput("");
       setCommentInput("");
@@ -134,14 +181,22 @@ export default function ReportDetailPage({ user }: Readonly<ReportDetailPageProp
     }
   };
 
+  const reloadReportData = async (reportId: number) => {
+    const msgs = await API.getAllMessages(reportId);
+    setMessages(msgs);
+    const updateReport = await API.getReportById(reportId);
+    setReport(updateReport);
+  };
+
   const handleMessage = async (e: React.FormEvent, isPrivate: boolean) => {
     e.preventDefault();
     if (!report || !user || !(isTOSM(user)||isEM(user)) ) return;
+    
     setMessageLoading(true);
     setMessageError("");
 
     try {
-    const message = isPrivate ? privateMessage : publicMessage;
+      const message = isPrivate ? privateMessage : publicMessage;
       await API.createMessage(report.id, message, isPrivate);
 
       if (isPrivate) {
@@ -150,17 +205,20 @@ export default function ReportDetailPage({ user }: Readonly<ReportDetailPageProp
         setPublicMessage("");
       }
 
-      // Reload messages
-      const msgs = await API.getAllMessages(report.id);
-      setMessages(msgs);
-
-      const updateReport = await API.getReportById(report.id);
-      setReport(updateReport);
-      } catch (err: any) {
+      await reloadReportData(report.id);
+    } catch (err: any) {
       setMessageError(err?.details || "Failed to send message");
-      } finally {
+    } finally {
       setMessageLoading(false);
-      }
+    }
+  };
+
+    const buildStatusUpdatePayload = (): any => {
+        const data: any = { status: statusUpdate };
+        if (statusUpdate === "RESOLVED" && commentInput) {
+            data.comment = commentInput;
+        }
+        return data;
     };
 
     const handleStatusUpdate = async () => {
@@ -168,16 +226,9 @@ export default function ReportDetailPage({ user }: Readonly<ReportDetailPageProp
         if (!statusUpdate || !report || !isStaff(user)) return;
 
         try {
-            const data: any = { status: statusUpdate };
-            if (statusUpdate === "RESOLVED" && commentInput) {
-                data.comment = commentInput;
-            }
-
-            const updatedReport = await API.updateReport(report?.id, data, user.role);
-
+            const data = buildStatusUpdatePayload();
+            const updatedReport = await API.updateReport(report.id, data, user.role);
             setReport(updatedReport);
-
-            // Clear the status update and comment for this report
             setStatusUpdate("");
             setCommentInput("");
         } catch (err: any) {
@@ -194,11 +245,7 @@ return (
 
             <div className="row">
                 {/* LEFT COLUMN — REPORT DETAILS */}
-                <div className={(
-                    (isTOSM(user) && report.assignedStaff === user.username) ||
-                    report.status === ReportStatus.PENDING) ||
-                    (isEM(user) && report.assignedEM === user.username)
-                    ? "col-md-8" : "col-12"}>
+                <div className={getColumnWidth(user, report)}>
                     <div className="card shadow-sm h-100 d-flex flex-column">
                         <div className="card-header">
                             <h2>{report.title}</h2>
@@ -288,7 +335,7 @@ return (
                                 </Carousel>
                             </div>
                         </div>
-                        { ((isTOSM(user) || isEM(user)) && (report.assignedStaff === user.username || report.assignedEM === user.username)) &&
+                        { canUpdateStatus(user, report) &&
                         <div className="row px-4">
                             {!loading && error && <Alert variant="danger">{error}</Alert>}
                             <div className="ms-4 pt-3">
@@ -339,8 +386,7 @@ return (
 
                 <div className="col-md-4">
                     {/* RIGHT COLUMN — MESSAGES CHAT (for TOSM) */}
-    {user && ((isTOSM(user) && report.assignedStaff === user.username)
-        || (isEM(user) && report.assignedEM === user.username)) && (
+    {user && canAccessMessages(user, report) && (
         <div className="card shadow-sm h-100 d-flex flex-column">
             <div className="card-header">
                 <div className="d-flex justify-content-between align-items-center">
@@ -513,7 +559,7 @@ return (
     )}
 
                     {/* RIGHT COLUMN — MANAGE REPORT (for MPRO) */}
-                    {user && isMPRO(user) && report.status === ReportStatus.PENDING && (
+                    {user && canManageReport(user, report) && (
                         <div className="card shadow-sm p-3">
 
                             <h4 className="mb-3">Manage Report</h4>

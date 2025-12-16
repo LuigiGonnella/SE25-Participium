@@ -350,10 +350,10 @@ const ReportForm = ({ coordinates, street, toggleReportView }: ReportFormProps) 
                                 </Form.Group>
                             </Col>
 
-                            {/*<Col md={12}>
+                            <Col md={12}>
                                 <Form.Group className="mb-3">
                                     <Form.Check
-                                        id="terms"
+                                        id="anonymous"
                                         type="checkbox"
                                         name="anonymous"
                                         label="Submit report anonymously"
@@ -361,7 +361,7 @@ const ReportForm = ({ coordinates, street, toggleReportView }: ReportFormProps) 
                                         onChange={handleInputChange}
                                     />
                                 </Form.Group>
-                            </Col>*/}
+                            </Col>
                         </Row>
 
                         <div className="d-grid gap-2">

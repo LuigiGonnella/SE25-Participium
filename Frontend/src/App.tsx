@@ -27,6 +27,20 @@ import {
 } from "./models/Models.ts";
 import AdminTOSMPage from './components/AllTOSM.tsx';
 
+// Helper function to check if user can access reports
+const canAccessReports = (user: User | undefined): boolean => {
+    return isMPRO(user) || isTOSM(user) || isEM(user);
+};
+
+// Helper function to check if user is admin
+const isAdmin = (user: User | undefined): boolean => {
+    return isStaff(user) && user.role === StaffRole.ADMIN;
+};
+
+// Helper function to check if citizen needs email verification
+const needsEmailVerification = (user: User | undefined): boolean => {
+    return isCitizen(user) && !user.email;
+};
 
 function App() {
     const [loggedIn, setLoggedIn] = useState<boolean>(false);
@@ -72,7 +86,7 @@ function App() {
     };
 
     const getLoginRedirect = () => {
-        if (isCitizen(user) && !user.email) {
+        if (needsEmailVerification(user)) {
             return <Navigate replace to="/verify-email"/>;
         }
         return <Navigate replace to={isCitizen(user) ? "/map" : "/reports"}/>;
@@ -95,51 +109,71 @@ function App() {
         return <CitizenProfile user={user} refresh={toggleRefresh} />;
     };
 
+    const getHomeElement = () => {
+        return !loggedIn || isCitizen(user) ? <HomePage/> : <Navigate replace to="/reports"/>;
+    };
+
+    const getLoginElement = () => {
+        return loggedIn ? getLoginRedirect() : <LoginForm handleLogin={handleLogin}/>;
+    };
+
+    const getRegistrationElement = () => {
+        return loggedIn ? <Navigate replace to="/"/> : <RegistrationForm handleRegistration={handleRegistration}/>;
+    };
+
+    const getVerifyEmailElement = () => {
+        return needsEmailVerification(user) || !loggedIn 
+            ? <EmailVerificationPage refresh={toggleRefresh} /> 
+            : <Navigate replace to="/"/>;
+    };
+
+    const getMunicipalityRegistrationElement = () => {
+        return loggedIn && isAdmin(user)
+            ? <MunicipalityRegistrationForm handleStaffRegistration={handleMunicipalityRegistration}/>
+            : <Navigate replace to="/"/>;
+    };
+
+    const getMapElement = () => {
+        return loggedIn && isCitizen(user) ? getMapContent() : <Navigate replace to="/"/>;
+    };
+
+    const getReportsElement = () => {
+        if (loggedIn && canAccessReports(user) && user) {
+            return <ReportListPage user={user}/>;
+        }
+        return <Navigate replace to={isAdmin(user) ? "/municipality-registration" : "/login"}/>;
+    };
+
+    const getReportDetailElement = () => {
+        if (loggedIn && canAccessReports(user) && user) {
+            return <ReportDetailPage user={user} />;
+        }
+        return <Navigate replace to="/login"/>;
+    };
+
+    const getProfileElement = () => {
+        return loggedIn && user ? getProfileContent() : <Navigate replace to="/login"/>;
+    };
+
+    const getTOSMsElement = () => {
+        return loggedIn && isAdmin(user) ? <AdminTOSMPage /> : <Navigate replace to="/"/>;
+    };
+
     const toggleRefresh = () => setRefresh(prev => !prev);
 
     return (
         <Routes>
             <Route element={<DefaultLayout loggedIn={loggedIn} user={user} handleLogout={handleLogout} loading={!authChecked}/>}>
-                <Route path="" element={!loggedIn || isCitizen(user) ? <HomePage/> : <Navigate replace to="/reports"/>}/>
-                <Route path="login" element={
-                    loggedIn ? getLoginRedirect() : <LoginForm handleLogin={handleLogin}/>
-                }/>
-                <Route path="registration" element={
-                    loggedIn ?
-                        <Navigate replace to="/"/> :
-                        <RegistrationForm handleRegistration={handleRegistration}/>
-                }/>
-                <Route path="verify-email" element={
-                    (isCitizen(user) && !user.email || !loggedIn) ?
-                        <EmailVerificationPage refresh={toggleRefresh} /> :
-                        <Navigate replace to="/"/>
-                }/>
-                <Route path="municipality-registration" element={
-                    (loggedIn && isStaff(user) && user.role === StaffRole.ADMIN) ?
-                        <MunicipalityRegistrationForm handleStaffRegistration={handleMunicipalityRegistration}/> :
-                        <Navigate replace to="/"/>
-                }/>
-                <Route path="/map" element={
-                    loggedIn && isCitizen(user) ? getMapContent() : <Navigate replace to="/"/>
-                }/>
-                <Route path="/reports" element={
-                    loggedIn && (isMPRO(user) || isTOSM(user) || isEM(user)) ?
-                        <ReportListPage user={user}/> :
-                        <Navigate replace to={(isStaff(user) && user.role === StaffRole.ADMIN) ? "/municipality-registration" : "/login"}/>
-                }/>
-                <Route path="/reports/:id" element={
-                    loggedIn && (isMPRO(user) || isTOSM(user) || isEM(user)) ?
-                        <ReportDetailPage user={user} /> :
-                        <Navigate replace to="/login"/>
-                }/>
-                <Route path="/profile" element={
-                    loggedIn && user ? getProfileContent() : <Navigate replace to="/login"/>
-                }/>
-                <Route path="/tosms" element={
-                    loggedIn && isStaff(user) && user.role === StaffRole.ADMIN ? 
-                        <AdminTOSMPage />
-                    : <Navigate replace to="/"/>
-                }/>
+                <Route path="" element={getHomeElement()}/>
+                <Route path="login" element={getLoginElement()}/>
+                <Route path="registration" element={getRegistrationElement()}/>
+                <Route path="verify-email" element={getVerifyEmailElement()}/>
+                <Route path="municipality-registration" element={getMunicipalityRegistrationElement()}/>
+                <Route path="/map" element={getMapElement()}/>
+                <Route path="/reports" element={getReportsElement()}/>
+                <Route path="/reports/:id" element={getReportDetailElement()}/>
+                <Route path="/profile" element={getProfileElement()}/>
+                <Route path="/tosms" element={getTOSMsElement()}/>
                 <Route path="*" element={<Navigate replace to="/"/>}/>
             </Route>
         </Routes>

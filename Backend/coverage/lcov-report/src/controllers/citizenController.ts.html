@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">76.59% </span>
+                <span class="strong">95.74% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>36/47</span>
+                <span class='fraction'>45/47</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">66.66% </span>
+                <span class="strong">83.33% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>8/12</span>
+                <span class='fraction'>10/12</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">66.66% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>6/9</span>
+                <span class='fraction'>9/9</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">76.59% </span>
+                <span class="strong">95.74% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>36/47</span>
+                <span class='fraction'>45/47</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line medium'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -194,15 +194,15 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">8x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -212,12 +212,12 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -229,8 +229,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">4x</span>
-<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">8x</span>
@@ -281,16 +281,16 @@ export async function getCitizenByUsername(username: string): Promise&lt;Citizen
 }
 &nbsp;
 const profileStorage = multer.diskStorage({
-    destination: <span class="fstat-no" title="function not covered" >(r</span>eq, file, cb) =&gt; {
-        const uploadDir = <span class="cstat-no" title="statement not covered" >'./uploads/profiles';</span>
-<span class="cstat-no" title="statement not covered" >        if (!fs.existsSync(uploadDir)) {</span>
+    destination: (req, file, cb) =&gt; {
+        const uploadDir = './uploads/profiles';
+        <span class="missing-if-branch" title="if path not taken" >I</span>if (!fs.existsSync(uploadDir)) {
 <span class="cstat-no" title="statement not covered" >            fs.mkdirSync(uploadDir, { recursive: true });</span>
         }
-<span class="cstat-no" title="statement not covered" >        cb(null, uploadDir);</span>
+        cb(null, uploadDir);
     },
-    filename: <span class="fstat-no" title="function not covered" >(r</span>eq, file, cb) =&gt; {
-        const uniqueName = <span class="cstat-no" title="statement not covered" >`${Date.now()}-${Math.random().toString(36).substring(7)}${path.extname(file.originalname)}`;</span>
-<span class="cstat-no" title="statement not covered" >        cb(null, uniqueName);</span>
+    filename: (req, file, cb) =&gt; {
+        const uniqueName = `${Date.now()}-${Math.random().toString(36).substring(7)}${path.extname(file.originalname)}`;
+        cb(null, uniqueName);
     }
 });
 &nbsp;
@@ -299,13 +299,13 @@ export const uploadProfilePicture = multer({
     limits: {
         fileSize: 5 * 1024 * 1024
     },
-    fileFilter: <span class="fstat-no" title="function not covered" >(r</span>eq, file, cb) =&gt; {
-        const allowedTypes = <span class="cstat-no" title="statement not covered" >/jpeg|jpg|png/;</span>
-        const ext = <span class="cstat-no" title="statement not covered" >path.extname(file.originalname).toLowerCase();</span>
-<span class="cstat-no" title="statement not covered" >        if (!allowedTypes.test(ext)) {</span>
+    fileFilter: (req, file, cb) =&gt; {
+        const allowedTypes = /jpeg|jpg|png/;
+        const ext = path.extname(file.originalname).toLowerCase();
+        <span class="missing-if-branch" title="if path not taken" >I</span>if (!allowedTypes.test(ext)) {
 <span class="cstat-no" title="statement not covered" >            return cb(new BadRequestError("Only JPEG, JPG, PNG allowed"));</span>
         }
-<span class="cstat-no" title="statement not covered" >        cb(null, true);</span>
+        cb(null, true);
     }
 });
 &nbsp;
@@ -334,7 +334,7 @@ export async function getCitizenByTelegramUsername(telegram_username: string): P
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-12-10T22:57:16.586Z
+                at 2025-12-11T13:48:36.411Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

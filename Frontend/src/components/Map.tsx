@@ -43,23 +43,79 @@ function pointInPolygon(point: L.Point, polygon: L.Point[]): boolean {
     return inside;
 }
 
+function coordinatesToLatLng(coords: [number, number]): L.LatLngExpression {
+    const [lng, lat] = coords;
+    return [lat, lng] as L.LatLngExpression;
+}
+
+function processPolygonCoordinates(coordinates: [number, number][]): L.LatLngExpression[] {
+    return coordinates.map(coordinatesToLatLng);
+}
+
+function processGeoJSONHoles(gj: any): L.LatLngExpression[][] {
+    const newHoles: L.LatLngExpression[][] = [];
+    
+    if (gj.type === "Polygon") {
+        const outer = processPolygonCoordinates(gj.coordinates[0]);
+        newHoles.push(outer.slice().reverse());
+    } else if (gj.type === "MultiPolygon") {
+        gj.coordinates.forEach((poly: [number, number][][]) => {
+            const outer = processPolygonCoordinates(poly[0]);
+            newHoles.push(outer.slice().reverse());
+        });
+    }
+    
+    return newHoles;
+}
+
+function extractStreetName(data: any): string {
+    return (data.address?.road + " " + (data.address?.house_number || "")) ||
+        data.address?.pedestrian ||
+        data.address?.footway ||
+        data.display_name ||
+        "Unnamed street";
+}
+
 async function getStreetName(selectedCoordinates: LatLng): Promise<string> {
     if(!selectedCoordinates) return "";
-    // Reverse geocoding
+    
     try {
         const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${selectedCoordinates.lat}&lon=${selectedCoordinates.lng}`;
         const res = await fetch(url);
         const data = await res.json();
-
-        return (data.address?.road + " " + (data.address?.house_number || "")) ||
-            data.address?.pedestrian ||
-            data.address?.footway ||
-            data.display_name ||
-            "Unnamed street";
+        return extractStreetName(data);
     } catch (error) {
         console.error("Reverse geocoding failed:", error);
+        return "Unnamed street";
     }
-    return "Unnamed street";
+}
+
+function convertLatLngToPoint(ll: L.LatLngExpression): L.Point {
+    const latLng = Array.isArray(ll) ? L.latLng(ll[0], ll[1]) : ll;
+    return L.point(latLng.lng, latLng.lat);
+}
+
+function isPointInsideHole(latlng: LatLng, hole: L.LatLngExpression[]): boolean {
+    const reversed = hole.slice().reverse();
+    const poly = L.polygon(reversed);
+    const bounds = poly.getBounds();
+    
+    if (!bounds.contains(latlng)) {
+        return false;
+    }
+    
+    const point = L.point(latlng.lng, latlng.lat);
+    const polyPoints = reversed.map(convertLatLngToPoint);
+    return pointInPolygon(point, polyPoints);
+}
+
+function checkPointInTurin(latlng: LatLng, holes: L.LatLngExpression[][]): boolean {
+    for (const hole of holes) {
+        if (isPointInsideHole(latlng, hole)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 function MapClickHandler({ holes, setCoordinates, newReportMode, selectedReport}: {
@@ -71,27 +127,8 @@ function MapClickHandler({ holes, setCoordinates, newReportMode, selectedReport}
     useMapEvents({
         click: async (e) => {
             const {latlng} = e;
-
-            // Verifica se il punto è dentro Torino
-            for (const hole of holes) {
-                const reversed = hole.slice().reverse();
-                const poly = L.polygon(reversed);
-
-                const bounds = poly.getBounds();
-                if (bounds.contains(latlng)) {
-                    const point = L.point(latlng.lng, latlng.lat);
-                    const polyPoints = reversed.map(ll => {
-                        const latLng = Array.isArray(ll) ? L.latLng(ll[0], ll[1]) : ll;
-                        return L.point(latLng.lng, latLng.lat);
-                    });
-
-                    if (pointInPolygon(point, polyPoints)) {
-                        setCoordinates(latlng);
-                        return;
-                    }
-                }
-            }
-            setCoordinates(null);
+            const isInTurin = checkPointInTurin(latlng, holes);
+            setCoordinates(isInTurin ? latlng : null);
         }
     });
 
@@ -133,43 +170,30 @@ export default function TurinMaskedMap({isLoggedIn, user}: Readonly<MapProps>) {
     }, [selectedCoordinates]);
 
     useEffect(() => {
-        const nominatimUrl =
-            "https://nominatim.openstreetmap.org/search.php?q=Turin%2C+Italy&polygon_geojson=1&format=jsonv2";
-
-        fetch(nominatimUrl)
-            .then((r) => r.json())
-            .then((results) => {
+        const loadTurinBoundary = async () => {
+            try {
+                const nominatimUrl = "https://nominatim.openstreetmap.org/search.php?q=Turin%2C+Italy&polygon_geojson=1&format=jsonv2";
+                const response = await fetch(nominatimUrl);
+                const results = await response.json();
+                
                 const feature = results.find(
-                    (f: any) =>
-                        f.geojson &&
-                        (f.geojson.type === "Polygon" || f.geojson.type === "MultiPolygon")
+                    (f: any) => f.geojson && (f.geojson.type === "Polygon" || f.geojson.type === "MultiPolygon")
                 );
                 if (!feature) throw new Error("No polygon found for Turin");
 
                 const gj = feature.geojson;
                 setTurinGeoJSON(gj);
 
-                const newHoles: L.LatLngExpression[][] = [];
-                if (gj.type === "Polygon") {
-                    const outer = gj.coordinates[0].map(
-                        ([lng, lat]: [number, number]) => [lat, lng] as L.LatLngExpression
-                    );
-                    newHoles.push(outer.slice().reverse());
-                } else if (gj.type === "MultiPolygon") {
-                    gj.coordinates.forEach((poly: [number, number][][]) => {
-                        const outer = poly[0].map(
-                            ([lng, lat]: [number, number]) => [lat, lng] as L.LatLngExpression
-                        );
-                        newHoles.push(outer.slice().reverse());
-                    });
-                }
-
+                const newHoles = processGeoJSONHoles(gj);
                 setHoles(newHoles);
                 setIsLoaded(true);
-            })
-            .catch((err) => console.error("Failed to load Turin boundary:", err));
+            } catch (err) {
+                console.error("Failed to load Turin boundary:", err);
+            }
+        };
 
-        API.getMapReports().then(setReports).catch(console.error)
+        loadTurinBoundary();
+        API.getMapReports().then(setReports).catch(console.error);
     }, []);
 
     // Check for reportId in URL params and open the report details panel
