@@ -304,12 +304,12 @@ bot.command("myreports", verifyUserMiddleware, async (ctx) => {
             }[report.status] || '📄';
 
             message += `${index + 1}. *Report #${report.id}*\n`;
-            message += `   ${statusEmoji} Status: *${report.status}*\n`;
-            message += `   Title: ${report.title}\n`;
-            message += `   Category: ${report.category}\n`;
-            message += `   Date: ${new Date(report.timestamp).toLocaleDateString()}\n`;
+            message += `   ${statusEmoji} Status: *${escapeMarkdown(report.status)}*\n`;
+            message += `   Title: ${escapeMarkdown(report.title)}\n`;
+            message += `   Category: ${escapeMarkdown(report.category)}\n`;
+            message += `   Date: ${escapeMarkdown(new Date(report.timestamp).toLocaleDateString())}\n`;
             if (report.assignedStaff) {
-                message += `   👤 Assigned to: ${report.assignedStaff}\n`;
+                message += `   👤 Assigned to: ${escapeMarkdown(report.assignedStaff)}\n`;
             }
             message += `\n`;
         });
@@ -362,7 +362,7 @@ bot.command("reportstatus", verifyUserMiddleware, async (ctx) => {
         }[report.status] || '📄';
 
         let message = `📄 *Report #${report.id} Details*\n` +
-                      `━━━━━━━━━━━━━━━━━━━\n\n` +
+                      `━━━━━━━━━━━━━━━━━━━\n` +
                       `*Title:* ${escapeMarkdown(report.title)}\n` +
                       `*Category:* ${escapeMarkdown(report.category as string)}\n` +
                       `*Date:* ${new Date(report.timestamp || Date.now()).toLocaleDateString()}\n\n` +
