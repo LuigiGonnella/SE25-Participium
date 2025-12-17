@@ -72,9 +72,7 @@ export async function register(
         name,
         surname,
         hashedPassword,
-        receive_emails,
-        profilePicture,
-        telegram_username
+        receive_emails
     );
 
     await createEmailVerification(citizenDAO.username, email);
