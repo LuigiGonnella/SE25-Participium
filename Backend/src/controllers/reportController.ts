@@ -86,18 +86,18 @@ export async function createReport(body: any, citizen: string, photos: Express.M
         throw new BadRequestError("Report location must be within Turin city boundaries");
     }
 
-    return await repo.create(
-        citizenDAO,
+    return await repo.create({
+        citizen: citizenDAO,
         title,
         description,
         category,
-        lat,
-        lon,
-        isAnonymous,
+        latitude: lat,
+        longitude: lon,
+        anonymous: isAnonymous,
         photo1,
         photo2,
         photo3
-    );
+    });
 }
 
 export async function getReports(staffUsername: string, filters?: ReportFilters): Promise<Report[]> {
