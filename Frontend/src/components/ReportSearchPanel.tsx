@@ -92,10 +92,23 @@ export default function ReportSearchPanel({ reports, closeSearchMode, setCenter,
                         placeholder="Search an address in Turin."
                         className="flex-1 py-2 ps-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 border-0 h-100 w-100"
                     />
-                    <i role="button" onClick={searchLocation} className="bi bi bi-search float-end h6 mb-0"></i>
-                    &nbsp;
-                    <i role="button"  onClick={closeSearchModeHandler} className="bi bi-x float-end h3 mb-0"></i>
-                    
+                    <button
+                        type="button"
+                        onClick={searchLocation}
+                        className="p-0 bg-transparent border-0 float-end h6 mb-0"
+                        aria-label="Search"
+                    >
+                        <i className="bi bi-search"></i>
+                    </button>
+                    {' '}
+                    <button
+                        type="button"
+                        onClick={closeSearchModeHandler}
+                        className="p-0 bg-transparent border-0 float-end h3 mb-0"
+                        aria-label="Close search"
+                    >
+                        <i className="bi bi-x"></i>
+                    </button>      
                 </Card.Header >
 
                 <Card.Body className="flex-grow-1 overflow-auto">

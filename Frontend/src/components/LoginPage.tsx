@@ -128,15 +128,13 @@ function LoginForm({handleLogin}: Readonly<LoginFormProps>) {
                                 <p className="text-sm-end text-center text-muted m-0">
                                     Are you a&nbsp;
                                     {type === 'CITIZEN' ? 'staff member' : 'citizen'}?&nbsp;
-                                    <span>
-                                        <a
-                                            role="button"
-                                            onClick={changeType}
-                                            className="text-primary"
-                                        >
-                                            Login&nbsp;here
-                                        </a>
-                                    </span>
+                                    <button
+                                        type="button"
+                                        onClick={changeType}
+                                        className="btn btn-link text-primary p-0 align-baseline"
+                                    >
+                                        Login&nbsp;here
+                                    </button>
                                 </p>
                             </Col>
                         </Row>
@@ -149,13 +147,20 @@ function LoginForm({handleLogin}: Readonly<LoginFormProps>) {
 
 function LogoutButton({logout}: Readonly<LogoutButtonProps>) {
     return (
-        <span role="button" onClick={logout}>
-            <Icon
-                size="sm"
-                color="danger"
-                icon="it-logout"
-            />
-        </span>
+        <button
+            type="button"
+            onClick={logout}
+            className="p-0 border-0"
+            aria-label="Log out"
+            style={{ background: 'none', backgroundColor: 'transparent' }}
+        >
+        <Icon
+            size="sm"
+            color="danger"
+            icon="it-logout"
+            style={{ background: 'none' }}
+        />
+        </button>
     );
 }
 
