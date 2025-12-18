@@ -19,19 +19,19 @@ export default function ReportSearchPanel({ reports, closeSearchMode, setCenter,
     const [selectedLocation, setSelectedLocation] = useState<{lat: number, lon: number, name: string} | null>(null);
 
     const torinoBBox = {
-        minLat: 45.0,
+        minLat: 45,
         maxLat: 45.15,
         minLon: 7.6,
         maxLon: 7.75
     };
 
     const closeSearchModeHandler = () => {
-        if(searchQuery !== "") {
+        if(searchQuery === "") {
+            closeSearchMode();
+        } else {
             setSearchQuery("");
             setSearchResults([]);
             setSelectedLocation(null);
-        } else {
-            closeSearchMode();
         }
     }
     const searchLocation = async () => {
@@ -104,28 +104,37 @@ export default function ReportSearchPanel({ reports, closeSearchMode, setCenter,
                     {!isSearching && searchResults.length > 0 && (
                         <ul className="list-group gap-3">
                             {selectedLocation && sortReportsByDistance(reports, [selectedLocation.lat, selectedLocation.lon]).map((result) => (
-                                <li
-                                    key={result.id}
-                                    className="list-group-item list-group-item-action border-1 rounded-2"
-                                    role="button"
-                                    onClick={() => {
-                                        setCenter([result.coordinates[0], result.coordinates[1]]);
-                                        setZoom(18);
-                                        setSelectedReport(result);
-                                    }}
+                                <li 
+                                    key={result.id} 
+                                    className="list-group-item list-group-item-action border-1 rounded-2 p-0"
                                 >
-                                    {result.title} &nbsp;
-                                    <span className={`badge ${getReportStatusColor(result.status)}`}>
-                                                        {result.status}
-                                    </span>
-                                    <br />
-                                    <small className="text-muted">
-                                        <span>{result.distanceFormatted}</span>&nbsp;•&nbsp;
-                                        {result.category}
+                                    <button
+                                        type="button"
+                                        className="w-100 bg-transparent border-0 text-start p-3"
+                                        onClick={() => {
+                                            setCenter([result.coordinates[0], result.coordinates[1]]);
+                                            setZoom(18);
+                                            setSelectedReport(result);
+                                        }}
+                                    >
+                                        {result.title}{' '}
+                                        <span className={`badge ${getReportStatusColor(result.status)}`}>
+                                            {result.status}
+                                        </span>
                                         <br />
-                                        by {result.citizenUsername ? (result.citizenUsername === user?.username ? <strong>me</strong> : result.citizenUsername) : "Anonymous Citizen"}
-                                    </small>
+                                        <small className="text-muted">
+                                            <span>{result.distanceFormatted}</span>&nbsp;•&nbsp;
+                                            {result.category}
+                                            <br />
+                                            by {result.citizenUsername ? (
+                                                result.citizenUsername === user?.username ? 
+                                                <strong>me</strong> : 
+                                                result.citizenUsername
+                                            ) : "Anonymous Citizen"}
+                                        </small>
+                                    </button>
                                 </li>
+                                
                             ))}
                         </ul>
                     )}
