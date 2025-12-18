@@ -183,7 +183,17 @@ const ReportForm = ({ coordinates, street, toggleReportView }: ReportFormProps) 
     return (
         <Container className="h-100 d-flex flex-column p-0">
             <Card className="h-100 d-flex flex-column">
-                <Card.Header as="h3">Create New Report <i role="button" onClick={toggleReportView} className="bi bi-x float-end"></i></Card.Header>
+                <Card.Header as="h3">
+                Create New Report{' '}
+                    <button
+                        type="button"
+                        onClick={toggleReportView}
+                        className="p-0 bg-transparent border-0 float-end"
+                        aria-label="Close"
+                    >
+                        <i className="bi bi-x"></i>
+                    </button>
+                </Card.Header>
                 <Card.Body className="flex-grow-1 overflow-auto">
                     {error && <Alert variant="danger" dismissible onClose={() => setError('')}>{error}</Alert>}
                     {success && <Alert variant="success" dismissible onClose={() => setSuccess('')}>{success}</Alert>}
