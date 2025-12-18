@@ -52,16 +52,9 @@ export async function register(
     surname: string,
     password: string,
     receive_emails: boolean = false,
-    profilePictureFile?: Express.Multer.File, // uploaded file
-    telegram_username?: string
 ) {
     const citizenRepo = new CitizenRepository();
     const hashedPassword = await bcrypt.hash(password, 10);
-    
-    // image path
-    const profilePicture = profilePictureFile 
-        ? `/uploads/profiles/${profilePictureFile.filename}`
-        : undefined;
 
     // Create citizen WITHOUT email (will be set after verification)
     const citizenDAO = await citizenRepo.createCitizen(
