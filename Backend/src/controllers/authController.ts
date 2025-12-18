@@ -13,8 +13,6 @@ import {BadRequestError} from "@errors/BadRequestError";
 import {PendingVerificationRepository} from "@repositories/pendingVerificationRepository";
 import {Citizen} from "@dto/Citizen";
 import { sendVerificationEmail } from "@services/emailService";
-import { CitizenDAO } from "@models/dao/citizenDAO";
-import { create } from "domain";
 
 // storage configuration
 const storage = multer.diskStorage({
