@@ -80,6 +80,19 @@ export default function ReportSearchPanel({ reports, closeSearchMode, setCenter,
         }
     };  
     
+    const getUsername = (report: Report): React.ReactNode => {
+        if (!report.citizenUsername) {
+            return <strong>Anonymous Citizen</strong>;
+        }
+        
+        if (user && user.username === report.citizenUsername) {
+            return <strong>me</strong>;
+        }
+
+        return report.citizenUsername;
+    };
+
+
     return(
         <Container className="h-100 d-flex flex-column p-0">
             <Card className="h-100 d-flex flex-column">
@@ -139,11 +152,7 @@ export default function ReportSearchPanel({ reports, closeSearchMode, setCenter,
                                             <span>{result.distanceFormatted}</span>&nbsp;•&nbsp;
                                             {result.category}
                                             <br />
-                                            by {result.citizenUsername ? (
-                                                result.citizenUsername === user?.username ? 
-                                                <strong>me</strong> : 
-                                                result.citizenUsername
-                                            ) : "Anonymous Citizen"}
+                                            by {getUsername(result)}
                                         </small>
                                     </button>
                                 </li>
