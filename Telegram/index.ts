@@ -420,7 +420,7 @@ bot.command("myreports", verifyUserMiddleware, async (ctx) => {
 
 const escapeMarkdown = (text: string | undefined): string => {
     if (!text) return "";
-    return text.replace(/[_*[\]`]/g, '\\$&');
+    return text.replaceAll(/[_*[\]`]/g, String.raw`\$&`);
 };
 
 bot.command("reportstatus", verifyUserMiddleware, async (ctx) => {
