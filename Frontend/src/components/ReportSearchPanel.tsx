@@ -19,19 +19,19 @@ export default function ReportSearchPanel({ reports, closeSearchMode, setCenter,
     const [selectedLocation, setSelectedLocation] = useState<{lat: number, lon: number, name: string} | null>(null);
 
     const torinoBBox = {
-        minLat: 45.0,
+        minLat: 45,
         maxLat: 45.15,
         minLon: 7.6,
         maxLon: 7.75
     };
 
     const closeSearchModeHandler = () => {
-        if(searchQuery !== "") {
+        if(searchQuery === "") {
+            closeSearchMode();
+        } else {
             setSearchQuery("");
             setSearchResults([]);
             setSelectedLocation(null);
-        } else {
-            closeSearchMode();
         }
     }
     const searchLocation = async () => {
@@ -80,6 +80,19 @@ export default function ReportSearchPanel({ reports, closeSearchMode, setCenter,
         }
     };  
     
+    const getUsername = (report: Report): React.ReactNode => {
+        if (!report.citizenUsername) {
+            return <strong>Anonymous Citizen</strong>;
+        }
+        
+        if (user && user.username === report.citizenUsername) {
+            return <strong>me</strong>;
+        }
+
+        return report.citizenUsername;
+    };
+
+
     return(
         <Container className="h-100 d-flex flex-column p-0">
             <Card className="h-100 d-flex flex-column">
@@ -92,10 +105,23 @@ export default function ReportSearchPanel({ reports, closeSearchMode, setCenter,
                         placeholder="Search an address in Turin."
                         className="flex-1 py-2 ps-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 border-0 h-100 w-100"
                     />
-                    <i role="button" onClick={searchLocation} className="bi bi bi-search float-end h6 mb-0"></i>
-                    &nbsp;
-                    <i role="button"  onClick={closeSearchModeHandler} className="bi bi-x float-end h3 mb-0"></i>
-                    
+                    <button
+                        type="button"
+                        onClick={searchLocation}
+                        className="p-0 bg-transparent border-0 float-end h6 mb-0"
+                        aria-label="Search"
+                    >
+                        <i className="bi bi-search"></i>
+                    </button>
+                    {' '}
+                    <button
+                        type="button"
+                        onClick={closeSearchModeHandler}
+                        className="p-0 bg-transparent border-0 float-end h3 mb-0"
+                        aria-label="Close search"
+                    >
+                        <i className="bi bi-x"></i>
+                    </button>      
                 </Card.Header >
 
                 <Card.Body className="flex-grow-1 overflow-auto">
@@ -104,28 +130,33 @@ export default function ReportSearchPanel({ reports, closeSearchMode, setCenter,
                     {!isSearching && searchResults.length > 0 && (
                         <ul className="list-group gap-3">
                             {selectedLocation && sortReportsByDistance(reports, [selectedLocation.lat, selectedLocation.lon]).map((result) => (
-                                <li
-                                    key={result.id}
-                                    className="list-group-item list-group-item-action border-1 rounded-2"
-                                    role="button"
-                                    onClick={() => {
-                                        setCenter([result.coordinates[0], result.coordinates[1]]);
-                                        setZoom(18);
-                                        setSelectedReport(result);
-                                    }}
+                                <li 
+                                    key={result.id} 
+                                    className="list-group-item list-group-item-action border-1 rounded-2 p-0"
                                 >
-                                    {result.title} &nbsp;
-                                    <span className={`badge ${getReportStatusColor(result.status)}`}>
-                                                        {result.status}
-                                    </span>
-                                    <br />
-                                    <small className="text-muted">
-                                        <span>{result.distanceFormatted}</span>&nbsp;•&nbsp;
-                                        {result.category}
+                                    <button
+                                        type="button"
+                                        className="w-100 bg-transparent border-0 text-start p-3"
+                                        onClick={() => {
+                                            setCenter([result.coordinates[0], result.coordinates[1]]);
+                                            setZoom(18);
+                                            setSelectedReport(result);
+                                        }}
+                                    >
+                                        {result.title}{' '}
+                                        <span className={`badge ${getReportStatusColor(result.status)}`}>
+                                            {result.status}
+                                        </span>
                                         <br />
-                                        by {result.citizenUsername ? (result.citizenUsername === user?.username ? <strong>me</strong> : result.citizenUsername) : "Anonymous Citizen"}
-                                    </small>
+                                        <small className="text-muted">
+                                            <span>{result.distanceFormatted}</span>&nbsp;•&nbsp;
+                                            {result.category}
+                                            <br />
+                                            by {getUsername(result)}
+                                        </small>
+                                    </button>
                                 </li>
+                                
                             ))}
                         </ul>
                     )}

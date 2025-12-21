@@ -61,7 +61,15 @@ export default function ReportDetailsPanel({ report, onClose }: Readonly<ReportD
             <Card className="h-100 d-flex flex-column">
 
                 <Card.Header as="h3">
-                    Report Details<i role="button" onClick={onClose} className="bi bi-x float-end"></i>
+                    Report Details{' '}
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="p-0 bg-transparent border-0 float-end"
+                        aria-label="Close"
+                    >
+                    <i className="bi bi-x"></i>
+                    </button>
                 </Card.Header>
 
                 <Card.Body className="flex-grow-1 overflow-auto">
