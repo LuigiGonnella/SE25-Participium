@@ -33,29 +33,31 @@ export class ReportRepository {
         this.messageRepo = AppDataSource.getRepository(MessageDAO);
     }
 
-    async create(
-        citizen: CitizenDAO,
-        title: string,
-        description: string,
-        category: OfficeCategory,
-        latitude: number,
-        longitude: number,
-        anonymous: boolean,
-        photo1: string,
-        photo2?: string,
-        photo3?: string
-    ): Promise<ReportDAO> {
+    async create(params: {
+        citizen: CitizenDAO;
+        title: string;
+        description: string;
+        category: OfficeCategory;
+        latitude: number;
+        longitude: number;
+        anonymous: boolean;
+        photo1: string;
+        photo2?: string;
+        photo3?: string;
+    }): Promise<ReportDAO> {
+        const { citizen, title, description, category, latitude, longitude, anonymous, photo1, photo2, photo3 } = params;
+        
         return this.repo.save({
-            citizen: citizen,
-            title: title,
-            description: description,
-            category: category,
-            latitude: latitude,
-            longitude: longitude,
-            anonymous: anonymous,
-            photo1: photo1,
-            photo2: photo2,
-            photo3: photo3
+            citizen,
+            title,
+            description,
+            category,
+            latitude,
+            longitude,
+            anonymous,
+            photo1,
+            photo2,
+            photo3
         });
     }
 
