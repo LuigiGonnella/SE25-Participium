@@ -36,7 +36,7 @@ const buildReportFilters = (query: any): ReportFilters => {
     }
 
     if (title && typeof title === 'string') {
-        filters.title = title.trim().replace(/_/g, ' ');
+        filters.title = title.trim().replaceAll('_', ' ');
     }
 
     if (staff_username && typeof staff_username === 'string') {
