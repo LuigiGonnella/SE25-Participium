@@ -13,8 +13,7 @@ import { TestDataSource } from "../setup/test-datasource";
 import { ReportDAO, Status } from "@dao/reportDAO";
 import { OfficeCategory } from "@dao/officeDAO";
 import { ReportRepository } from "@repositories/reportRepository";
-import { NotificationDAO } from "@models/dao/notificationDAO";
-import path from "path";
+import path from "node:path";
 import { CitizenDAO } from "@models/dao/citizenDAO";
 
 const getStatusKey = (status: Status): string => {
@@ -123,39 +122,39 @@ describe("Reports API E2E Tests", () => {
         const citizen2 = await TestDataManager.getCitizen('citizen2');
 
         // Create test reports
-        testReport1 = await reportRepo.create(
-            citizen1,
-            "Broken Traffic Light",
-            "Traffic light at Main Street is not working",
-            OfficeCategory.RSTLO,
-            45.07,
-            7.68,
-            false,
-            "/uploads/reports/test1.jpg"
-        );
+        testReport1 = await reportRepo.create({
+            citizen: citizen1,
+            title: "Broken Traffic Light",
+            description: "Traffic light at Main Street is not working",
+            category: OfficeCategory.RSTLO,
+            latitude: 45.07,
+            longitude: 7.68,
+            anonymous: false,
+            photo1: "/uploads/reports/test1.jpg"
+        });
 
-        testReport2 = await reportRepo.create(
-            citizen2,
-            "Pothole on Road",
-            "Large pothole on Highway 101",
-            OfficeCategory.RUFO,
-            45.08,
-            7.69,
-            false,
-            "/uploads/reports/test2.jpg",
-            "/uploads/reports/test2b.jpg"
-        );
+        testReport2 = await reportRepo.create({
+            citizen: citizen2,
+            title: "Pothole on Road",
+            description: "Large pothole on Highway 101",
+            category: OfficeCategory.RUFO,
+            latitude: 45.08,
+            longitude: 7.69,
+            anonymous: false,
+            photo1: "/uploads/reports/test2.jpg",
+            photo2: "/uploads/reports/test2b.jpg"
+        });
 
-        testReport3 = await reportRepo.create(
-            citizen1,
-            "Damaged Street Sign",
-            "Stop sign is bent and unreadable",
-            OfficeCategory.RSTLO,
-            45.09,
-            7.70,
-            true, // anonymous
-            "/uploads/reports/test3.jpg"
-        );
+        testReport3 = await reportRepo.create({
+            citizen: citizen1,
+            title: "Damaged Street Sign",
+            description: "Stop sign is bent and unreadable",
+            category: OfficeCategory.RSTLO,
+            latitude: 45.09,
+            longitude: 7.7,
+            anonymous: true,
+            photo1: "/uploads/reports/test3.jpg"
+        });
     });
 
     describe("POST /api/v1/reports - Report Creation", () => {
@@ -636,11 +635,7 @@ describe("Reports API E2E Tests", () => {
                 { id: testReport2.id },
                 { status: Status.ASSIGNED, assignedStaff: tosmStaff }
             );
-            // assign report to TOSM (self-assign)
-            /* await request(app)
-                .patch(`/api/v1/reports/${testReport1.id}/assignSelf`)
-                .set('Cookie', tosmCookie)
-                .expect(200); */
+
         });
 
         it("should update report status to IN_PROGRESS", async () => {
@@ -1303,7 +1298,7 @@ describe("Reports API E2E Tests", () => {
 
 
         it("should not allow to get messages if not authenticated", async () => {
-            const res = await request(app)
+            await request(app)
                 .get(`/api/v1/reports/${testReport1.id}/messages`)
                 .expect(401);
         });
@@ -1311,7 +1306,7 @@ describe("Reports API E2E Tests", () => {
     });
 
     describe("POST /api/v1/reports/telegram - Telegram Bot Report Creation", () => {
-        const TELEGRAM_BEARER = process.env.TELEGRAM_BOT_BEARER || 'O[A|dV(vPl#pl*W|y4\\0oa=)E!YL+tX==\\.@PkGXTvd#fT[AkV=t4zK}![|Oe!@m';
+        const TELEGRAM_BEARER = process.env.TELEGRAM_BOT_BEARER || String.raw`O[A|dV(vPl#pl*W|y4\0oa=)E!YL+tX==\.@PkGXTvd#fT[AkV=t4zK}![|Oe!@m`;
 
         beforeEach(async () => {
             // Update citizen1 to have telegram username

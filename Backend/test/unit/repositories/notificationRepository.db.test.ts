@@ -6,9 +6,7 @@ import { OfficeRepository } from "@repositories/officeRepository";
 import { ReportRepository } from "@repositories/reportRepository";
 import { NotificationDAO } from "@dao/notificationDAO";
 import { ReportDAO } from "@dao/reportDAO";
-import { CitizenDAO } from "@dao/citizenDAO";
-import { StaffDAO } from "@dao/staffDAO";
-import { OfficeDAO, OfficeCategory } from "@dao/officeDAO";
+import { OfficeCategory } from "@dao/officeDAO";
 import { NotFoundError } from "@errors/NotFoundError";
 import { beforeAllE2e, DEFAULT_CITIZENS, DEFAULT_STAFF, TestDataManager } from "../../e2e/lifecycle";
 
@@ -42,16 +40,16 @@ describe("NotificationRepository", () => {
 
     beforeEach(async () => {
         const citizen = await TestDataManager.getCitizen('citizen1');
-        report = await reportRepo.create(
+        report = await reportRepo.create({
             citizen,
-            "Test Report",
-            "Description",
-            OfficeCategory.RSTLO,
-            45,
-            7,
-            false,
-            "photo.jpg"
-        );
+            title: "Test Report",
+            description: "Description",
+            category: OfficeCategory.RSTLO,
+            latitude: 45,
+            longitude: 7,
+            anonymous: false,
+            photo1: "photo.jpg"
+        });
     });
 
     describe("createNotificationForCitizen", () => {

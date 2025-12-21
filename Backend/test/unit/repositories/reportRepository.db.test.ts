@@ -5,14 +5,14 @@ import { OfficeRepository } from "@repositories/officeRepository";
 import { ReportDAO, Status } from "@dao/reportDAO";
 import { CitizenDAO } from "@dao/citizenDAO";
 import { StaffDAO } from "@dao/staffDAO";
-import { OfficeDAO, OfficeCategory } from "@dao/officeDAO";
+import { OfficeCategory } from "@dao/officeDAO";
 import { NotFoundError } from "@errors/NotFoundError";
 import { BadRequestError } from "@errors/BadRequestError";
 import { initializeTestDataSource, closeTestDataSource, TestDataSource } from "../../setup/test-datasource";
 import { NotificationRepository } from "@repositories/notificationRepository";
 import { NotificationDAO } from "@models/dao/notificationDAO";
 import { MessageDAO } from "@models/dao/messageDAO";
-import { beforeAllE2e, DEFAULT_CITIZENS, DEFAULT_STAFF, TestDataManager } from "../../e2e/lifecycle";
+import { beforeAllE2e, DEFAULT_CITIZENS, TestDataManager } from "../../e2e/lifecycle";
 
 let citizenRepo: CitizenRepository;
 let reportRepo: ReportRepository;
@@ -45,16 +45,16 @@ describe("ReportRepository - test suite", () => {
     it("creates a new report successfully with default citizen", async () => {
         const citizen = await TestDataManager.getCitizen('citizen1');
 
-        await reportRepo.create(
+        await reportRepo.create({
             citizen,
-            "Broken light",
-            "Streetlight not working",
-            OfficeCategory.RSTLO,
-            45.07,
-            7.68,
-            false,
-            "/uploads/reports/1.jpg"
-        );
+            title: "Broken light",
+            description: "Streetlight not working",
+            category: OfficeCategory.RSTLO,
+            latitude: 45.07,
+            longitude: 7.68,
+            anonymous: false,
+            photo1: "/uploads/reports/1.jpg"
+        });
 
         const saved = await TestDataSource
             .getRepository(ReportDAO)
@@ -68,18 +68,18 @@ describe("ReportRepository - test suite", () => {
     it("stores photo2 and photo3 when provided", async () => {
         const citizen = await TestDataManager.getCitizen('citizen2');
 
-        await reportRepo.create(
+        await reportRepo.create({
             citizen,
-            "Garbage issue",
-            "Overflowing trash bin",
-            OfficeCategory.WO,
-            45.1,
-            7.6,
-            true,
-            "/img1.jpg",
-            "/img2.jpg",
-            "/img3.jpg"
-        );
+            title: "Garbage issue",
+            description: "Overflowing trash bin",
+            category: OfficeCategory.WO,
+            latitude: 45.1,
+            longitude: 7.6,
+            anonymous: true,
+            photo1: "/img1.jpg",
+            photo2: "/img2.jpg",
+            photo3: "/img3.jpg"
+        });
 
         const saved = await TestDataSource
             .getRepository(ReportDAO)
@@ -93,16 +93,16 @@ describe("ReportRepository - test suite", () => {
     it("sets photo2 and photo3 to null when not provided", async () => {
         const citizen = await TestDataManager.getCitizen('citizen3');
 
-        await reportRepo.create(
+        await reportRepo.create({
             citizen,
-            "Single photo report",
-            "Testing single photo",
-            OfficeCategory.PLO,
-            45.0,
-            7.5,
-            false,
-            "/single.jpg"
-        );
+            title: "Single photo report",
+            description: "Testing single photo",
+            category: OfficeCategory.PLO,
+            latitude: 45,
+            longitude: 7.5,
+            anonymous: false,
+            photo1: "/single.jpg"
+        });
 
         const saved = await TestDataSource
             .getRepository(ReportDAO)
@@ -117,27 +117,27 @@ describe("ReportRepository - test suite", () => {
         const citizen = await TestDataManager.getCitizen('citizen1');
         const staff = await TestDataManager.getStaff('mpro');
 
-        await reportRepo.create(
+        await reportRepo.create({
             citizen,
-            "Report 1",
-            "First report",
-            OfficeCategory.RSTLO,
-            45.0,
-            7.0,
-            false,
-            "/r1.jpg"
-        );
+            title: "Report 1",
+            description: "First report",
+            category: OfficeCategory.RSTLO,
+            latitude: 45,
+            longitude: 7,
+            anonymous: false,
+            photo1: "/r1.jpg"
+        });
 
-        await reportRepo.create(
+        await reportRepo.create({
             citizen,
-            "Report 2",
-            "Second report",
-            OfficeCategory.WSO,
-            45.1,
-            7.1,
-            false,
-            "/r2.jpg"
-        );
+            title: "Report 2",
+            description: "Second report",
+            category: OfficeCategory.WSO,
+            latitude: 45.1,
+            longitude: 7.1,
+            anonymous: false,
+            photo1: "/r2.jpg"
+        });
 
         const reports = await reportRepo.getReports(staff);
         expect(reports.length).toBe(2);
@@ -146,16 +146,16 @@ describe("ReportRepository - test suite", () => {
     it("gets report by id", async () => {
         const citizen = await TestDataManager.getCitizen('citizen1');
 
-        const created = await reportRepo.create(
+        const created = await reportRepo.create({
             citizen,
-            "Find by ID",
-            "Description",
-            OfficeCategory.RSTLO,
-            45.0,
-            7.0,
-            false,
-            "/img.jpg"
-        );
+            title: "Find by ID",
+            description: "Description",
+            category: OfficeCategory.RSTLO,
+            latitude: 45,
+            longitude: 7,
+            anonymous: false,
+            photo1: "/img.jpg"
+        });
 
         const found = await reportRepo.getReportById(created.id);
         expect(found).toBeDefined();
@@ -170,27 +170,27 @@ describe("ReportRepository - test suite", () => {
         const citizen = await TestDataManager.getCitizen('citizen2');
         const staff = await TestDataManager.getStaff('mpro');
 
-        await reportRepo.create(
+        await reportRepo.create({
             citizen,
-            "Citizen Report 1",
-            "First",
-            OfficeCategory.RSTLO,
-            45.0,
-            7.0,
-            false,
-            "/c1.jpg"
-        );
+            title: "Citizen Report 1",
+            description: "First",
+            category: OfficeCategory.RSTLO,
+            latitude: 45,
+            longitude: 7,
+            anonymous: false,
+            photo1: "/c1.jpg"
+        });
 
-        await reportRepo.create(
+        await reportRepo.create({
             citizen,
-            "Citizen Report 2",
-            "Second",
-            OfficeCategory.WSO,
-            45.1,
-            7.1,
-            false,
-            "/c2.jpg"
-        );
+            title: "Citizen Report 2",
+            description: "Second",
+            category: OfficeCategory.WSO,
+            latitude: 45.1,
+            longitude: 7.1,
+            anonymous: false,
+            photo1: "/c2.jpg"
+        });
 
         const reports = await reportRepo.getReports(staff, { citizen_username: DEFAULT_CITIZENS.citizen2.username });
         expect(reports.length).toBe(2);
@@ -200,27 +200,27 @@ describe("ReportRepository - test suite", () => {
         const citizen = await TestDataManager.getCitizen('citizen1');
         const staff = await TestDataManager.getStaff('mpro');
 
-        const report1 = await reportRepo.create(
+        await reportRepo.create({
             citizen,
-            "Pending Report",
-            "Description",
-            OfficeCategory.RSTLO,
-            45.0,
-            7.0,
-            false,
-            "/img.jpg"
-        );
+            title: "Pending Report",
+            description: "Description",
+            category: OfficeCategory.RSTLO,
+            latitude: 45,
+            longitude: 7,
+            anonymous: false,
+            photo1: "/img.jpg"
+        });
 
-        const report2 = await reportRepo.create(
+        const report2 = await reportRepo.create({
             citizen,
-            "Assigned Report",
-            "Description",
-            OfficeCategory.RSTLO,
-            45.0,
-            7.0,
-            false,
-            "/img.jpg"
-        );
+            title: "Assigned Report",
+            description: "Description",
+            category: OfficeCategory.RSTLO,
+            latitude: 45,
+            longitude: 7,
+            anonymous: false,
+            photo1: "/img.jpg"
+        });
 
         // Update report2 status to ASSIGNED
         await TestDataSource.getRepository(ReportDAO).update(
@@ -239,27 +239,27 @@ describe("ReportRepository - test suite", () => {
         const citizen = await TestDataManager.getCitizen('citizen1');
         const staff = await TestDataManager.getStaff('mpro');
 
-        await reportRepo.create(
+        await reportRepo.create({
             citizen,
-            "RSTLO Report",
-            "Description",
-            OfficeCategory.RSTLO,
-            45.0,
-            7.0,
-            false,
-            "/img.jpg"
-        );
+            title: "RSTLO Report",
+            description: "Description",
+            category: OfficeCategory.RSTLO,
+            latitude: 45,
+            longitude: 7,
+            anonymous: false,
+            photo1: "/img.jpg"
+        });
 
-        await reportRepo.create(
+        await reportRepo.create({
             citizen,
-            "WSO Report",
-            "Description",
-            OfficeCategory.WSO,
-            45.0,
-            7.0,
-            false,
-            "/img.jpg"
-        );
+            title: "WSO Report",
+            description: "Description",
+            category: OfficeCategory.WSO,
+            latitude: 45,
+            longitude: 7,
+            anonymous: false,
+            photo1: "/img.jpg"
+        });
 
         const filters = { category: OfficeCategory.WSO };
         const filtered = await reportRepo.getReports(staff, filters);
@@ -273,27 +273,27 @@ describe("ReportRepository - test suite", () => {
         const citizen2 = await TestDataManager.getCitizen('citizen2');
         const staff = await TestDataManager.getStaff('mpro');
 
-        await reportRepo.create(
-            citizen1,
-            "Citizen1 Report",
-            "Description",
-            OfficeCategory.RSTLO,
-            45.0,
-            7.0,
-            false,
-            "/img.jpg"
-        );
+        await reportRepo.create({
+            citizen: citizen1,
+            title: "Citizen1 Report",
+            description: "Description",
+            category: OfficeCategory.RSTLO,
+            latitude: 45,
+            longitude: 7,
+            anonymous: false,
+            photo1: "/img.jpg"
+        });
 
-        await reportRepo.create(
-            citizen2,
-            "Citizen2 Report",
-            "Description",
-            OfficeCategory.WSO,
-            45.0,
-            7.0,
-            false,
-            "/img.jpg"
-        );
+        await reportRepo.create({
+            citizen: citizen2,
+            title: "Citizen2 Report",
+            description: "Description",
+            category: OfficeCategory.WSO,
+            latitude: 45,
+            longitude: 7,
+            anonymous: false,
+            photo1: "/img.jpg"
+        });
 
         const filters = { citizen_username: DEFAULT_CITIZENS.citizen1.username };
         const filtered = await reportRepo.getReports(staff, filters);
@@ -306,27 +306,27 @@ describe("ReportRepository - test suite", () => {
         const citizen = await TestDataManager.getCitizen('citizen1');
         const staff = await TestDataManager.getStaff('mpro');
 
-        await reportRepo.create(
+        await reportRepo.create({
             citizen,
-            "Broken Light",
-            "Description",
-            OfficeCategory.RSTLO,
-            45.0,
-            7.0,
-            false,
-            "/img.jpg"
-        );
+            title: "Broken Light",
+            description: "Description",
+            category: OfficeCategory.RSTLO,
+            latitude: 45,
+            longitude: 7,
+            anonymous: false,
+            photo1: "/img.jpg"
+        });
 
-        await reportRepo.create(
+        await reportRepo.create({
             citizen,
-            "Water Leak",
-            "Description",
-            OfficeCategory.WSO,
-            45.0,
-            7.0,
-            false,
-            "/img.jpg"
-        );
+            title: "Water Leak",
+            description: "Description",
+            category: OfficeCategory.WSO,
+            latitude: 45,
+            longitude: 7,
+            anonymous: false,
+            photo1: "/img.jpg"
+        });
 
         const filters = { title: "Broken Light" };
         const filtered = await reportRepo.getReports(staff, filters);
@@ -338,34 +338,33 @@ describe("ReportRepository - test suite", () => {
     it("creates anonymous report without citizen reference", async () => {
         const citizen = await TestDataManager.getCitizen('citizen1');
 
-        const report = await reportRepo.create(
+        const report = await reportRepo.create({
             citizen,
-            "Anonymous Report",
-            "Description",
-            OfficeCategory.RSTLO,
-            45.0,
-            7.0,
-            true, // anonymous
-            "/img.jpg"
-        );
+            title: "Anonymous Report",
+            description: "Description",
+            category: OfficeCategory.RSTLO,
+            latitude: 45,
+            longitude: 7,
+            anonymous: true,
+            photo1: "/img.jpg"
+        });
 
         expect(report.anonymous).toBe(true);
     });
 
     it("update a report for the MPRO", async () => {
-        const mpro = await TestDataManager.getStaff('mpro');
         const citizen = await TestDataManager.getCitizen('citizen1');
 
-        const report = await reportRepo.create(
+        const report = await reportRepo.create({
             citizen,
-            "Report to Update",
-            "Description",
-            OfficeCategory.RSTLO,
-            45.0,
-            7.0,
-            false,
-            "/img.jpg"
-        );
+            title: "Report to Update",
+            description: "Description",
+            category: OfficeCategory.RSTLO,
+            latitude: 45,
+            longitude: 7,
+            anonymous: false,
+            photo1: "/img.jpg"
+        });
 
         const updatedReport = await reportRepo.updateReportAsMPRO(report.id, Status.ASSIGNED);
         expect(updatedReport.status).toBe(Status.ASSIGNED);
@@ -373,16 +372,16 @@ describe("ReportRepository - test suite", () => {
 
     it("update the category of a report by MPRO", async () => {
         const citizen = await TestDataManager.getCitizen('citizen1');
-        const report = await reportRepo.create(
+        const report = await reportRepo.create({
             citizen,
-            "Report with Wrong Category",
-            "Description",
-            OfficeCategory.MOO,
-            45.0,
-            7.0,
-            false,
-            "/img.jpg"
-        );
+            title: "Report with Wrong Category",
+            description: "Description",
+            category: OfficeCategory.MOO,
+            latitude: 45,
+            longitude: 7,
+            anonymous: false,
+            photo1: "/img.jpg"
+        });
         const updatedReport = await reportRepo.updateReportAsMPRO(report.id, Status.ASSIGNED, undefined, OfficeCategory.RSTLO);
         expect(updatedReport.category).toBe(OfficeCategory.RSTLO);
     });
@@ -394,18 +393,17 @@ describe("ReportRepository - test suite", () => {
     });
 
     it("sends notification to citizen when report status is updated by MPRO", async () => {
-        const mpro = await TestDataManager.getStaff('mpro');
         const citizen = await TestDataManager.getCitizen('citizen1');
-        const report = await reportRepo.create(
+        const report = await reportRepo.create({
             citizen,
-            "Report for Notification",
-            "Description",
-            OfficeCategory.RSTLO,
-            45.0,
-            7.0,
-            false,
-            "/img.jpg"
-        );  
+            title: "Report for Notification",
+            description: "Description",
+            category: OfficeCategory.RSTLO,
+            latitude: 45,
+            longitude: 7,
+            anonymous: false,
+            photo1: "/img.jpg"
+        });
         await reportRepo.updateReportAsMPRO(report.id, Status.ASSIGNED);
 
         const notifications = await TestDataSource
@@ -418,7 +416,6 @@ describe("ReportRepository - test suite", () => {
     });
 
     it("throw NotFoundError when updating report with invalid id", async () => {
-        const mpro = await TestDataManager.getStaff('mpro');
         await expect(
             reportRepo.updateReportAsMPRO(123456, Status.RESOLVED)
         ).rejects.toThrow(NotFoundError);
@@ -426,16 +423,16 @@ describe("ReportRepository - test suite", () => {
 
     it("throw BadRequestError when updating a non-pending report", async () => {
         const citizen = await TestDataManager.getCitizen('citizen1');
-        const report = await reportRepo.create(
+        const report = await reportRepo.create({
             citizen,
-            "Non-pending Report",
-            "Description",
-            OfficeCategory.RSTLO,
-            45.0,
-            7.0,
-            false,
-            "/img.jpg"
-        );
+            title: "Non-pending Report",
+            description: "Description",
+            category: OfficeCategory.RSTLO,
+            latitude: 45,
+            longitude: 7,
+            anonymous: false,
+            photo1: "/img.jpg"
+        });
         await reportRepo.updateReportAsMPRO(report.id, Status.ASSIGNED);
 
         await expect(
@@ -445,16 +442,16 @@ describe("ReportRepository - test suite", () => {
 
     it("update report status to REJECTED with comment by MPRO", async () => {
         const citizen = await TestDataManager.getCitizen('citizen1');
-        const report = await reportRepo.create(
+        const report = await reportRepo.create({
             citizen,
-            "Report to Reject",
-            "Description",
-            OfficeCategory.RSTLO,
-            45.0,
-            7.0,
-            false,
-            "/img.jpg"
-        );
+            title: "Report to Reject",
+            description: "Description",
+            category: OfficeCategory.RSTLO,
+            latitude: 45,
+            longitude: 7,
+            anonymous: false,
+            photo1: "/img.jpg"
+        });
         
         const updatedReport = await reportRepo.updateReportAsMPRO(report.id, Status.REJECTED, "Does not meet requirements");
         expect(updatedReport.status).toBe(Status.REJECTED);
@@ -463,16 +460,16 @@ describe("ReportRepository - test suite", () => {
 
     it("send notification to citizen when MPRO rejects report", async () => {
         const citizen = await TestDataManager.getCitizen('citizen1');
-        const report = await reportRepo.create(
+        const report = await reportRepo.create({
             citizen,
-            "Report to Reject with Notification",
-            "Description",
-            OfficeCategory.RSTLO,
-            45.0,
-            7.0,
-            false,
-            "/img.jpg"
-        );
+            title: "Report to Reject with Notification",
+            description: "Description",
+            category: OfficeCategory.RSTLO,
+            latitude: 45,
+            longitude: 7,
+            anonymous: false,
+            photo1: "/img.jpg"
+        });
         await reportRepo.updateReportAsMPRO(report.id, Status.REJECTED, "Invalid submission");
         
         const notifications = await TestDataSource
@@ -487,16 +484,16 @@ describe("ReportRepository - test suite", () => {
 
     it("update report status and category by MPRO", async () => {
         const citizen = await TestDataManager.getCitizen('citizen1');
-        const report = await reportRepo.create(
+        const report = await reportRepo.create({
             citizen,
-            "Report with Wrong Category",
-            "Description",
-            OfficeCategory.MOO,
-            45.0,
-            7.0,
-            false,
-            "/img.jpg"
-        );
+            title: "Report with Wrong Category",
+            description: "Description",
+            category: OfficeCategory.MOO,
+            latitude: 45,
+            longitude: 7,
+            anonymous: false,
+            photo1: "/img.jpg"
+        });
         
         const updatedReport = await reportRepo.updateReportAsMPRO(report.id, Status.ASSIGNED, undefined, OfficeCategory.RSTLO);
         expect(updatedReport.status).toBe(Status.ASSIGNED);
@@ -505,16 +502,16 @@ describe("ReportRepository - test suite", () => {
 
     it("throws BadRequestError when MPRO assigns MOO report without changing category", async () => {
         const citizen = await TestDataManager.getCitizen('citizen1');
-        const report = await reportRepo.create(
+        const report = await reportRepo.create({
             citizen,
-            "MOO Report",
-            "Description",
-            OfficeCategory.MOO,
-            45.0,
-            7.0,
-            false,
-            "/img.jpg"
-        );
+            title: "MOO Report",
+            description: "Description",
+            category: OfficeCategory.MOO,
+            latitude: 45,
+            longitude: 7,
+            anonymous: false,
+            photo1: "/img.jpg"
+        });
         
         await expect(
             reportRepo.updateReportAsMPRO(report.id, Status.ASSIGNED)
@@ -524,16 +521,16 @@ describe("ReportRepository - test suite", () => {
     it("self-assign a report for the TOSM", async () => {
         const tosm = await TestDataManager.getStaff('tosm_RSTLO');
         const citizen = await TestDataManager.getCitizen('citizen1');
-        const report = await reportRepo.create(
+        const report = await reportRepo.create({
             citizen,
-            "Report to Update by TOSM",
-            "Description",
-            OfficeCategory.RSTLO,
-            45.0,
-            7.0,
-            false,
-            "/img.jpg"
-        );
+            title: "Report to Update by TOSM",
+            description: "Description",
+            category: OfficeCategory.RSTLO,
+            latitude: 45,
+            longitude: 7,
+            anonymous: false,
+            photo1: "/img.jpg"
+        });
         // First, MPRO assigns the report
         await reportRepo.updateReportAsMPRO(report.id, Status.ASSIGNED);
         const updatedReport = await reportRepo.selfAssignReport(report.id, tosm.username);
@@ -550,16 +547,16 @@ describe("ReportRepository - test suite", () => {
     it("throws BadRequestError when TOSM tries to self-assign a report of different category", async () => {
         const tosm = await TestDataManager.getStaff('tosm_WSO');
         const citizen = await TestDataManager.getCitizen('citizen1');
-        const report = await reportRepo.create(
+        const report = await reportRepo.create({
             citizen,
-            "Report of different category",
-            "Description",
-            OfficeCategory.RSTLO,
-            45.0,
-            7.0,
-            false,
-            "/img.jpg"
-        );  
+            title: "Report of different category",
+            description: "Description",
+            category: OfficeCategory.RSTLO,
+            latitude: 45,
+            longitude: 7,
+            anonymous: false,
+            photo1: "/img.jpg"
+        });
         // First, MPRO assigns the report
         await reportRepo.updateReportAsMPRO(report.id, Status.ASSIGNED);
         await expect(
@@ -570,16 +567,16 @@ describe("ReportRepository - test suite", () => {
     it("throws BadRequestError when TOSM tries to self-assign a non-assigned report", async () => {
         const tosm = await TestDataManager.getStaff('tosm_RSTLO');
         const citizen = await TestDataManager.getCitizen('citizen1');
-        const report = await reportRepo.create(
-            citizen,    
-            "Non-assigned Report",
-            "Description",
-            OfficeCategory.RSTLO,   
-            45.0,
-            7.0,
-            false,  
-            "/img.jpg"
-        );  
+        const report = await reportRepo.create({
+            citizen,
+            title: "Non-assigned Report",
+            description: "Description",
+            category: OfficeCategory.RSTLO,
+            latitude: 45,
+            longitude: 7,
+            anonymous: false,
+            photo1: "/img.jpg"
+        });
         await expect( 
             reportRepo.selfAssignReport(report.id, tosm.username)
         ).rejects.toThrow(BadRequestError);
@@ -588,16 +585,16 @@ describe("ReportRepository - test suite", () => {
     it("throws BadRequestError when TOSM tries to self-assign an already assigned report", async () => {
         const tosm = await TestDataManager.getStaff('tosm_RSTLO');
         const citizen = await TestDataManager.getCitizen('citizen1');   
-        const report = await reportRepo.create(
-            citizen,    
-            "Already Assigned Report",
-            "Description",
-            OfficeCategory.RSTLO,   
-            45.0,
-            7.0,
-            false,  
-            "/img.jpg"
-        );
+        const report = await reportRepo.create({
+            citizen,
+            title: "Already Assigned Report",
+            description: "Description",
+            category: OfficeCategory.RSTLO,
+            latitude: 45,
+            longitude: 7,
+            anonymous: false,
+            photo1: "/img.jpg"
+        });
         // First, MPRO assigns the report
         await reportRepo.updateReportAsMPRO(report.id, Status.ASSIGNED);
         // Then, TOSM self-assigns the report
@@ -610,16 +607,16 @@ describe("ReportRepository - test suite", () => {
     it("update report for TOSM to RESOLVED", async () => {
         const tosm = await TestDataManager.getStaff('tosm_RSTLO');
         const citizen = await TestDataManager.getCitizen('citizen1');
-        const report = await reportRepo.create(
+        const report = await reportRepo.create({
             citizen,
-            "Report to Update Status by TOSM",
-            "Description",
-            OfficeCategory.RSTLO,
-            45.0,
-            7.0,
-            false,
-            "/img.jpg"
-        );
+            title: "Report to Update Status by TOSM",
+            description: "Description",
+            category: OfficeCategory.RSTLO,
+            latitude: 45,
+            longitude: 7,
+            anonymous: false,
+            photo1: "/img.jpg"
+        });
         // First, MPRO assigns the report   
         await reportRepo.updateReportAsMPRO(report.id, Status.ASSIGNED);
         // Then, TOSM self-assigns the report
@@ -638,16 +635,16 @@ describe("ReportRepository - test suite", () => {
     it("throws BadRequestError when TOSM tries to update a report of different category", async () => {     
         const tosm = await TestDataManager.getStaff('tosm_WSO');
         const citizen = await TestDataManager.getCitizen('citizen1');
-        const report = await reportRepo.create( 
+        const report = await reportRepo.create({
             citizen,
-            "Report of different category to update",
-            "Description",
-            OfficeCategory.RSTLO,
-            45.0,
-            7.0,
-            false,
-            "/img.jpg"
-        );
+            title: "Report of different category to update",
+            description: "Description",
+            category: OfficeCategory.RSTLO,
+            latitude: 45,
+            longitude: 7,
+            anonymous: false,
+            photo1: "/img.jpg"
+        });
         // First, MPRO assigns the report
         await reportRepo.updateReportAsMPRO(report.id, Status.ASSIGNED);
         // Then, TOSM tries to update the report
@@ -659,16 +656,16 @@ describe("ReportRepository - test suite", () => {
     it("send notification to citizen when TOSM updates report status to RESOLVED", async () => {
         const tosm = await TestDataManager.getStaff('tosm_RSTLO');
         const citizen = await TestDataManager.getCitizen('citizen1');
-        const report = await reportRepo.create(
+        const report = await reportRepo.create({
             citizen,
-            "Report for TOSM Notification",
-            "Description",
-            OfficeCategory.RSTLO,
-            45.0,
-            7.0,
-            false,
-            "/img.jpg"
-        );
+            title: "Report for TOSM Notification",
+            description: "Description",
+            category: OfficeCategory.RSTLO,
+            latitude: 45,
+            longitude: 7,
+            anonymous: false,
+            photo1: "/img.jpg"
+        });
         // First, MPRO assigns the report
         await reportRepo.updateReportAsMPRO(report.id, Status.ASSIGNED);
         // Then, TOSM self-assigns the report
@@ -686,16 +683,16 @@ describe("ReportRepository - test suite", () => {
     it("update status for TOSM to SUSPENDED", async () => {
         const tosm = await TestDataManager.getStaff('tosm_RSTLO');
         const citizen = await TestDataManager.getCitizen('citizen1');
-        const report = await reportRepo.create(
+        const report = await reportRepo.create({
             citizen,
-            "Report to Suspend by TOSM",
-            "Description",
-            OfficeCategory.RSTLO,
-            45.0,
-            7.0,
-            false,
-            "/img.jpg"
-        );
+            title: "Report to Suspend by TOSM",
+            description: "Description",
+            category: OfficeCategory.RSTLO,
+            latitude: 45,
+            longitude: 7,
+            anonymous: false,
+            photo1: "/img.jpg"
+        });
         // First, MPRO assigns the report
         await reportRepo.updateReportAsMPRO(report.id, Status.ASSIGNED);
         // Then, TOSM self-assigns the report
@@ -707,16 +704,16 @@ describe("ReportRepository - test suite", () => {
     it("send notification to citizen when TOSM updates report status to SUSPENDED", async () => {
         const tosm = await TestDataManager.getStaff('tosm_RSTLO');
         const citizen = await TestDataManager.getCitizen('citizen1');
-        const report = await reportRepo.create(
+        const report = await reportRepo.create({
             citizen,
-            "Report for TOSM Suspension Notification",
-            "Description",
-            OfficeCategory.RSTLO,
-            45.0,
-            7.0,
-            false,
-            "/img.jpg"
-        );
+            title: "Report for TOSM Suspension Notification",
+            description: "Description",
+            category: OfficeCategory.RSTLO,
+            latitude: 45,
+            longitude: 7,
+            anonymous: false,
+            photo1: "/img.jpg"
+        });
         // First, MPRO assigns the report
         await reportRepo.updateReportAsMPRO(report.id, Status.ASSIGNED);
         // Then, TOSM self-assigns the report
@@ -734,16 +731,16 @@ describe("ReportRepository - test suite", () => {
     it("throw BadRequestError when TOSM tries to update to RESOLVED when the report is SUSPENDED", async () => {
         const tosm = await TestDataManager.getStaff('tosm_RSTLO');
         const citizen = await TestDataManager.getCitizen('citizen1');
-        const report = await reportRepo.create(
+        const report = await reportRepo.create({
             citizen,
-            "Report to Fail Update by TOSM",
-            "Description",
-            OfficeCategory.RSTLO,
-            45.0,
-            7.0,
-            false,
-            "/img.jpg"
-        );
+            title: "Report to Fail Update by TOSM",
+            description: "Description",
+            category: OfficeCategory.RSTLO,
+            latitude: 45,
+            longitude: 7,
+            anonymous: false,
+            photo1: "/img.jpg"
+        });
         // First, MPRO assigns the report
         await reportRepo.updateReportAsMPRO(report.id, Status.ASSIGNED);
         // Then, TOSM self-assigns the report
@@ -757,16 +754,16 @@ describe("ReportRepository - test suite", () => {
     it("update status for TOSM to IN_PROGRESS", async () => {
         const tosm = await TestDataManager.getStaff('tosm_RSTLO');
         const citizen = await TestDataManager.getCitizen('citizen1');
-        const report = await reportRepo.create(
+        const report = await reportRepo.create({
             citizen,
-            "Report to Start by TOSM",
-            "Description",
-            OfficeCategory.RSTLO,
-            45.0,
-            7.0,
-            false,
-            "/img.jpg"
-        );
+            title: "Report to Start by TOSM",
+            description: "Description",
+            category: OfficeCategory.RSTLO,
+            latitude: 45,
+            longitude: 7,
+            anonymous: false,
+            photo1: "/img.jpg"
+        });
         await reportRepo.updateReportAsMPRO(report.id, Status.ASSIGNED);
         await reportRepo.selfAssignReport(report.id, tosm.username);
         
@@ -777,16 +774,16 @@ describe("ReportRepository - test suite", () => {
     it("send notification to citizen when TOSM updates report status to IN_PROGRESS", async () => {
         const tosm = await TestDataManager.getStaff('tosm_RSTLO');
         const citizen = await TestDataManager.getCitizen('citizen1');
-        const report = await reportRepo.create(
+        const report = await reportRepo.create({
             citizen,
-            "Report for TOSM In Progress Notification",
-            "Description",
-            OfficeCategory.RSTLO,
-            45.0,
-            7.0,
-            false,
-            "/img.jpg"
-        );
+            title: "Report for TOSM In Progress Notification",
+            description: "Description",
+            category: OfficeCategory.RSTLO,
+            latitude: 45,
+            longitude: 7,
+            anonymous: false,
+            photo1: "/img.jpg"
+        });
         await reportRepo.updateReportAsMPRO(report.id, Status.ASSIGNED);
         await reportRepo.selfAssignReport(report.id, tosm.username);
         await reportRepo.updateReportAsTOSM(report.id, Status.IN_PROGRESS, tosm.username);
@@ -805,16 +802,16 @@ describe("ReportRepository - test suite", () => {
         const tosm1 = await TestDataManager.getStaff('tosm_RSTLO');
         const tosm2 = await TestDataManager.getStaff('tosm_WSO');
         const citizen = await TestDataManager.getCitizen('citizen1');
-        const report = await reportRepo.create(
+        const report = await reportRepo.create({
             citizen,
-            "Report assigned to another TOSM",
-            "Description",
-            OfficeCategory.WSO,
-            45.0,
-            7.0,
-            false,
-            "/img.jpg"
-        );
+            title: "Report assigned to another TOSM",
+            description: "Description",
+            category: OfficeCategory.WSO,
+            latitude: 45,
+            longitude: 7,
+            anonymous: false,
+            photo1: "/img.jpg"
+        });
         await reportRepo.updateReportAsMPRO(report.id, Status.ASSIGNED);
         await reportRepo.selfAssignReport(report.id, tosm2.username);
         
@@ -827,16 +824,16 @@ describe("ReportRepository - test suite", () => {
         const tosm = await TestDataManager.getStaff('tosm_RSTLO');
         const em = await TestDataManager.getStaff('em_RSTLO');
         const citizen = await TestDataManager.getCitizen('citizen1');
-        const report = await reportRepo.create(
+        const report = await reportRepo.create({
             citizen,
-            "Report assigned to EM",
-            "Description",
-            OfficeCategory.RSTLO,
-            45.0,
-            7.0,
-            false,
-            "/img.jpg"
-        );
+            title: "Report assigned to EM",
+            description: "Description",
+            category: OfficeCategory.RSTLO,
+            latitude: 45,
+            longitude: 7,
+            anonymous: false,
+            photo1: "/img.jpg"
+        });
         await reportRepo.updateReportAsMPRO(report.id, Status.ASSIGNED);
         await reportRepo.selfAssignReport(report.id, tosm.username);
         await reportRepo.assignEMToReport(report.id, em.username, tosm.username);
@@ -861,15 +858,16 @@ describe("ReportRepository - assignEMToReport (Story 24)", () => {
     });
 
     it("assigns EM successfully to a report", async () => {
-        const report = await reportRepo.create(
+        const report = await reportRepo.create({
             citizen,
-            "Test assign EM",
-            "Description",
-            OfficeCategory.RSTLO,
-            45, 7,
-            false,
-            "/img.jpg"
-        );
+            title: "Test assign EM",
+            description: "Description",
+            category: OfficeCategory.RSTLO,
+            latitude: 45,
+            longitude: 7,
+            anonymous: false,
+            photo1: "/img.jpg"
+        });
 
         await reportRepo.updateReportAsMPRO(report.id, Status.ASSIGNED);
         await reportRepo.selfAssignReport(report.id, tosm.username);
@@ -887,15 +885,16 @@ describe("ReportRepository - assignEMToReport (Story 24)", () => {
     });
 
     it("throws BadRequestError if report is not assigned to TOSM", async () => {
-        const report = await reportRepo.create(
+        const report = await reportRepo.create({
             citizen,
-            "Test wrong assign",
-            "Description",
-            OfficeCategory.RSTLO,
-            45, 7,
-            false,
-            "/img.jpg"
-        );
+            title: "Test wrong assign",
+            description: "Description",
+            category: OfficeCategory.RSTLO,
+            latitude: 45,
+            longitude: 7,
+            anonymous: false,
+            photo1: "/img.jpg"
+        });
 
         await reportRepo.updateReportAsMPRO(report.id, Status.ASSIGNED);
 
@@ -906,15 +905,16 @@ describe("ReportRepository - assignEMToReport (Story 24)", () => {
 
     /** FIXED VERSION — CORRECT BEHAVIOR FOR STATUS TEST **/
     it("throws BadRequestError if report status is not ASSIGNED", async () => {
-        const report = await reportRepo.create(
+        const report = await reportRepo.create({
             citizen,
-            "Test wrong status",
-            "Description",
-            OfficeCategory.RSTLO,
-            45, 7,
-            false,
-            "/img.jpg"
-        );
+            title: "Test wrong status",
+            description: "Description",
+            category: OfficeCategory.RSTLO,
+            latitude: 45,
+            longitude: 7,
+            anonymous: false,
+            photo1: "/img.jpg"
+        });
 
         // 🔥 MUST assign staff, otherwise first error triggers
         await TestDataSource.getRepository(ReportDAO).update(
@@ -932,15 +932,16 @@ describe("ReportRepository - assignEMToReport (Story 24)", () => {
     it("throws BadRequestError if EM is not valid for the category", async () => {
         const wrongEM = await TestDataManager.getStaff("em_WSO");
 
-        const report = await reportRepo.create(
+        const report = await reportRepo.create({
             citizen,
-            "Wrong EM test",
-            "Description",
-            OfficeCategory.RSTLO,
-            45, 7,
-            false,
-            "/img.jpg"
-        );
+            title: "Wrong EM test",
+            description: "Description",
+            category: OfficeCategory.RSTLO,
+            latitude: 45,
+            longitude: 7,
+            anonymous: false,
+            photo1: "/img.jpg"
+        });
 
         await reportRepo.updateReportAsMPRO(report.id, Status.ASSIGNED);
         await reportRepo.selfAssignReport(report.id, tosm.username);
@@ -951,15 +952,16 @@ describe("ReportRepository - assignEMToReport (Story 24)", () => {
     });
 
     it("throws BadRequestError if EM already assigned", async () => {
-        const report = await reportRepo.create(
+        const report = await reportRepo.create({
             citizen,
-            "Already EM",
-            "Description",
-            OfficeCategory.RSTLO,
-            45, 7,
-            false,
-            "/img.jpg"
-        );
+            title: "Already EM",
+            description: "Description",
+            category: OfficeCategory.RSTLO,
+            latitude: 45,
+            longitude: 7,
+            anonymous: false,
+            photo1: "/img.jpg"
+        });
 
         await reportRepo.updateReportAsMPRO(report.id, Status.ASSIGNED);
         await reportRepo.selfAssignReport(report.id, tosm.username);
@@ -975,16 +977,16 @@ describe("ReportRepository - assignEMToReport (Story 24)", () => {
         const tosm = await TestDataManager.getStaff('tosm_RSTLO');
         const em = await TestDataManager.getStaff('em_RSTLO');
         const citizen = await TestDataManager.getCitizen('citizen1');
-        const report = await reportRepo.create(
+        const report = await reportRepo.create({
             citizen,
-            "Report to Update by EM",
-            "Description",
-            OfficeCategory.RSTLO,
-            45.0,
-            7.0,
-            false,
-            "/img.jpg"
-        );
+            title: "Report to Update by EM",
+            description: "Description",
+            category: OfficeCategory.RSTLO,
+            latitude: 45,
+            longitude: 7,
+            anonymous: false,
+            photo1: "/img.jpg"
+        });
         await reportRepo.updateReportAsMPRO(report.id, Status.ASSIGNED);
         await reportRepo.selfAssignReport(report.id, tosm.username);
         await reportRepo.assignEMToReport(report.id, em.username, tosm.username);
@@ -997,16 +999,16 @@ describe("ReportRepository - assignEMToReport (Story 24)", () => {
         const tosm = await TestDataManager.getStaff('tosm_RSTLO');
         const em = await TestDataManager.getStaff('em_RSTLO');
         const citizen = await TestDataManager.getCitizen('citizen1');
-        const report = await reportRepo.create(
+        const report = await reportRepo.create({
             citizen,
-            "Report to Suspend by EM",
-            "Description",
-            OfficeCategory.RSTLO,
-            45.0,
-            7.0,
-            false,
-            "/img.jpg"
-        );
+            title: "Report to Suspend by EM",
+            description: "Description",
+            category: OfficeCategory.RSTLO,
+            latitude: 45,
+            longitude: 7,
+            anonymous: false,
+            photo1: "/img.jpg"
+        });
         await reportRepo.updateReportAsMPRO(report.id, Status.ASSIGNED);
         await reportRepo.selfAssignReport(report.id, tosm.username);
         await reportRepo.assignEMToReport(report.id, em.username, tosm.username);
@@ -1019,16 +1021,16 @@ describe("ReportRepository - assignEMToReport (Story 24)", () => {
         const tosm = await TestDataManager.getStaff('tosm_RSTLO');
         const em = await TestDataManager.getStaff('em_RSTLO');
         const citizen = await TestDataManager.getCitizen('citizen1');
-        const report = await reportRepo.create(
+        const report = await reportRepo.create({
             citizen,
-            "Report to Resolve by EM",
-            "Description",
-            OfficeCategory.RSTLO,
-            45.0,
-            7.0,
-            false,
-            "/img.jpg"
-        );
+            title: "Report to Resolve by EM",
+            description: "Description",
+            category: OfficeCategory.RSTLO,
+            latitude: 45,
+            longitude: 7,
+            anonymous: false,
+            photo1: "/img.jpg"
+        });
         await reportRepo.updateReportAsMPRO(report.id, Status.ASSIGNED);
         await reportRepo.selfAssignReport(report.id, tosm.username);
         await reportRepo.assignEMToReport(report.id, em.username, tosm.username);
@@ -1049,16 +1051,16 @@ describe("ReportRepository - assignEMToReport (Story 24)", () => {
         const em1 = await TestDataManager.getStaff('em_RSTLO');
         const em2 = await TestDataManager.getStaff('em_WSO');
         const citizen = await TestDataManager.getCitizen('citizen1');
-        const report = await reportRepo.create(
+        const report = await reportRepo.create({
             citizen,
-            "Report assigned to another EM",
-            "Description",
-            OfficeCategory.RSTLO,
-            45.0,
-            7.0,
-            false,
-            "/img.jpg"
-        );
+            title: "Report assigned to another EM",
+            description: "Description",
+            category: OfficeCategory.RSTLO,
+            latitude: 45,
+            longitude: 7,
+            anonymous: false,
+            photo1: "/img.jpg"
+        });
         await reportRepo.updateReportAsMPRO(report.id, Status.ASSIGNED);
         await reportRepo.selfAssignReport(report.id, tosm.username);
         await reportRepo.assignEMToReport(report.id, em1.username, tosm.username);
@@ -1071,16 +1073,16 @@ describe("ReportRepository - assignEMToReport (Story 24)", () => {
     it("throws BadRequestError when EM tries to update report without TOSM assignment", async () => {
         const em = await TestDataManager.getStaff('em_RSTLO');
         const citizen = await TestDataManager.getCitizen('citizen1');
-        const report = await reportRepo.create(
+        const report = await reportRepo.create({
             citizen,
-            "Report without TOSM",
-            "Description",
-            OfficeCategory.RSTLO,
-            45.0,
-            7.0,
-            false,
-            "/img.jpg"
-        );
+            title: "Report without TOSM",
+            description: "Description",
+            category: OfficeCategory.RSTLO,
+            latitude: 45,
+            longitude: 7,
+            anonymous: false,
+            photo1: "/img.jpg"
+        });
         await reportRepo.updateReportAsMPRO(report.id, Status.ASSIGNED);
         
         await expect(
@@ -1092,16 +1094,16 @@ describe("ReportRepository - assignEMToReport (Story 24)", () => {
         const tosm = await TestDataManager.getStaff('tosm_RSTLO');
         const em = await TestDataManager.getStaff('em_RSTLO');
         const citizen = await TestDataManager.getCitizen('citizen1');
-        const report = await reportRepo.create(
+        const report = await reportRepo.create({
             citizen,
-            "Report for EM Notification",
-            "Description",
-            OfficeCategory.RSTLO,
-            45.0,
-            7.0,
-            false,
-            "/img.jpg"
-        );
+            title: "Report for EM Notification",
+            description: "Description",
+            category: OfficeCategory.RSTLO,
+            latitude: 45,
+            longitude: 7,
+            anonymous: false,
+            photo1: "/img.jpg"
+        });
         await reportRepo.updateReportAsMPRO(report.id, Status.ASSIGNED);
         await reportRepo.selfAssignReport(report.id, tosm.username);
         await reportRepo.assignEMToReport(report.id, em.username, tosm.username);
@@ -1121,16 +1123,16 @@ describe("ReportRepository - assignEMToReport (Story 24)", () => {
         const tosm = await TestDataManager.getStaff('tosm_RSTLO');
         const em = await TestDataManager.getStaff('em_RSTLO');
         const citizen = await TestDataManager.getCitizen('citizen1');
-        const report = await reportRepo.create(
+        const report = await reportRepo.create({
             citizen,
-            "Report for EM Suspension Notification",
-            "Description",
-            OfficeCategory.RSTLO,
-            45.0,
-            7.0,
-            false,
-            "/img.jpg"
-        );
+            title: "Report for EM Suspension Notification",
+            description: "Description",
+            category: OfficeCategory.RSTLO,
+            latitude: 45,
+            longitude: 7,
+            anonymous: false,
+            photo1: "/img.jpg"
+        });
         await reportRepo.updateReportAsMPRO(report.id, Status.ASSIGNED);
         await reportRepo.selfAssignReport(report.id, tosm.username);
         await reportRepo.assignEMToReport(report.id, em.username, tosm.username);
@@ -1150,16 +1152,16 @@ describe("ReportRepository - assignEMToReport (Story 24)", () => {
         const tosm = await TestDataManager.getStaff('tosm_RSTLO');
         const em = await TestDataManager.getStaff('em_RSTLO');
         const citizen = await TestDataManager.getCitizen('citizen1');
-        const report = await reportRepo.create(
+        const report = await reportRepo.create({
             citizen,
-            "Report for EM In Progress Notification",
-            "Description",
-            OfficeCategory.RSTLO,
-            45.0,
-            7.0,
-            false,
-            "/img.jpg"
-        );
+            title: "Report for EM In Progress Notification",
+            description: "Description",
+            category: OfficeCategory.RSTLO,
+            latitude: 45,
+            longitude: 7,
+            anonymous: false,
+            photo1: "/img.jpg"
+        });
         await reportRepo.updateReportAsMPRO(report.id, Status.ASSIGNED);
         await reportRepo.selfAssignReport(report.id, tosm.username);
         await reportRepo.assignEMToReport(report.id, em.username, tosm.username);
@@ -1179,16 +1181,16 @@ describe("ReportRepository - assignEMToReport (Story 24)", () => {
         const tosm = await TestDataManager.getStaff('tosm_RSTLO');
         const em = await TestDataManager.getStaff('em_RSTLO');
         const citizen = await TestDataManager.getCitizen('citizen1');
-        const report = await reportRepo.create(
+        const report = await reportRepo.create({
             citizen,
-            "Report to Fail Update by EM",
-            "Description",
-            OfficeCategory.RSTLO,
-            45.0,
-            7.0,
-            false,
-            "/img.jpg"
-        );
+            title: "Report to Fail Update by EM",
+            description: "Description",
+            category: OfficeCategory.RSTLO,
+            latitude: 45,
+            longitude: 7,
+            anonymous: false,
+            photo1: "/img.jpg"
+        });
         await reportRepo.updateReportAsMPRO(report.id, Status.ASSIGNED);
         await reportRepo.selfAssignReport(report.id, tosm.username);
         await reportRepo.assignEMToReport(report.id, em.username, tosm.username);
@@ -1203,16 +1205,16 @@ describe("ReportRepository - assignEMToReport (Story 24)", () => {
         const tosm = await TestDataManager.getStaff('tosm_RSTLO');
         const citizen = await TestDataManager.getCitizen('citizen1');
 
-        const report = await reportRepo.create(
+        const report = await reportRepo.create({
             citizen,
-            "Report for TOSM Message",
-            "Description",
-            OfficeCategory.RSTLO,
-            45.0,
-            7.0,
-            false,
-            "/img.jpg"
-        );
+            title: "Report for TOSM Message",
+            description: "Description",
+            category: OfficeCategory.RSTLO,
+            latitude: 45,
+            longitude: 7,
+            anonymous: false,
+            photo1: "/img.jpg"
+        });
 
         await reportRepo.updateReportAsMPRO(report.id, Status.ASSIGNED);
         await reportRepo.selfAssignReport(report.id, tosm.username);
@@ -1233,16 +1235,16 @@ describe("ReportRepository - assignEMToReport (Story 24)", () => {
         const tosm = await TestDataManager.getStaff('tosm_RSTLO');
         const citizen = await TestDataManager.getCitizen('citizen1');
 
-        const report = await reportRepo.create(
+        const report = await reportRepo.create({
             citizen,
-            "Report for TOSM Message",
-            "Description",
-            OfficeCategory.RSTLO,
-            45.0,
-            7.0,
-            false,
-            "/img.jpg"
-        );
+            title: "Report for TOSM Message",
+            description: "Description",
+            category: OfficeCategory.RSTLO,
+            latitude: 45,
+            longitude: 7,
+            anonymous: false,
+            photo1: "/img.jpg"
+        });
 
         await reportRepo.updateReportAsMPRO(report.id, Status.ASSIGNED);
         await reportRepo.selfAssignReport(report.id, tosm.username);
@@ -1262,16 +1264,16 @@ describe("ReportRepository - assignEMToReport (Story 24)", () => {
         const em = await TestDataManager.getStaff('em_RSTLO');
         const citizen = await TestDataManager.getCitizen('citizen1');
 
-        const report = await reportRepo.create(
+        const report = await reportRepo.create({
             citizen,
-            "Report for EM Message",
-            "Description",
-            OfficeCategory.RSTLO,
-            45.0,
-            7.0,
-            false,
-            "/img.jpg"
-        );
+            title: "Report for EM Message",
+            description: "Description",
+            category: OfficeCategory.RSTLO,
+            latitude: 45,
+            longitude: 7,
+            anonymous: false,
+            photo1: "/img.jpg"
+        });
 
         await reportRepo.updateReportAsMPRO(report.id, Status.ASSIGNED);
         await reportRepo.selfAssignReport(report.id, tosm.username);
@@ -1290,16 +1292,16 @@ describe("ReportRepository - assignEMToReport (Story 24)", () => {
 
     it("should get all messages for TOSM", async () => {
         const citizen = await TestDataManager.getCitizen('citizen1');
-        const repo1 = await reportRepo.create(
+        const repo1 = await reportRepo.create({
             citizen,
-            "Report for TOSM Message Retrieval",
-            "Description",
-            OfficeCategory.RSTLO,
-            45.0,
-            7.0,
-            false,
-            "/img.jpg"
-        );
+            title: "Report for TOSM Message Retrieval",
+            description: "Description",
+            category: OfficeCategory.RSTLO,
+            latitude: 45,
+            longitude: 7,
+            anonymous: false,
+            photo1: "/img.jpg"
+        });
 
         const message1 = "Public message from TOSM.";
         const message2 = "Private message from TOSM.";
@@ -1319,16 +1321,16 @@ describe("ReportRepository - assignEMToReport (Story 24)", () => {
 
         it("should get all public messages for TOSM", async () => {
         const citizen = await TestDataManager.getCitizen('citizen1');
-        const repo1 = await reportRepo.create(
+        const repo1 = await reportRepo.create({
             citizen,
-            "Report for TOSM Message Retrieval",
-            "Description",
-            OfficeCategory.RSTLO,
-            45.0,
-            7.0,
-            false,
-            "/img.jpg"
-        );
+            title: "Report for TOSM Message Retrieval",
+            description: "Description",
+            category: OfficeCategory.RSTLO,
+            latitude: 45,
+            longitude: 7,
+            anonymous: false,
+            photo1: "/img.jpg"
+        });
 
         const message1 = "Public message from TOSM.";
         const message2 = "Private message from TOSM.";
@@ -1341,7 +1343,6 @@ describe("ReportRepository - assignEMToReport (Story 24)", () => {
         const messages = await reportRepo.getAllPublicMessages(repo1.id);
         expect(messages.length).toBe(1);
         const publicMessage = messages.find(msg => msg.message === message1);
-        const privateMessage = messages.find(msg => msg.message === message2);
         expect(publicMessage).toBeDefined();
     });
 

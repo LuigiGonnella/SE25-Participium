@@ -9,6 +9,7 @@ import {
     getMapReports,
     getReportById,
     getReports,
+    getReportsByCitizenUsername,
     selfAssignReport,
     updateReportAsEM,
     updateReportAsMPRO,
@@ -26,6 +27,49 @@ import {validateDate, validateOfficeCategory, validateReportId, validateStatus, 
 
 const router = Router();
 
+const buildReportFilters = (query: any): ReportFilters => {
+    const { citizen_username, fromDate, toDate, status, title, category, staff_username } = query;
+    const filters: ReportFilters = {};
+
+    if (citizen_username && typeof citizen_username === 'string') {
+        filters.citizen_username = citizen_username.trim();
+    }
+
+    if (title && typeof title === 'string') {
+        filters.title = title.trim().replaceAll('_', ' ');
+    }
+
+    if (staff_username && typeof staff_username === 'string') {
+        filters.staff_username = staff_username.trim();
+    }
+
+    if (fromDate && !toDate || !fromDate && toDate) {
+        throw new BadRequestError('Both fromDate and toDate must be provided together.');
+    }
+
+    if (fromDate) {
+        filters.fromDate = validateDate(fromDate, 'fromDate');
+    }
+
+    if (toDate) {
+        filters.toDate = validateDate(toDate, 'toDate');
+    }
+
+    if (filters.fromDate && filters.toDate && filters.fromDate > filters.toDate) {
+        throw new BadRequestError('fromDate cannot be after toDate.');
+    }
+
+    if (typeof status === 'string') {
+        filters.status = validateStatus(status);
+    }
+
+    if (typeof category === 'string') {
+        filters.category = validateOfficeCategory(category);
+    }
+
+    return filters;
+};
+
 router.post('/', isAuthenticated(['CITIZEN']), uploadReportPictures.array("photos", 3), async (req, res, next) => {
     try {
         const photos = req.files as Express.Multer.File[];
@@ -38,62 +82,16 @@ router.post('/', isAuthenticated(['CITIZEN']), uploadReportPictures.array("photo
 
 router.get('/', isAuthenticated(['STAFF']), async (req, res, next) => {
     try{
-        const { citizen_username,
-                fromDate,
-                toDate,
-                status,
-                title,
-                category,
-                staff_username } = req.query;
-
-        const filters: ReportFilters = {};
-
-        if (citizen_username) {
-            filters.citizen_username = String(citizen_username).trim();
-        }
-
-        if (title) {
-            filters.title = String(title).trim().replace(/_/g, ' ');
-        }
-
-        if (staff_username) {
-            filters.staff_username = String(staff_username).trim();
-        }
-
-        if (fromDate && !toDate || !fromDate && toDate) {
-            throw new BadRequestError('Both fromDate and toDate must be provided together.');
-        }
-
-        if (fromDate) {
-            filters.fromDate = validateDate(fromDate, 'fromDate');
-        }
-
-        if (toDate) {
-            filters.toDate = validateDate(toDate, 'toDate');
-        }
-
-        if (filters.fromDate && filters.toDate && filters.fromDate > filters.toDate) {
-            throw new BadRequestError('fromDate cannot be after toDate.');
-        }
-
-        if (typeof status === 'string') {
-            filters.status = validateStatus(status);
-        }
-
-        if (typeof category === 'string') {
-            filters.category = validateOfficeCategory(category);
-        }
-
+        const filters = buildReportFilters(req.query);
         const reports = await getReports((req.user as Staff).username, filters);
         res.status(200).json(reports);
-
     }
     catch(err) {
         next(err);
     }
 });
 
-router.get('/public', isAuthenticated(['CITIZEN']), async (req, res, next) => {
+router.get('/public', async (req, res, next) => {
     try{
         const reports = await getMapReports();
         res.status(200).json(reports);
@@ -246,5 +244,28 @@ router.post('/telegram', telegramBotAuth, uploadReportPictures.array("photos", 3
         next(err);
     }
 })
+
+router.get('/telegram/citizen/:telegram_username', telegramBotAuth, async (req, res, next) => {
+    try {
+        const { telegram_username } = req.params;
+        const citizen = await getCitizenByTelegramUsername(telegram_username);
+        
+        const reports = await getReportsByCitizenUsername(citizen.username);
+        
+        res.status(200).json(reports);
+    } catch (err) {
+        next(err);
+    }
+});
+
+router.get('/telegram/report/:reportId', telegramBotAuth, async (req, res, next) => {
+    try {
+        const reportId = validateReportId(req.params.reportId);
+        const report = await getReportById(reportId);
+        res.status(200).json(report);
+    } catch (err) {
+        next(err);
+    }
+});
 
 export default router;

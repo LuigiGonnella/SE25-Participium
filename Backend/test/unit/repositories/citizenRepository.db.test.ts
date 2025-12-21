@@ -2,7 +2,6 @@ import { CitizenDAO } from "@dao/citizenDAO";
 import { CitizenRepository } from "@repositories/citizenRepository";
 import { initializeTestDataSource, closeTestDataSource, TestDataSource } from "../../setup/test-datasource";
 import { beforeAllE2e, DEFAULT_CITIZENS } from "../../e2e/lifecycle";
-import bcrypt from "bcrypt";
 
 let citizenRepo: CitizenRepository;
 
@@ -19,8 +18,8 @@ afterAll(async () => {
 beforeEach(async () => {
     // Clear only non-default citizens
     const allCitizens = await TestDataSource.getRepository(CitizenDAO).find();
-    const defaultUsernames = Object.values(DEFAULT_CITIZENS).map(c => c.username);
-    const toDelete = allCitizens.filter(c => !defaultUsernames.includes(c.username));
+    const defaultUsernames = new Set(Object.values(DEFAULT_CITIZENS).map(c => c.username));
+    const toDelete = allCitizens.filter(c => !defaultUsernames.has(c.username));
     await TestDataSource.getRepository(CitizenDAO).remove(toDelete);
 });
 
@@ -44,8 +43,6 @@ describe("CitizenRepository - test suite", () => {
             newCitizen.surname,
             newCitizen.password,
             newCitizen.receive_emails,
-            newCitizen.profilePicture,
-            newCitizen.telegram_username,
         );
         
         const savedInDB = await TestDataSource
@@ -77,8 +74,6 @@ describe("CitizenRepository - test suite", () => {
             newCitizen.surname,
             newCitizen.password,
             newCitizen.receive_emails,
-            newCitizen.profilePicture,
-            newCitizen.telegram_username,
         );
         
         const citizens = await citizenRepo.getAllCitizens();
@@ -153,8 +148,6 @@ describe("CitizenRepository - test suite", () => {
             "User",
             "password123",
             false,
-            "",
-            ""
         )).rejects.toThrow();
     });
 
@@ -166,8 +159,6 @@ describe("CitizenRepository - test suite", () => {
             "User",
             "password123",
             false,
-            "",
-            ""
         )).rejects.toThrow();
     });
 });

@@ -92,8 +92,8 @@ function App() {
         return <Navigate replace to={isCitizen(user) ? "/map" : "/reports"}/>;
     };
 
-    const getMapContent = () => {
-        if (!user?.email) {
+    const getMapElement = () => {
+        if (loggedIn && isCitizen(user) && !user?.email) {
             return <Navigate replace to="/verify-email"/>;
         }
         return <TurinMaskedMap isLoggedIn={loggedIn} user={user}/>;
@@ -122,8 +122,8 @@ function App() {
     };
 
     const getVerifyEmailElement = () => {
-        return needsEmailVerification(user) || !loggedIn 
-            ? <EmailVerificationPage refresh={toggleRefresh} /> 
+        return needsEmailVerification(user) || !loggedIn
+            ? <EmailVerificationPage refresh={toggleRefresh} user={user}/>
             : <Navigate replace to="/"/>;
     };
 
@@ -131,10 +131,6 @@ function App() {
         return loggedIn && isAdmin(user)
             ? <MunicipalityRegistrationForm handleStaffRegistration={handleMunicipalityRegistration}/>
             : <Navigate replace to="/"/>;
-    };
-
-    const getMapElement = () => {
-        return loggedIn && isCitizen(user) ? getMapContent() : <Navigate replace to="/"/>;
     };
 
     const getReportsElement = () => {
@@ -145,10 +141,7 @@ function App() {
     };
 
     const getReportDetailElement = () => {
-        if (loggedIn && canAccessReports(user) && user) {
-            return <ReportDetailPage user={user} />;
-        }
-        return <Navigate replace to="/login"/>;
+        return <ReportDetailPage user={user} />;
     };
 
     const getProfileElement = () => {
@@ -169,7 +162,7 @@ function App() {
                 <Route path="registration" element={getRegistrationElement()}/>
                 <Route path="verify-email" element={getVerifyEmailElement()}/>
                 <Route path="municipality-registration" element={getMunicipalityRegistrationElement()}/>
-                <Route path="/map" element={getMapElement()}/>
+                <Route path="/map" element={!isStaff(user) ? getMapElement() : <Navigate replace to="/"/>}/>
                 <Route path="/reports" element={getReportsElement()}/>
                 <Route path="/reports/:id" element={getReportDetailElement()}/>
                 <Route path="/profile" element={getProfileElement()}/>

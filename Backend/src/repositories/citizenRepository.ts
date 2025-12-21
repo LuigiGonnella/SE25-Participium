@@ -69,9 +69,7 @@ export class CitizenRepository {
         name: string,
         surname: string,
         password: string,
-        receive_emails: boolean = false, //by default it is false, then the citizen can change it
-        profilePicture?: string,
-        telegram_username?: string,
+        receive_emails: boolean = false //by default it is false, then the citizen can change it
     ): Promise<CitizenDAO> {
         if (!email || !username || !name || !surname || !password) {
             throw new AppError("Invalid input data: email, username, name, surname, and password are required", 400);
@@ -102,9 +100,7 @@ export class CitizenRepository {
             name,
             surname,
             password,
-            receive_emails,
-            profilePicture,
-            telegram_username
+            receive_emails
         });
     }
 

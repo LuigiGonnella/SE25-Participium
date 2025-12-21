@@ -2,12 +2,14 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import API from '../API/API.mts';
 import { Alert, Button, Card, CardBody, CardTitle, Container, Input, Row, Col } from 'design-react-kit';
+import type {User} from "../models/Models.ts";
 
 interface EmailVerificationPageProps {
+    user?: User;
     refresh: () => void;
 }
 
-function EmailVerificationPage({refresh}: EmailVerificationPageProps) {
+function EmailVerificationPage({user, refresh}: Readonly<EmailVerificationPageProps>) {
     const [code, setCode] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
@@ -52,7 +54,7 @@ function EmailVerificationPage({refresh}: EmailVerificationPageProps) {
             setError(err.details || 'Failed to resend verification email. Please try again later.');
         } finally {
             setLoading(false);
-        }   
+        }
     };
 
     return (
@@ -119,9 +121,10 @@ function EmailVerificationPage({refresh}: EmailVerificationPageProps) {
                                         <p className="text-muted small">
                                             Didn't receive the code? Check your spam folder or contact support.
                                         </p>
+                                        { user &&
                                         <a href="#!" onClick={handleResend} style={{ textDecoration: 'underline' }}>
                                             Resend Verification Email
-                                        </a>
+                                        </a>}
                                     </div>
                                 </>
                             )}

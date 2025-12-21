@@ -142,16 +142,16 @@ describe("ReportController - updateReportAsEM", () => {
 
     beforeEach(async () => {
         const citizen = await TestDataManager.getCitizen('citizen1');
-        report = await reportRepo.create(
+        report = await reportRepo.create({
             citizen,
-            "Test Report",
-            "Description",
-            OfficeCategory.RSTLO,
-            45.0,
-            7.0,
-            false,
-            "/img.jpg"
-        );
+            title: "Test Report",
+            description: "Description",
+            category: OfficeCategory.RSTLO,
+            latitude: 45,
+            longitude: 7,
+            anonymous: false,
+            photo1: "/img.jpg"
+        });
     });
 
     it("should update report status as EM", async () => {
@@ -171,16 +171,16 @@ describe("ReportController - addMessageToReport", () => {
 
     beforeEach(async () => {
         const citizen = await TestDataManager.getCitizen('citizen1');
-        report = await reportRepo.create(
+        report = await reportRepo.create({
             citizen,
-            "Test Report",
-            "Description",
-            OfficeCategory.RSTLO,
-            45.0,
-            7.0,
-            false,
-            "/img.jpg"
-        );
+            title: "Test Report",
+            description: "Description",
+            category: OfficeCategory.RSTLO,
+            latitude: 45,
+            longitude: 7,
+            anonymous: false,
+            photo1: "/img.jpg"
+        });
     });
 
     it("should add message to report from staff", async () => {
@@ -219,16 +219,16 @@ describe("ReportController - getAllMessages", () => {
 
     beforeEach(async () => {
         const citizen = await TestDataManager.getCitizen('citizen1');
-        report = await reportRepo.create(
+        report = await reportRepo.create({
             citizen,
-            "Test Report",
-            "Description",
-            OfficeCategory.RSTLO,
-            45.0,
-            7.0,
-            false,
-            "/img.jpg"
-        );
+            title: "Test Report",
+            description: "Description",
+            category: OfficeCategory.RSTLO,
+            latitude: 45,
+            longitude: 7,
+            anonymous: false,
+            photo1: "/img.jpg"
+        });
     });
 
     it("should get all messages for a report", async () => {
@@ -272,16 +272,16 @@ describe("ReportController - getAllMessages", () => {
 
     it("should add a public message to report from TOSM", async () => {
         const citizen = await TestDataManager.getCitizen('citizen1');
-        const report = await reportRepo.create(
+        const report = await reportRepo.create({
             citizen,
-            "Report for TOSM Message Retrieval",
-            "Description",
-            OfficeCategory.RSTLO,
-            45.0,
-            7.0,
-            false,
-            "/img.jpg"
-            );
+            title: "Report for TOSM Message Retrieval",
+            description: "Description",
+            category: OfficeCategory.RSTLO,
+            latitude: 45,
+            longitude: 7,
+            anonymous: false,
+            photo1: "/img.jpg"
+        });
 
         const message1 = "Public message from TOSM.";
         
@@ -304,16 +304,16 @@ describe("ReportController - getAllMessages", () => {
 
     it("should add a private message to report from TOSM", async () => {
         const citizen = await TestDataManager.getCitizen('citizen1');
-        const report = await reportRepo.create(
+        const report = await reportRepo.create({
             citizen,
-            "Report for TOSM Message Retrieval",
-            "Description",
-            OfficeCategory.RSTLO,
-            45.0,
-            7.0,
-            false,
-            "/img.jpg"
-            );
+            title: "Report for TOSM Message Retrieval",
+            description: "Description",
+            category: OfficeCategory.RSTLO,
+            latitude: 45,
+            longitude: 7,
+            anonymous: false,
+            photo1: "/img.jpg"
+        });
 
         const message1 = "Private message from TOSM.";
 
@@ -336,16 +336,16 @@ describe("ReportController - getAllMessages", () => {
 
     it("should add a message to report from EM", async () => {
         const citizen = await TestDataManager.getCitizen('citizen1');
-        const report = await reportRepo.create(
+        const report = await reportRepo.create({
             citizen,
-            "Report for EM Message Retrieval",
-            "Description",
-            OfficeCategory.RSTLO,
-            45.0,
-            7.0,
-            false,
-            "/img.jpg"
-            );
+            title: "Report for EM Message Retrieval",
+            description: "Description",
+            category: OfficeCategory.RSTLO,
+            latitude: 45,
+            longitude: 7,
+            anonymous: false,
+            photo1: "/img.jpg"
+        });
 
         const message1 = "Private message from EM.";
 
@@ -369,16 +369,16 @@ describe("ReportController - getAllMessages", () => {
 
     it("should throw BadRequestError when TOSM tries to add message to unassigned report", async () => {
         const citizen = await TestDataManager.getCitizen('citizen1');
-        const report = await reportRepo.create(
+        const report = await reportRepo.create({
             citizen,
-            "Report for TOSM Unassigned Message Test",
-            "Description",
-            OfficeCategory.RSTLO,
-            45.0,
-            7.0,
-            false,
-            "/img.jpg"
-        );
+            title: "Report for TOSM Unassigned Message Test",
+            description: "Description",
+            category: OfficeCategory.RSTLO,
+            latitude: 45,
+            longitude: 7,
+            anonymous: false,
+            photo1: "/img.jpg"
+        });
         const message1 = "Message from unassigned TOSM.";
 
         await expect(
@@ -395,16 +395,16 @@ describe("ReportController - getAllMessages", () => {
 
     it("should throw BadRequestError when EM is not assigned to the report", async () => {
         const citizen = await TestDataManager.getCitizen('citizen1');
-        const report = await reportRepo.create(
+        const report = await reportRepo.create({
             citizen,
-            "Report for EM Unassigned Message Test",
-            "Description",
-            OfficeCategory.RSTLO,
-            45.0,
-            7.0,
-            false,
-            "/img.jpg"
-        );
+            title: "Report for EM Unassigned Message Test",
+            description: "Description",
+            category: OfficeCategory.RSTLO,
+            latitude: 45,
+            longitude: 7,
+            anonymous: false,
+            photo1: "/img.jpg"
+        });
 
         await updateReportAsMPRO(report.id, Status.ASSIGNED);
         await selfAssignReport(report.id, DEFAULT_STAFF.tosm_RSTLO.username);
@@ -423,16 +423,16 @@ describe("ReportController - getAllMessages", () => {
 
     it("should get all messages", async () => {
         const citizen = await TestDataManager.getCitizen('citizen1');
-        const report = await reportRepo.create(
+        const report = await reportRepo.create({
             citizen,
-            "Report for EM Message Retrieval",
-            "Description",
-            OfficeCategory.RSTLO,
-            45.0,
-            7.0,
-            false,
-            "/img.jpg"
-            );
+            title: "Report for EM Message Retrieval",
+            description: "Description",
+            category: OfficeCategory.RSTLO,
+            latitude: 45,
+            longitude: 7,
+            anonymous: false,
+            photo1: "/img.jpg"
+        });
 
         const message1 = "Public message from TOSM.";
         const message2 = "Private message from TOSM.";

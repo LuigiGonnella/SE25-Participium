@@ -17,6 +17,15 @@ import { errorHandler } from '@middlewares/errorMiddleware';
 let app: Express;
 let reportRepo: ReportRepository;
 
+// --- Test helpers for mocking users ---
+function mockUser(user: any) {
+    return (req: any, res: any, next: any) => {
+        req.user = user;
+        req.isAuthenticated = () => true;
+        next();
+    };
+}
+
 beforeAll(async () => {
     await initializeTestDataSource();
     await beforeAllE2e();
@@ -59,29 +68,28 @@ describe('Report Routes Tests', () => {
         it('should return all reports for default citizen', async () => {
             const citizen = await TestDataManager.getCitizen('citizen1');
             
-            await reportRepo.create(
+            await reportRepo.create({
                 citizen,
-                "Report 1",
-                "Description 1",
-                OfficeCategory.RSTLO,
-                45.0,
-                7.0,
-                false,
-                "/img1.jpg"
-            );
+                title: "Report 1",
+                description: "Description 1",
+                category: OfficeCategory.RSTLO,
+                latitude: 45,
+                longitude: 7,
+                anonymous: false,
+                photo1: "/img1.jpg"
+            });
 
-            await reportRepo.create(
+            await reportRepo.create({
                 citizen,
-                "Report 2",
-                "Description 2",
-                OfficeCategory.WSO,
-                45.1,
-                7.1,
-                false,
-                "/img2.jpg"
-            );
+                title: "Report 2",
+                description: "Description 2",
+                category: OfficeCategory.WSO,
+                latitude: 45.1,
+                longitude: 7.1,
+                anonymous: false,
+                photo1: "/img2.jpg"
+            });
 
-            const mproStaff = await TestDataManager.getStaff('mpro');
             const agent = request.agent(app);
             await agent.post('/api/v1/auth/login?type=STAFF')
                 .send({ username: 'mpro', password: 'mpro123' })
@@ -111,27 +119,27 @@ describe('Report Routes Tests', () => {
         it('should filter reports by category', async () => {
             const citizen = await TestDataManager.getCitizen('citizen1');
             
-            await reportRepo.create(
+            await reportRepo.create({
                 citizen,
-                "RSTLO Report",
-                "Description",
-                OfficeCategory.RSTLO,
-                45.0,
-                7.0,
-                false,
-                "/img.jpg"
-            );
+                title: "RSTLO Report",
+                description: "Description",
+                category: OfficeCategory.RSTLO,
+                latitude: 45,
+                longitude: 7,
+                anonymous: false,
+                photo1: "/img.jpg"
+            });
 
-            await reportRepo.create(
+            await reportRepo.create({
                 citizen,
-                "WSO Report",
-                "Description",
-                OfficeCategory.WSO,
-                45.0,
-                7.0,
-                false,
-                "/img.jpg"
-            );
+                title: "WSO Report",
+                description: "Description",
+                category: OfficeCategory.WSO,
+                latitude: 45,
+                longitude: 7,
+                anonymous: false,
+                photo1: "/img.jpg"
+            });
 
             const agent = request.agent(app);
             await agent.post('/api/v1/auth/login?type=STAFF')
@@ -150,16 +158,16 @@ describe('Report Routes Tests', () => {
     describe('GET /api/v1/reports/:id', () => {
         it('should return report by id', async () => {
             const citizen = await TestDataManager.getCitizen('citizen1');
-            const report = await reportRepo.create(
+            const report = await reportRepo.create({
                 citizen,
-                "Test Report",
-                "Description",
-                OfficeCategory.RSTLO,
-                45.0,
-                7.0,
-                false,
-                "/img.jpg"
-            );
+                title: "Test Report",
+                description: "Description",
+                category: OfficeCategory.RSTLO,
+                latitude: 45,
+                longitude: 7,
+                anonymous: false,
+                photo1: "/img.jpg"
+            });
 
             const agent = request.agent(app);
             await agent.post('/api/v1/auth/login?type=STAFF')
@@ -191,25 +199,21 @@ describe('Report Routes Tests', () => {
     describe('PATCH /api/v1/reports/:id/manage', () => {
         beforeEach(() => {
             // Mock MPRO user
-            app.use((req: any, res, next) => {
-                req.user = { username: DEFAULT_STAFF.mpro.username, type: 'STAFF', role: 'MPRO' };
-                req.isAuthenticated = () => true;
-                next();
-            });
+            app.use(mockUser({ username: DEFAULT_STAFF.mpro.username, type: 'STAFF', role: 'MPRO' }));
         });
 
         it('should update report status to ASSIGNED', async () => {
             const citizen = await TestDataManager.getCitizen('citizen1');
-            const report = await reportRepo.create(
+            const report = await reportRepo.create({
                 citizen,
-                "Test Report",
-                "Description",
-                OfficeCategory.RSTLO,
-                45.0,
-                7.0,
-                false,
-                "/img.jpg"
-            );
+                title: "Test Report",
+                description: "Description",
+                category: OfficeCategory.RSTLO,
+                latitude: 45,
+                longitude: 7,
+                anonymous: false,
+                photo1: "/img.jpg"
+            });
 
             const agent = request.agent(app);
             await agent.post('/api/v1/auth/login?type=STAFF')
@@ -228,31 +232,23 @@ describe('Report Routes Tests', () => {
     describe('PATCH /api/v1/reports/:id/updateStatus', () => {
         beforeEach(() => {
             // Mock MPRO user
-            app.use((req: any, res, next) => {
-                req.user = { username: DEFAULT_STAFF.mpro.username, type: 'STAFF', role: 'MPRO' };
-                req.isAuthenticated = () => true;
-                next();
-            });
+            app.use(mockUser({ username: DEFAULT_STAFF.mpro.username, type: 'STAFF', role: 'MPRO' }));
             // Mock TOSM user
-            app.use((req: any, res, next) => {
-                req.user = { username: DEFAULT_STAFF.tosm_RSTLO.username, type: 'STAFF', role: 'TOSM' };
-                req.isAuthenticated = () => true;
-                next();
-            });
+            app.use(mockUser({ username: DEFAULT_STAFF.tosm_RSTLO.username, type: 'STAFF', role: 'TOSM' }));
         });
 
         it('should update report status to IN_PROGRESS by EM', async () => {
             const citizen = await TestDataManager.getCitizen('citizen1');
-            const report = await reportRepo.create(
+            const report = await reportRepo.create({
                 citizen,
-                "Test Report",
-                "Description",
-                OfficeCategory.RSTLO,
-                45.0,
-                7.0,
-                false,
-                "/img.jpg"
-            );
+                title: "Test Report",
+                description: "Description",
+                category: OfficeCategory.RSTLO,
+                latitude: 45,
+                longitude: 7,
+                anonymous: false,
+                photo1: "/img.jpg"
+            });
             const agent = request.agent(app);
             //assign to MPRO
             await agent.post('/api/v1/auth/login?type=STAFF')
@@ -295,16 +291,16 @@ describe('Report Routes Tests', () => {
     describe('POST /api/v1/reports/:id/messages', () => {
         it('should add message to report', async () => {
             const citizen = await TestDataManager.getCitizen('citizen1');
-            const report = await reportRepo.create(
+            const report = await reportRepo.create({
                 citizen,
-                "Test Report",
-                "Description",
-                OfficeCategory.RSTLO,
-                45.0,
-                7.0,
-                false,
-                "/img.jpg"
-            );
+                title: "Test Report",
+                description: "Description",
+                category: OfficeCategory.RSTLO,
+                latitude: 45,
+                longitude: 7,
+                anonymous: false,
+                photo1: "/img.jpg"
+            });
 
             const agent = request.agent(app);
             await agent.post('/api/v1/auth/login?type=CITIZEN')
@@ -339,16 +335,16 @@ describe('Report Routes Tests', () => {
 
         it('should create a new message from TOSM', async () => {
             const citizen = await TestDataManager.getCitizen('citizen1');
-            const report = await reportRepo.create(
+            const report = await reportRepo.create({
                 citizen,
-                "Test Report",
-                "Description",
-                OfficeCategory.RSTLO,
-                45.0,
-                7.0,
-                false,
-                "/img.jpg"
-            );
+                title: "Test Report",
+                description: "Description",
+                category: OfficeCategory.RSTLO,
+                latitude: 45,
+                longitude: 7,
+                anonymous: false,
+                photo1: "/img.jpg"
+            });
 
             const agentMPRO = request.agent(app);
             const agentTOSM = request.agent(app);
@@ -379,16 +375,16 @@ describe('Report Routes Tests', () => {
 
         it('should create a new message from EM', async () => {
             const citizen = await TestDataManager.getCitizen('citizen1');
-            const report = await reportRepo.create(
+            const report = await reportRepo.create({
                 citizen,
-                "Test Report",
-                "Description",
-                OfficeCategory.RSTLO,
-                45.0,
-                7.0,
-                false,
-                "/img.jpg"
-            );
+                title: "Test Report",
+                description: "Description",
+                category: OfficeCategory.RSTLO,
+                latitude: 45,
+                longitude: 7,
+                anonymous: false,
+                photo1: "/img.jpg"
+            });
 
             const agentMPRO = request.agent(app);
             const agentTOSM = request.agent(app);
@@ -433,16 +429,16 @@ describe('Report Routes Tests', () => {
     describe('GET /api/v1/reports/:id/messages', () => {
         it('should get all messages for a report', async () => {
             const citizen = await TestDataManager.getCitizen('citizen1');
-            const report = await reportRepo.create(
+            const report = await reportRepo.create({
                 citizen,
-                "Test Report",
-                "Description",
-                OfficeCategory.RSTLO,
-                45.0,
-                7.0,
-                false,
-                "/img.jpg"
-            );
+                title: "Test Report",
+                description: "Description",
+                category: OfficeCategory.RSTLO,
+                latitude: 45,
+                longitude: 7,
+                anonymous: false,
+                photo1: "/img.jpg"
+            });
 
             // Add messages using the controller/service
             const agent = request.agent(app);

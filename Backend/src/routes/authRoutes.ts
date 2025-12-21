@@ -13,8 +13,6 @@ import {Router} from "express";
 import {isAuthenticated, telegramBotAuth} from '@middlewares/authMiddleware';
 import { StaffToJSON } from '@models/dto/Staff';
 import { StaffRole } from '@models/dao/staffDAO';
-import { create } from 'domain';
-import { getCitizenByUsername } from '@controllers/citizenController';
 
 const router = Router();
 
@@ -45,8 +43,6 @@ router.post('/register', uploadProfilePicture.single('profilePicture'), async (r
             surname,
             password,
             req.body.receive_emails,
-            req.file, // multer puts file in req.file
-            req.body.telegram_username
         );
         res.status(201).json(CitizenToJSON(citizen)); // does not expose password
     } catch (error) {
