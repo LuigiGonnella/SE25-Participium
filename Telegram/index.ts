@@ -2,6 +2,7 @@ import { session, Telegraf } from "telegraf";
 import { ParticipiumContext, OfficeCategory } from "./models";
 import * as dotenv from "dotenv";
 import {verifyUserMiddleware, submitReport, verifyUser, checkUserVerification, isWithinTurin, getMyReports, getReportDetails} from "./API";
+import { message } from "telegraf/filters";
 
 dotenv.config();
 
@@ -203,7 +204,7 @@ const handleBackNavigation = (ctx: ParticipiumContext) => {
     }
 
     clearStepData(ctx, ctx.session.step as FlowStep);
-    const previousStep = history.pop()!;
+    const previousStep = history.pop();
     stepHistoryStore.set(key, history);
     ctx.session.step = previousStep;
     return sendStepPrompt(ctx, previousStep);
@@ -248,7 +249,7 @@ bot.command("verify", async (ctx) => {
     const code = parts[1];
 
     try {
-        const verified = await verifyUser(ctx.message!.from.username, code);
+        const verified = await verifyUser(ctx.message.from.username, code);
 
         if (verified) {
             ctx.session.isVerified = true;
@@ -419,7 +420,7 @@ bot.command("myreports", verifyUserMiddleware, async (ctx) => {
 
 const escapeMarkdown = (text: string | undefined): string => {
     if (!text) return "";
-    return text.replace(/[_*[\]`]/g, '\\$&');
+    return text.replaceAll(/[_*[\]`]/g, String.raw`\$&`);
 };
 
 bot.command("reportstatus", verifyUserMiddleware, async (ctx) => {
@@ -430,9 +431,9 @@ bot.command("reportstatus", verifyUserMiddleware, async (ctx) => {
     }
 
     const reportIdStr = parts[1];
-    const reportId = parseInt(reportIdStr, 10);
+    const reportId = Number.parseInt(reportIdStr, 10);
 
-    if (isNaN(reportId)) {
+    if (Number.isNaN(reportId)) {
         return replyMarkdown(ctx, "❌ Invalid Report ID. Please enter a valid number.");
     }
 
@@ -454,7 +455,7 @@ bot.command("reportstatus", verifyUserMiddleware, async (ctx) => {
         let message = `📄 *Report #${report.id} Details*\n` +
                       `━━━━━━━━━━━━━━━━━━━\n` +
                       `*Title:* ${escapeMarkdown(report.title)}\n` +
-                      `*Category:* ${escapeMarkdown(report.category as string)}\n` +
+                      `*Category:* ${escapeMarkdown(report.category)}\n` +
                       `*Date:* ${new Date(report.timestamp || Date.now()).toLocaleDateString()}\n\n` +
                       `${statusEmoji} *Status:* ${escapeMarkdown(report.status)}\n`;
 
@@ -476,7 +477,7 @@ bot.command("reportstatus", verifyUserMiddleware, async (ctx) => {
     }
 });
 
-bot.on("location", verifyUserMiddleware, async (ctx) => {
+bot.on(message("location"), verifyUserMiddleware, async (ctx) => {
     if (ctx.session.step !== "location") return;
 
     ctx.session.latitude = ctx.message.location.latitude;
@@ -492,7 +493,7 @@ bot.on("location", verifyUserMiddleware, async (ctx) => {
     return goToStep(ctx, "title");
 });
 
-bot.on("text", verifyUserMiddleware, async (ctx) => {
+bot.on(message("text"), verifyUserMiddleware, async (ctx) => {
     const text = ctx.message.text.trim();
     const normalized = normalizeText(text);
 
@@ -576,7 +577,7 @@ bot.on("text", verifyUserMiddleware, async (ctx) => {
     }
 });
 
-bot.on("photo", verifyUserMiddleware, async (ctx) => {
+bot.on(message("photo"), verifyUserMiddleware, async (ctx) => {
     if (ctx.session.step !== "photos") return;
 
     ctx.session.photos = ctx.session.photos ?? [];

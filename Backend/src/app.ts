@@ -1,5 +1,4 @@
 import express from "express";
-import swaggerUi from "swagger-ui-express";
 import { CONFIG } from "@config";
 import { errorHandler } from "@middlewares/errorMiddleware";
 import cors from "cors";
@@ -45,12 +44,6 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 configurePassport();
-
-// app.use(
-//   CONFIG.ROUTES.V1_SWAGGER,
-//   swaggerUi.serve,
-//   swaggerUi.setup(YAML.load(CONFIG.SWAGGER_V1_FILE_PATH))
-// );
 
 // app.use(
 //     OpenApiValidator.middleware({
