@@ -13,8 +13,6 @@ import {BadRequestError} from "@errors/BadRequestError";
 import {PendingVerificationRepository} from "@repositories/pendingVerificationRepository";
 import {Citizen} from "@dto/Citizen";
 import { sendVerificationEmail } from "@services/emailService";
-import { CitizenDAO } from "@models/dao/citizenDAO";
-import { create } from "domain";
 
 // storage configuration
 const storage = multer.diskStorage({
@@ -54,16 +52,9 @@ export async function register(
     surname: string,
     password: string,
     receive_emails: boolean = false,
-    profilePictureFile?: Express.Multer.File, // uploaded file
-    telegram_username?: string
 ) {
     const citizenRepo = new CitizenRepository();
     const hashedPassword = await bcrypt.hash(password, 10);
-    
-    // image path
-    const profilePicture = profilePictureFile 
-        ? `/uploads/profiles/${profilePictureFile.filename}`
-        : undefined;
 
     // Create citizen WITHOUT email (will be set after verification)
     const citizenDAO = await citizenRepo.createCitizen(
