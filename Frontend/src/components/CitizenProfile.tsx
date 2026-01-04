@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Card, Row, Col, Form, Button, Alert, Modal } from "react-bootstrap";
 import type { Citizen } from "../models/Models.ts";
-import defaultProfile from "/default-profile.png";
 import API, { STATIC_URL } from "../API/API.mts";
+
+const defaultProfile = "/default-profile.png";
 
 interface CitizenProfileProps {
     user: Citizen;

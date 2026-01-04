@@ -312,9 +312,10 @@ const ReportForm = ({ coordinates, street, toggleReportView }: ReportFormProps) 
                                             <Col md={6}>
                                                 <div className="d-flex flex-wrap gap-2">
                                                     {previewUrls.map((url, index) => (
-                                                        <div
+                                                        <button
+                                                            type="button"
                                                             key={url}
-                                                            className="position-relative"
+                                                            className="position-relative p-0 border-0 bg-transparent"
                                                             style={{
                                                                 width: '80px',
                                                                 height: '80px',
@@ -340,18 +341,20 @@ const ReportForm = ({ coordinates, street, toggleReportView }: ReportFormProps) 
                                                                     border: '1px solid #dee2e6'
                                                                 }}
                                                             />
-                                                            <div
-                                                                className="hover-overlay position-absolute top-0 start-0 w-100 h-100 align-items-center justify-content-center"
+                                                            <button
+                                                                type="button"
+                                                                className="hover-overlay position-absolute top-0 start-0 w-100 h-100 align-items-center justify-content-center border-0"
                                                                 style={{
                                                                     backgroundColor: 'rgba(0, 0, 0, 0.5)',
                                                                     borderRadius: '4px',
-                                                                    display: 'none'
+                                                                    display: 'none',
+                                                                    padding: 0
                                                                 }}
                                                                 onClick={() => removePhoto(index)}
                                                             >
                                                                 <i className="bi bi-trash text-white" style={{ fontSize: '1.5rem' }}></i>
-                                                            </div>
-                                                        </div>
+                                                            </button>
+                                                        </button>
                                                     ))}
                                                 </div>
                                             </Col>
