@@ -133,7 +133,7 @@ export default function ReportDetailPage({ user }: Readonly<ReportDetailPageProp
     load();
   }, [id]);
 
-  const buildUpdatePayload = (): any | null => {
+  const buildUpdatePayload = (): any => {
     const payload: any = {};
     
     if (statusInput === ReportStatus.REJECTED) {

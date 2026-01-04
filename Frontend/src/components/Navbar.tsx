@@ -68,12 +68,15 @@ function NavComponent({loggedIn, user, handleLogout}: Readonly<NavComponentProps
                 </HeaderBrand>
                 <div className="nav-mobile">
                     <nav className="d-flex flex-column justify-content-end">
-                        <a className="it-opener d-lg-none" data-bs-toggle="collapse" data-bs-target="#menu1a"
-                           role="button" href="#menu1a"
-                           aria-expanded="false" aria-controls="menu1a">
+                        <button className="it-opener d-lg-none btn p-1 border-0 bg-transparent text-white" 
+                           data-bs-toggle="collapse" 
+                           data-bs-target="#menu1a"
+                           type="button"
+                           aria-expanded="false"
+                           aria-controls="menu1a">
                             <span className="fs-5 fw-bold">Participium</span>
-                            <Icon aria-hidden icon="it-expand"/>
-                        </a>
+                            <Icon aria-hidden icon="it-expand" color="white" />
+                        </button>
                         <LinkList className="collapse me-3 pe-1" id="menu1a">
                             {!loggedIn && (
                                 <LinkListItem inDropdown href="/" active={globalThis.location.pathname === '/'}>
@@ -110,14 +113,16 @@ function NavComponent({loggedIn, user, handleLogout}: Readonly<NavComponentProps
                     {loggedIn && user ? (
                         <>
                             {isCitizen(user) && (<Container ref={notifRef} className="position-relative pt-1">
-                                <i role="button" className="bi bi-bell-fill text-white position-relative pe-4"
+                                <button type="button" className="btn p-0 border-0 bg-transparent bi bi-bell-fill text-white position-relative pe-4"
+                                    aria-label={isNotifOpen ? "Close notifications" : "Open notifications"}
+                                    aria-expanded={isNotifOpen}
                                    onClick={() => setIsNotifOpen(prevState => !prevState)}>
                                     {notifications.some(n => !n.isRead) &&
                                         <Badge color="danger"
                                                className="text-white fst-normal fw-medium position-absolute top-0 start-50 translate-middle rounded-pill">
                                             {notifications.filter(n => !n.isRead).length > 99 ? "99+" : notifications.filter(n => !n.isRead).length}
                                         </Badge>}
-                                </i>
+                                </button>
                                 {isNotifOpen && (
                                     <div
                                         className="position-absolute bg-white shadow rounded p-2"
@@ -139,10 +144,10 @@ function NavComponent({loggedIn, user, handleLogout}: Readonly<NavComponentProps
                                             </div>
                                         )}
                                         {notifications.map((n, i) => (
-                                            <div
+                                            <button
                                                 key={n.id}
-                                                role="button"
-                                                className={`small py-1 px-1 ${i + 1 === notifications.length ? "" : "border-bottom"} ${n.isRead ? "bg-dark bg-opacity-10" : ""}`}
+                                                type="button"
+                                                className={`w-100 text-start border-0 bg-transparent small py-1 px-1 ${i + 1 === notifications.length ? "" : "border-bottom"} ${n.isRead ? "bg-dark bg-opacity-10" : ""}`}
                                                 onClick={() => handleNotificationClick(n)}
                                             >
                                                 <div className="fw-semibold">
@@ -154,13 +159,14 @@ function NavComponent({loggedIn, user, handleLogout}: Readonly<NavComponentProps
                                                 <div className="text-muted fst-italic" style={{fontSize: "0.7rem"}}>
                                                     {new Date(n.timestamp).toLocaleString()}
                                                 </div>
-                                            </div>
+                                            </button>
                                         ))}
                                     </div>
                                 )}
                             </Container>)}
-                            <div id="avatarRef" role="button"
-                                 className="d-flex flex-row justify-content-center gap-2 mx-2"
+                            <button id="avatarRef" type="button"
+                                 className="d-flex flex-row justify-content-center gap-2 mx-2 border-0 bg-transparent p-0"
+                                 aria-label="Open profile"
                                  onClick={() => navigate('/profile')}>
                                 <AvatarIcon size="sm">
                                     {isCitizen(user) && user.profilePicture ?
@@ -171,7 +177,7 @@ function NavComponent({loggedIn, user, handleLogout}: Readonly<NavComponentProps
                                 <span className="text-white">
                                         {user.username}
                                     </span>
-                            </div>
+                            </button>
                             <UncontrolledTooltip placement="bottom" target={"avatarRef"}>
                                 <strong><small>{user.name} {user.surname}</small></strong>
                                 {isStaff(user) &&

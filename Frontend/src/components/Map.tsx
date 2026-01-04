@@ -126,7 +126,7 @@ function MapClickHandler({ holes, setCoordinates, newReportMode, selectedReport}
     selectedReport: Report | undefined
 }) {
     useMapEvents({
-        click: async (e) => {
+        click: (e) => {
             const {latlng} = e;
             const isInTurin = checkPointInTurin(latlng, holes);
             setCoordinates(isInTurin ? latlng : null);
