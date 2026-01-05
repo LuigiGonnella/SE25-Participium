@@ -119,14 +119,16 @@ function checkPointInTurin(latlng: LatLng, holes: L.LatLngExpression[][]): boole
     return false;
 }
 
-function MapClickHandler({ holes, setCoordinates, newReportMode, selectedReport}: {
+function MapClickHandler({ holes, setCoordinates, newReportMode, searchMode, selectedReport}: {
     holes: L.LatLngExpression[][],
     setCoordinates: (latlng: LatLng | null) => void,
+    searchMode: boolean,
     newReportMode: boolean,
     selectedReport: Report | undefined
 }) {
     useMapEvents({
         click: (e) => {
+            if (searchMode) return;
             const {latlng} = e;
             const isInTurin = checkPointInTurin(latlng, holes);
             setCoordinates(isInTurin ? latlng : null);
@@ -136,12 +138,11 @@ function MapClickHandler({ holes, setCoordinates, newReportMode, selectedReport}
     const map = useMap();
     useEffect(() => {
         if (map) {
-            // Aggiunge un piccolo ritardo per assicurarsi che il layout sia aggiornato
             setTimeout(() => {
                 map.invalidateSize();
             }, 100);
         }
-    }, [newReportMode, map, selectedReport]);
+    }, [newReportMode, searchMode, map, selectedReport]);
 
     return null;
 }
@@ -162,12 +163,6 @@ export function MapViewController({ center, zoom, coordinates, onViewChange }: M
                 const newCenter = map.getCenter();
                 const newZoom = map.getZoom();
                 onViewChange([newCenter.lat, newCenter.lng], newZoom);
-                if (map) {
-                    // Aggiunge un piccolo ritardo per assicurarsi che il layout sia aggiornato
-                    setTimeout(() => {
-                        map.invalidateSize();
-                    }, 100);
-                }
             }
         },
         moveend: () => {
@@ -175,12 +170,6 @@ export function MapViewController({ center, zoom, coordinates, onViewChange }: M
                 const newCenter = map.getCenter();
                 const newZoom = map.getZoom();
                 onViewChange([newCenter.lat, newCenter.lng], newZoom);
-                if (map) {
-                    // Aggiunge un piccolo ritardo per assicurarsi che il layout sia aggiornato
-                    setTimeout(() => {
-                        map.invalidateSize();
-                    }, 100);
-                }
             }
         }
     });
@@ -313,19 +302,20 @@ export default function TurinMaskedMap({isLoggedIn, user}: Readonly<MapProps>) {
                     minZoom={12}
                     maxZoom={18}
                     zoomControl={true}
+                    zoomSnap={0.5}
                     style={{height: '100%', width: '100%'}}
                 >
                     <TileLayer
                         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                     />
-                    {reports.length > 0 && <ClusterMarkers reports={reports} selectedReport={selectedReport} setSelectedReport={ setSelectedReport } setNewReportMode={ setNewReportMode } />}
+                    {reports.length > 0 && <ClusterMarkers reports={reports} selectedReport={selectedReport} setSelectedReport={ setSelectedReport } setNewReportMode={ setNewReportMode } selectedCoordinates={selectedCoordinates}/>}
 
                     <MapViewController
                         center={center}
                         zoom={zoom}
                         coordinates={selectedCoordinates}
-                        onViewChange={handleViewChange}/>
+                        onViewChange={searchMode ? undefined : handleViewChange}/>
 
                     {isLoaded && (
                         <>
@@ -361,6 +351,7 @@ export default function TurinMaskedMap({isLoggedIn, user}: Readonly<MapProps>) {
                                 holes={holes}
                                 setCoordinates={setSelectedCoordinates}
                                 newReportMode={newReportMode}
+                                searchMode={searchMode}
                                 selectedReport={selectedReport}
                             />
                         </>
@@ -382,7 +373,7 @@ export default function TurinMaskedMap({isLoggedIn, user}: Readonly<MapProps>) {
 
                 <Button
                         className="btn-primary rounded-5"
-                        onClick={() => { setNewReportMode(false); setSelectedReport(undefined); setSearchMode(true);}}
+                        onClick={() => { setNewReportMode(false); setSelectedReport(undefined); setSearchMode(true); setSelectedCoordinates(null);}}
                     >
                         <i className="bi bi-search">&nbsp;</i>Search
                 </Button>
@@ -444,9 +435,10 @@ interface ClusterMarkersProps {
     selectedReport?: Report;
     setSelectedReport: (report: Report | undefined) => void;
     setNewReportMode: (mode: boolean) => void;
+    selectedCoordinates: LatLng | null;
 }
 
-function ClusterMarkers({reports, selectedReport, setSelectedReport, setNewReportMode}: Readonly<ClusterMarkersProps>) {
+function ClusterMarkers({reports, selectedReport, setSelectedReport, setNewReportMode, selectedCoordinates}: Readonly<ClusterMarkersProps>) {
 
     const [bounds, setBounds] = useState<[number, number, number, number] | undefined>(undefined);
     const [zoom, setZoom] = useState<number>(12);
@@ -496,7 +488,7 @@ function ClusterMarkers({reports, selectedReport, setSelectedReport, setNewRepor
         if (selectedReport) {
             const lat = selectedReport.coordinates[0];
             const lng = selectedReport.coordinates[1];
-            map.setView([lat, lng], 18, { animate: true });
+            map.setView([lat, lng], 18, { animate: true, duration: 0.5 });
         }
     }, [map, selectedReport]);
 
@@ -525,7 +517,8 @@ function ClusterMarkers({reports, selectedReport, setSelectedReport, setNewRepor
                                     18
                                 );
                                 map.setView([latitude, longitude], expansionZoom, {
-                                    animate: true
+                                    animate: true,
+                                    duration: 0.5
                                 });
                             }
                         }}
@@ -538,7 +531,7 @@ function ClusterMarkers({reports, selectedReport, setSelectedReport, setNewRepor
                     position={[latitude, longitude]}
                     icon={selectedReport && selectedReport.id === cluster.properties.reportId ? SelectedIcon : DefaultIcon}
                     eventHandlers={{
-                        mouseover: (e) => { e.target.openPopup(); },
+                        mouseover: (e) => { if (!selectedCoordinates) e.target.openPopup(); },
                         mouseout: (e) => { e.target.closePopup(); },
                         click: () => { setSelectedReport(reports.find(r => r.id === cluster.properties.reportId) || undefined); setNewReportMode(false); }
                     }}

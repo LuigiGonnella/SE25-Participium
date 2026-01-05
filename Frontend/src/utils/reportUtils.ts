@@ -5,6 +5,7 @@ export const getReportStatusColor = (status: string): string => {
         case ReportStatus.PENDING:
             return 'bg-info';
         case ReportStatus.ASSIGNED:
+            return 'bg-primary-light';
         case ReportStatus.IN_PROGRESS:
             return 'bg-primary';
         case ReportStatus.REJECTED:
@@ -23,6 +24,7 @@ export const getReportStatusBorderColor = (status: string): string => {
         case ReportStatus.PENDING:
             return 'var(--bs-info)';
         case ReportStatus.ASSIGNED:
+            return 'var(--bs-primary-light)';
         case ReportStatus.IN_PROGRESS:
             return 'var(--bs-primary)';
         case ReportStatus.REJECTED:
@@ -96,4 +98,8 @@ export function sortReportsByDistance(
             };
         })
         .sort((a, b) => a.distance - b.distance);
+}
+
+export function checkPostalCode(postalCode: number): boolean {
+    return !Number.isNaN(postalCode) && postalCode >= 10121 && postalCode <= 10156;
 }

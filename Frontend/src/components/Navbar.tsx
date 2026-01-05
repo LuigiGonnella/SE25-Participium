@@ -27,6 +27,7 @@ function NavComponent({loggedIn, user, handleLogout}: Readonly<NavComponentProps
     const [isNotifOpen, setIsNotifOpen] = useState(false);
     const notifRef = useRef<HTMLDivElement | null>(null);
 
+    const unreadNotifications = notifications.filter(n => !n.isRead).length;
 
     useEffect(() => {
         if (loggedIn && user)
@@ -68,8 +69,8 @@ function NavComponent({loggedIn, user, handleLogout}: Readonly<NavComponentProps
                 </HeaderBrand>
                 <div className="nav-mobile">
                     <nav className="d-flex flex-column justify-content-end">
-                        <button className="it-opener d-lg-none btn p-1 border-0 bg-transparent text-white" 
-                           data-bs-toggle="collapse" 
+                        <button className="it-opener d-lg-none btn p-1 border-0 bg-transparent text-white"
+                           data-bs-toggle="collapse"
                            data-bs-target="#menu1a"
                            type="button"
                            aria-expanded="false"
@@ -77,7 +78,7 @@ function NavComponent({loggedIn, user, handleLogout}: Readonly<NavComponentProps
                             <span className="fs-5 fw-bold">Participium</span>
                             <Icon aria-hidden icon="it-expand" color="white" />
                         </button>
-                        <LinkList className="collapse me-3 pe-1" id="menu1a">
+                        <LinkList className="collapse me-0 pe-1" id="menu1a">
                             {!loggedIn && (
                                 <LinkListItem inDropdown href="/" active={globalThis.location.pathname === '/'}>
                                     Homepage
@@ -112,20 +113,20 @@ function NavComponent({loggedIn, user, handleLogout}: Readonly<NavComponentProps
                 <HeaderRightZone className={loggedIn ? "pt-1" : ""}>
                     {loggedIn && user ? (
                         <>
-                            {isCitizen(user) && (<Container ref={notifRef} className="position-relative pt-1">
-                                <button type="button" className="btn p-0 border-0 bg-transparent bi bi-bell-fill text-white position-relative pe-4"
+                            {isCitizen(user) && (<Container ref={notifRef} className={"position-relative pe-0 " + (unreadNotifications > 0 ? "pt-1" : "")}>
+                                <button type="button" className={"btn p-0 border-0 bg-transparent bi bi-bell-fill text-white position-relative " + (unreadNotifications > 0 ? "pe-4" : "pe-2")}
                                     aria-label={isNotifOpen ? "Close notifications" : "Open notifications"}
                                     aria-expanded={isNotifOpen}
                                    onClick={() => setIsNotifOpen(prevState => !prevState)}>
-                                    {notifications.some(n => !n.isRead) &&
+                                    {unreadNotifications > 0 &&
                                         <Badge color="danger"
                                                className="text-white fst-normal fw-medium position-absolute top-0 start-50 translate-middle rounded-pill">
-                                            {notifications.filter(n => !n.isRead).length > 99 ? "99+" : notifications.filter(n => !n.isRead).length}
+                                            {unreadNotifications > 99 ? "99+" : unreadNotifications}
                                         </Badge>}
                                 </button>
                                 {isNotifOpen && (
                                     <div
-                                        className="position-absolute bg-white shadow rounded p-2"
+                                        className="position-absolute bg-white shadow rounded"
                                         style={{
                                             top: "120%",
                                             right: "-100px",
@@ -135,7 +136,7 @@ function NavComponent({loggedIn, user, handleLogout}: Readonly<NavComponentProps
                                             zIndex: 1100
                                         }}
                                     >
-                                        <div className="fw-bold mb-2">
+                                        <div className="fw-bold my-1 ps-1">
                                             Notifications
                                         </div>
                                         {notifications.length === 0 && (
@@ -147,7 +148,7 @@ function NavComponent({loggedIn, user, handleLogout}: Readonly<NavComponentProps
                                             <button
                                                 key={n.id}
                                                 type="button"
-                                                className={`w-100 text-start border-0 bg-transparent small py-1 px-1 ${i + 1 === notifications.length ? "" : "border-bottom"} ${n.isRead ? "bg-dark bg-opacity-10" : ""}`}
+                                                className={`w-100 text-start border-0 small py-1 px-1 mx-0 ${i + 1 === notifications.length ? "" : "border-bottom"} ${n.isRead ? "bg-dark bg-opacity-10" : "bg-transparent"}`}
                                                 onClick={() => handleNotificationClick(n)}
                                             >
                                                 <div className="fw-semibold">
@@ -200,12 +201,12 @@ function NavComponent({loggedIn, user, handleLogout}: Readonly<NavComponentProps
                         </>
                     ) : (
                         <Button className="btn-icon btn-full" color="primary" href="/login">
-                                <span className="rounded-icon">
-                                    <Icon color="primary" icon="it-user"/>
-                                </span>
+                            <span className="rounded-icon">
+                                <Icon color="primary" icon="it-user"/>
+                            </span>
                             <span className="d-none d-lg-block">
-                                  Login to personal area
-                                </span>
+                                Login to personal area
+                            </span>
                         </Button>
                     )}
                 </HeaderRightZone>
