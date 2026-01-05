@@ -1,7 +1,8 @@
-import { Outlet } from "react-router";
+import { Outlet, useLocation } from "react-router";
 import NavComponent from "./Navbar";
 import {Container, Spinner} from "design-react-kit";
 import type {User} from "../models/Models.ts";
+import {CopyrightComponent, CopyrightComponentMap} from "./Copyright";
 
 interface DefaultLayoutProps {
     loggedIn: boolean;
@@ -11,6 +12,9 @@ interface DefaultLayoutProps {
 }
 
 function DefaultLayout({ loggedIn, user, handleLogout, loading = false }: Readonly<DefaultLayoutProps>) {
+    const location = useLocation();
+    const isMap = location.pathname === '/map' || location.pathname.includes('/map');
+    
     return (
         <div style={{display: 'flex', flexDirection: 'column', minHeight: '100vh'}}>
             <NavComponent loggedIn={loggedIn} user={user} handleLogout={handleLogout}/>
@@ -37,6 +41,7 @@ function DefaultLayout({ loggedIn, user, handleLogout, loading = false }: Readon
                     <Outlet/>
                 )}
             </Container>
+            {isMap ? <CopyrightComponentMap /> : <CopyrightComponent />}
         </div>
     );
 }
