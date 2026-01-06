@@ -327,6 +327,16 @@ SE25-Participium/
 │   ├── tsconfig.json
 │   └── vite.config.ts
 │
+├── Telegram/
+│   ├── data/                 # Data used by the bot
+│   ├── API.ts                # Backend API client for the Telegram bot
+│   ├── index.ts              # Telegram bot entry point
+│   ├── models.ts             # Shared models and types
+│   ├── .env                  # Telegram bot environment variables
+│   ├── package.json
+│   ├── package-lock.json
+│   └── tsconfig.json
+|
 ├── docker-compose.yaml       # Docker Compose orchestration
 └── README.md                 # This file
 ```
@@ -345,23 +355,74 @@ SE25-Participium/
 | POST | `/api/v1/auth/login?type=STAFF` | Login as staff | No |
 | GET | `/api/v1/auth/me` | Get current user info | Yes |
 | DELETE | `/api/v1/auth/logout` | Logout | Yes |
+| POST | `/api/v1/auth/createTelegramVerification` | Create Telegram verification code | Yes |
+| POST | `/api/v1/auth/verifyTelegramUser` |  Verify Telegram user via Telegram bot | Bot auth |
+| POST | `/api/v1/auth/verify-email` | Verify email using code | No |
+| POST | `/api/v1/auth/resend-verification-email` | Resend verification email | Yes |
+
+### Citizen Endpoints
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| GET | `/api/v1/citizens` | Get all citizens | No |
+| GET | `/api/v1/citizens/id/:id` | Get citizen by ID | No |
+| GET | `/api/v1/citizens/email/:email` | Get citizen by email | No |
+| GET | `/api/v1/citizens/username/:username` | Get citizen by username | No |
+| PATCH | `/api/v1/citizens/:username` | Update citizen profile (supports profile picture upload) | Yes |
+| GET | `/api/v1/citizens/telegram/:username` | Get citizen by Telegram username (called by Telegram bot) | Bot auth |
 
 ### Report Endpoints
 
 | Method | Endpoint | Description | Auth Required | Role |
 |--------|----------|-------------|---------------|------|
 | POST | `/api/v1/reports` | Create new report | Yes | CITIZEN |
-| GET | `/api/v1/reports/public` | Get map reports (non-pending/rejected) | Yes | CITIZEN |
+| GET | `/api/v1/reports/public` | Get map reports | Optional | - |
 | GET | `/api/v1/reports` | Get all reports with filters | Yes | STAFF |
-| GET | `/api/v1/reports/:id` | Get report by ID | Yes | STAFF |
-| PATCH | `/api/v1/reports/:id/manage` | Update report (assign/reject) | Yes | MPRO |
-| PATCH | `/api/v1/reports/:id/work` | Update report (progress/resolve) | Yes | TOSM |
+| GET | `/api/v1/reports/:reportId` | Get report by ID | Yes | STAFF |
+| PATCH | `/api/v1/reports/:reportId/manage` | Update report (assign/reject) | Yes | MPRO |
+| PATCH | `/api/v1/reports/:reportId/assignSelf` | Self-assign report | Yes | TOSM |
+| PATCH | `/api/v1/reports/:reportId/assignExternal` | Assign report to external maintainer (EM) | Yes | TOSM |
+| PATCH | `/api/v1/reports/:reportId/updateStatus` | Update report status (progress/resolve/suspend, etc.) | Yes | TOSM, EM |
+| POST | `/api/v1/reports/:reportId/messages` | Add a message to report (public/private) | Yes | CITIZEN, STAFF |
+| GET | `/api/v1/reports/:reportId/messages` | Get messages of a report (filtered by user type) | Yes | CITIZEN, STAFF |
+| POST | `/api/v1/reports/telegram` | Create report from Telegram bot (multipart form-data) | Bot auth | — |
+
+### Notification Endpoints
+
+| Method | Endpoint | Description | Auth Required | Role |
+|--------|----------|-------------|---------------|------|
+| GET | `/api/v1/notifications` | Get notifications of current user | Yes | CITIZEN, STAFF |
+| PATCH | `/api/v1/notifications/:id/read` | Mark notification as read | Yes | CITIZEN, STAFF |
 
 ### Office Endpoints
 
-| Method | Endpoint | Description | Auth Required |
-|--------|----------|-------------|---------------|
-| GET | `/api/v1/offices` | Get all offices | Yes |
+| Method | Endpoint | Description | Auth Required | Role |
+|--------|----------|-------------|---------------|------|
+| GET | `/api/v1/offices` | Get all offices | Yes | ADMIN |
+
+### Staff Endpoints
+
+| Method | Endpoint | Description | Auth Required | Role |
+|--------|----------|-------------|---------------|------|
+| GET | `/api/v1/staffs` | Get all staff members | Yes | ADMIN |
+| GET | `/api/v1/staffs/tosm` | Get all TOSM staff | Yes | ADMIN |
+| GET | `/api/v1/staffs/external` | Get external maintainers | Yes | TOSM |
+| PATCH | `/api/v1/staffs/:username/offices` | Update offices of a staff member | Yes | ADMIN |
+
+---
+
+**Authentication legend:**
+- `No` → Public endpoint
+- `Yes` → Requires authenticated user session
+- `Bot auth` → Accessible only by the Telegram bot via dedicated authentication
+
+### Telegram Verification Flow
+
+1. The citizen sets their Telegram username in the profile page
+2. The backend generates a verification code
+3. The citizen sends `/verify <code>` to the Telegram bot
+4. The bot validates the code using bot-authenticated endpoints
+5. The Telegram account is marked as verified
 
 ---
 
@@ -369,7 +430,7 @@ SE25-Participium/
 
 This project is developed for educational purposes as part of the Software Engineering 2 course at Politecnico di Torino.
 
-See the 'LICENSE' file for more infromations.
+See the 'LICENSE' file for more informations.
 
 ---
 
