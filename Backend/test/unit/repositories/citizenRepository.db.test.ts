@@ -161,4 +161,27 @@ describe("CitizenRepository - test suite", () => {
             false,
         )).rejects.toThrow();
     });
+
+    it("should get a citizen by telegram username", async () => {
+        await citizenRepo.createCitizen(
+            "newemail@example.com",
+            "newcitizen",
+            "New",
+            "User",
+            "password123",
+            false,
+        );
+
+        let telegram = "@new_telegram";
+
+        await citizenRepo.updateCitizen(
+            "newcitizen",
+            { telegram_username: telegram }
+        );
+        const fetchedCitizen = await citizenRepo.getCitizenByTelegramUsername(telegram);
+        expect(fetchedCitizen).toBeDefined();
+        expect(fetchedCitizen?.telegram_username).toBe(telegram);
+        expect(fetchedCitizen?.username).toBe("newcitizen");
+    });
+
 });

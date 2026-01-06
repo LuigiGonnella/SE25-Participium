@@ -2,9 +2,11 @@ import request from 'supertest';
 import express, { Express } from 'express';
 import reportRoutes from '@routes/reportRoutes';
 import authRoutes from '@routes/authRoutes';
+import citizenRoutes from '@routes/citizenRoutes';
 import session from 'express-session';
 import passport from 'passport';
 import { configurePassport } from '@config/passport';
+import { CONFIG } from '@config/config';
 import { beforeAllE2e, DEFAULT_CITIZENS, DEFAULT_STAFF, TestDataManager } from "../../e2e/lifecycle";
 import { initializeTestDataSource, closeTestDataSource, TestDataSource } from "../../setup/test-datasource";
 import { ReportDAO, Status } from '@dao/reportDAO';
@@ -50,6 +52,7 @@ beforeAll(async () => {
     
     app.use('/api/v1/auth', authRoutes);
     app.use('/api/v1/reports', reportRoutes);
+    app.use('/api/v1/citizens', citizenRoutes);
     app.use(errorHandler);
 });
 
@@ -460,6 +463,111 @@ describe('Report Routes Tests', () => {
 
             expect(response.body.length).toBe(2);
         });
+    });
+
+    describe('GET /api/v1/telegram/report/:reportId', () => {
+        it('should return report details for Telegram bot', async () => {
+            const citizen = await TestDataManager.getCitizen('citizen1');
+            const report = await reportRepo.create({
+                citizen,
+                title: "Test Report",
+                description: "Description",
+                category: OfficeCategory.RSTLO,
+                latitude: 45,
+                longitude: 7,
+                anonymous: false,
+                photo1: "/img.jpg"
+            });
+
+            const agent = request.agent(app);
+            const res = await agent.get(`/api/v1/reports/telegram/report/${report.id}`)
+                        .set('authorization', `Bearer ${CONFIG.TELEGRAM_BOT_BEARER}`)
+                        .expect(200);
+
+            expect(res.body).toBeDefined()
+            expect(res.body.id).toBe(report.id)
+            expect(res.body.title).toBe("Test Report");
+        });
+
+        it('should return 403 if unauthorized', async () => {
+            const agent = request.agent(app);
+            await agent.get('/api/v1/reports/telegram/report/1')
+                .expect(403);
+        });
+
+        it('should return 404 for non-existent report', async () => {
+            const agent = request.agent(app);
+            await agent.get('/api/v1/reports/telegram/report/99999')
+                .set('authorization', `Bearer ${CONFIG.TELEGRAM_BOT_BEARER}`)
+                .expect(404);
+        });
+
+        it('should return 400 for invalid report id', async () => {
+            const agent = request.agent(app);
+            await agent.get('/api/v1/reports/telegram/report/-1')
+                .set('authorization', `Bearer ${CONFIG.TELEGRAM_BOT_BEARER}`)
+                .expect(400);
+        });
+
+        it('should return 404 for missing report id', async () => {
+            const agent = request.agent(app);
+            await agent.get('/api/v1/reports/telegram/report/')
+                .set('authorization', `Bearer ${CONFIG.TELEGRAM_BOT_BEARER}`)
+                .expect(404);
+        });
+    });
+
+    describe('GET /api/v1/telegram/citizen/:telegram_username', () => {
+        it('should return citizen reports for Telegram bot', async () => {
+            const citizen = await TestDataManager.getCitizen('citizen1');
+            const report = await reportRepo.create({
+                citizen,
+                title: "Test Report",
+                description: "Description",
+                category: OfficeCategory.RSTLO,
+                latitude: 45,
+                longitude: 7,
+                anonymous: false,
+                photo1: "/img.jpg"
+            });
+
+            const telegram = "@citizen1_telegram";
+
+            const agent = request.agent(app);
+
+            await agent.post('/api/v1/auth/login?type=CITIZEN')
+                .send({ username: citizen.username, password: 'cit123' })
+                .expect(200);
+
+            await agent.patch(`/api/v1/citizens/${citizen.username}`)
+                .send({ telegram_username: telegram })
+                .expect(200);
+
+            const res = await agent.get(`/api/v1/reports/telegram/citizen/${telegram}`)
+                        .set('authorization', `Bearer ${CONFIG.TELEGRAM_BOT_BEARER}`)
+                        .expect(200);
+
+            expect(res.body).toBeDefined();
+            expect(res.body.length).toBe(1);
+            const returnedReport = res.body[0];
+            expect(returnedReport.id).toBe(report.id);
+            expect(returnedReport.title).toBe("Test Report");
+            expect(returnedReport.citizenUsername).toBe(citizen.username);
+        });
+
+        it('should return 403 if unauthorized', async () => {
+            const agent = request.agent(app);
+            await agent.get('/api/v1/reports/telegram/citizen/@someuser')
+                .expect(403);
+        });
+
+        it('should return 404 for non-existent citizen', async () => {
+            const agent = request.agent(app);
+            await agent.get('/api/v1/reports/telegram/citizen/@unknownuser')
+                .set('authorization', `Bearer ${CONFIG.TELEGRAM_BOT_BEARER}`)
+                .expect(404);
+        });
+        
     });
 
 });
