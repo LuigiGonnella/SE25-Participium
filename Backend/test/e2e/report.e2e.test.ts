@@ -69,6 +69,15 @@ describe("Reports API E2E Tests", () => {
             .expect(200);
         citizenCookie = citizenLogin.headers["set-cookie"][0];
 
+        // Login as citizen2 to verify visibility from another user
+        await request(app)
+            .post("/api/v1/auth/login?type=CITIZEN")
+            .send({
+                username: DEFAULT_CITIZENS.citizen2.username,
+                password: DEFAULT_CITIZENS.citizen2.password,
+            })
+            .expect(200);
+
         // Login as admin
         const adminLogin = await request(app)
             .post('/api/v1/auth/login?type=STAFF')
@@ -222,6 +231,80 @@ describe("Reports API E2E Tests", () => {
 
             expect(res.body.message).toBeDefined();
             expect(res.body.message).toBe("Not authenticated");
+        });
+
+        it("should create an anonymous report and hide citizen username in listings and detail", async () => {
+            const res = await request(app)
+                .post("/api/v1/reports")
+                .set("Cookie", citizenCookie)
+                .field("title", "Anonymous Report")
+                .field("description", "This report is anonymous")
+                .field("category", "Public Lighting")
+                .field("latitude", 45.0677)
+                .field("longitude", 7.6823)
+                .field("anonymous", "true")
+                .attach("photos", sampleImage)
+                .expect(201);
+
+            expect(res.body).toBeDefined();
+            const createdId = res.body.id;
+
+            // Admin listing should not expose username
+            const listAdmin = await request(app)
+                .get("/api/v1/reports")
+                .set('Cookie', adminCookie)
+                .expect(200);
+            const foundAdmin = listAdmin.body.find((r: any) => r.id === createdId);
+            expect(foundAdmin).toBeDefined();
+            expect(foundAdmin.citizenUsername).toBeUndefined();
+
+            // Make report public (not PENDING) so it appears on the public map
+            await TestDataSource.getRepository(ReportDAO).update(
+                { id: createdId },
+                { status: Status.RESOLVED }
+            );
+
+            // Map (public) endpoint should not expose username to citizens
+            const listPublic = await request(app)
+                .get("/api/v1/reports/public")
+                .expect(200);
+            const foundPublic = listPublic.body.find((r: any) => r.id === createdId);
+            expect(foundPublic).toBeDefined();
+            expect(foundPublic.citizenUsername).toBeUndefined();
+
+            // Detail endpoint should not expose username either
+            const detail = await request(app)
+                .get(`/api/v1/reports/${createdId}`)
+                .set('Cookie', adminCookie)
+                .expect(200);
+            expect(detail.body.citizenUsername).toBeUndefined();
+        });
+
+        it("should create a non-anonymous report and expose citizen username in response and listings", async () => {
+            const res = await request(app)
+                .post("/api/v1/reports")
+                .set("Cookie", citizenCookie)
+                .field("title", "Public Report")
+                .field("description", "This report is public")
+                .field("category", "Public Lighting")
+                .field("latitude", 45.0677)
+                .field("longitude", 7.6823)
+                .field("anonymous", "false")
+                .attach("photos", sampleImage)
+                .expect(201);
+
+            expect(res.body).toBeDefined();
+            expect(res.body.citizenUsername).toBe(DEFAULT_CITIZENS.citizen1.username);
+            const createdId = res.body.id;
+
+            // Admin listing should expose username
+            const listAdmin = await request(app)
+                .get("/api/v1/reports")
+                .set('Cookie', adminCookie)
+                .expect(200);
+            const foundAdmin = listAdmin.body.find((r: any) => r.id === createdId);
+            expect(foundAdmin).toBeDefined();
+            expect(foundAdmin.citizenUsername).toBe(DEFAULT_CITIZENS.citizen1.username);
         });
     });
 
