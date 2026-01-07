@@ -7,8 +7,12 @@ const repo = new StaffRepository();
 
 export async function getAllStaff(req: Request, res: Response) {
     try {
-        const isExternalParam = req.query.isExternal?.toString().toLowerCase();
-        const categoryParam = req.query.category?.toString().toUpperCase();
+        const isExternalParam = typeof req.query.isExternal === 'string' 
+            ? req.query.isExternal.toLowerCase() 
+            : undefined;
+        const categoryParam = typeof req.query.category === 'string' 
+            ? req.query.category.toUpperCase() 
+            : undefined;
 
         const isExternal = validateIsExternal(isExternalParam);
 
@@ -25,7 +29,9 @@ export async function getAllStaff(req: Request, res: Response) {
 
 export async function getAllEMStaff(req: Request, res: Response) {
     try {
-        const categoryParam = req.query.category?.toString().toUpperCase();
+        const categoryParam = typeof req.query.category === 'string' 
+            ? req.query.category.toUpperCase() 
+            : undefined;
 
         const category = categoryParam ? validateOfficeCategory(categoryParam) : undefined;
 
@@ -40,7 +46,9 @@ export async function getAllEMStaff(req: Request, res: Response) {
 
 export async function getAllTOSM(req: Request, res: Response) {
     try {
-        const categoryParam = req.query.category?.toString().toUpperCase();
+        const categoryParam = typeof req.query.category === 'string' 
+            ? req.query.category.toUpperCase() 
+            : undefined;
         const category = categoryParam ? validateOfficeCategory(categoryParam) : undefined;
 
         const repo = new StaffRepository();
