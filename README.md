@@ -376,7 +376,7 @@ SE25-Participium/
 | Method | Endpoint | Description | Auth Required | Role |
 |--------|----------|-------------|---------------|------|
 | POST | `/api/v1/reports` | Create new report | Yes | CITIZEN |
-| GET | `/api/v1/reports/public` | Get map reports | Optional | - |
+| GET | `/api/v1/reports/public` | Get map reports (accessible to authenticated and unauthenticated users) | No | - |
 | GET | `/api/v1/reports` | Get all reports with filters | Yes | STAFF |
 | GET | `/api/v1/reports/:reportId` | Get report by ID | Yes | STAFF |
 | PATCH | `/api/v1/reports/:reportId/manage` | Update report (assign/reject) | Yes | MPRO |
@@ -386,6 +386,8 @@ SE25-Participium/
 | POST | `/api/v1/reports/:reportId/messages` | Add a message to report (public/private) | Yes | CITIZEN, STAFF |
 | GET | `/api/v1/reports/:reportId/messages` | Get messages of a report (filtered by user type) | Yes | CITIZEN, STAFF |
 | POST | `/api/v1/reports/telegram` | Create report from Telegram bot (multipart form-data) | Bot auth | — |
+| GET | `/api/v1/reports/telegram/citizen/:telegram_username` | Get reports by Telegram username | Bot auth | — |
+| GET | `/api/v1/reports/telegram/report/:reportId` | Get report details (Telegram bot) | Bot auth | — |
 
 ### Notification Endpoints
 
@@ -414,7 +416,7 @@ SE25-Participium/
 **Authentication legend:**
 - `No` → Public endpoint
 - `Yes` → Requires authenticated user session
-- `Bot auth` → Accessible only by the Telegram bot via dedicated authentication
+- `Bot auth` → Accessible only by the Telegram bot via dedicated authentication. Requires a static bearer token (`TELEGRAM_BOT_BEARER`) sent via `Authorization: Bearer <token>`
 
 ### Telegram Verification Flow
 
