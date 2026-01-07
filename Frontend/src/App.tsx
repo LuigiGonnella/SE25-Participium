@@ -137,7 +137,7 @@ function App() {
         if (loggedIn && canAccessReports(user) && user) {
             return <ReportListPage user={user}/>;
         }
-        return <Navigate replace to={isAdmin(user) ? "/municipality-registration" : "/login"}/>;
+        return <Navigate replace to={isAdmin(user) ? "/tosms" : "/login"}/>;
     };
 
     const getReportDetailElement = () => {
@@ -162,7 +162,7 @@ function App() {
                 <Route path="registration" element={getRegistrationElement()}/>
                 <Route path="verify-email" element={getVerifyEmailElement()}/>
                 <Route path="municipality-registration" element={getMunicipalityRegistrationElement()}/>
-                <Route path="/map" element={!isStaff(user) ? getMapElement() : <Navigate replace to="/"/>}/>
+                <Route path="/map" element={isStaff(user) ? <Navigate replace to="/"/> : getMapElement()}/>
                 <Route path="/reports" element={getReportsElement()}/>
                 <Route path="/reports/:id" element={getReportDetailElement()}/>
                 <Route path="/profile" element={getProfileElement()}/>

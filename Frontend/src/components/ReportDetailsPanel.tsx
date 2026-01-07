@@ -2,7 +2,7 @@ import { Card, Container } from "react-bootstrap";
 import type { Report, Message } from "../models/Models";
 import { useEffect, useState } from "react";
 import API, {STATIC_URL} from "../API/API.mts";
-import {convertToDMS, getReportStatusColor} from "../utils/reportUtils.ts";
+import {convertToDMS, getCategoryLabel, getReportStatusColor} from "../utils/reportUtils.ts";
 
 interface ReportDetailsPanelProps {
     report: Report;
@@ -77,7 +77,7 @@ export default function ReportDetailsPanel({ report, onClose }: Readonly<ReportD
                     <h3 className="mb-3">{report.title}</h3>
 
                     <p><strong>Description:</strong><br />{report.description}</p>
-                    <p><strong>Category:</strong> {report.category}</p>
+                    <p><strong>Category:</strong> {getCategoryLabel(report.category)}</p>
                     <p><strong>Street:</strong> {streetName}</p>
                     <p><strong>Coordinates:</strong> {convertToDMS(report.coordinates[0], true)}, {convertToDMS(report.coordinates[1], false)}</p>
                     <p><strong>Status: </strong>
