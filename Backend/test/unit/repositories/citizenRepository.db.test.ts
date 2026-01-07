@@ -87,6 +87,23 @@ describe("CitizenRepository - test suite", () => {
         expect(usernames).toContain(newCitizen.username);
     });
 
+    it("should default receive_emails to false when not provided", async () => {
+        await citizenRepo.createCitizen(
+            "defaultflag@example.com",
+            "defaultflaguser",
+            "Default",
+            "Flag",
+            "password123"
+        );
+    
+        const saved = await TestDataSource
+            .getRepository(CitizenDAO)
+            .findOneBy({ username: "defaultflaguser" });
+    
+        expect(saved).toBeDefined();
+        expect(saved?.receive_emails).toBe(false);
+    });
+
     it("should get default citizen by email", async () => {
         const citizen = await citizenRepo.getCitizenByEmail(DEFAULT_CITIZENS.citizen1.email);
         expect(citizen).toBeDefined();
