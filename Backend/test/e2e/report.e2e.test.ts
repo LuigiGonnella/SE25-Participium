@@ -310,28 +310,28 @@ describe("Reports API E2E Tests", () => {
             expect(res.body.length).toBeGreaterThanOrEqual(0);
         });
 
-        it("should return 400 when only fromDate is provided", async () => {
+        it("should return 200 when only fromDate is provided", async () => {
             const yesterday = new Date();
             yesterday.setDate(yesterday.getDate() - 1);
 
             const res = await request(app)
                 .get(`/api/v1/reports?fromDate=${yesterday.toISOString()}`)
                 .set('Cookie', adminCookie)
-                .expect(400);
+                .expect(200);
 
-            expectErrorResponse(res);
+            expect(res.body.length).toBeGreaterThanOrEqual(0);
         });
 
-        it("should return 400 when only toDate is provided", async () => {
+        it("should return 200 when only toDate is provided", async () => {
             const tomorrow = new Date();
             tomorrow.setDate(tomorrow.getDate() + 1);
 
             const res = await request(app)
                 .get(`/api/v1/reports?toDate=${tomorrow.toISOString()}`)
                 .set('Cookie', adminCookie)
-                .expect(400);
+                .expect(200);
 
-            expectErrorResponse(res);
+            expect(res.body.length).toBeGreaterThanOrEqual(0);
         });
 
         it("should return 400 when fromDate is after toDate", async () => {

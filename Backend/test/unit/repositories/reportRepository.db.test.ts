@@ -951,7 +951,7 @@ describe("ReportRepository - assignEMToReport (Story 24)", () => {
         ).rejects.toThrow("cannot be assigned to reports of category");
     });
 
-    it("allow to changes EM if status is assigned", async () => {
+    it("allows to change EM if status is ASSIGNED", async () => {
         const report = await reportRepo.create({
             citizen,
             title: "Already EM",

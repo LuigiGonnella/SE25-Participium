@@ -43,10 +43,6 @@ const buildReportFilters = (query: any): ReportFilters => {
         filters.staff_username = staff_username.trim();
     }
 
-    if (fromDate && !toDate || !fromDate && toDate) {
-        throw new BadRequestError('Both fromDate and toDate must be provided together.');
-    }
-
     if (fromDate) {
         filters.fromDate = validateDate(fromDate, 'fromDate');
     }

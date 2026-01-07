@@ -2,10 +2,10 @@ import {useEffect, useState} from "react";
 import {useParams} from "react-router";
 import API, {STATIC_URL} from "../API/API.mts";
 import {
+    isEM,
     isMPRO,
     isStaff,
     isTOSM,
-    isEM,
     type Message,
     OfficeCategory,
     type Report,
@@ -13,8 +13,8 @@ import {
     type User
 } from "../models/Models.ts";
 import {Card, Carousel, CarouselSlide} from "design-react-kit";
-import {Alert, Button, Col, Form, Row } from "react-bootstrap";
-import {getReportStatusColor} from "../utils/reportUtils.ts";
+import {Alert, Button, Col, Form, Row} from "react-bootstrap";
+import {getCategoryLabel, getReportStatusColor} from "../utils/reportUtils.ts";
 
 interface ReportDetailPageProps {
   user?: User;
@@ -133,7 +133,7 @@ export default function ReportDetailPage({ user }: Readonly<ReportDetailPageProp
     load();
   }, [id]);
 
-  const buildUpdatePayload = (): any | null => {
+  const buildUpdatePayload = (): any => {
     const payload: any = {};
     
     if (statusInput === ReportStatus.REJECTED) {
@@ -143,6 +143,8 @@ export default function ReportDetailPage({ user }: Readonly<ReportDetailPageProp
       }
       payload.status = ReportStatus.REJECTED;
       payload.comment = commentInput.trim();
+      const key = Object.entries(OfficeCategory).find(([, v]) => v === report?.category)?.[0];
+      payload.category = key || 'MOO';
     } else if (statusInput === ReportStatus.ASSIGNED) {
       payload.status = ReportStatus.ASSIGNED;
       if (categoryInput) {
@@ -273,7 +275,7 @@ return (
                                 )}
 
                                 <h5>Category</h5>
-                                <p>{report.category}</p>
+                                <p>{getCategoryLabel(report.category)}</p>
 
                                 <h5>Description</h5>
                                 <p>{report.description}</p>
@@ -619,7 +621,7 @@ return (
                                                 value={categoryInput}
                                                 onChange={(e) => setCategoryInput(e.target.value)}
                                             >
-                                                <option value="">Keep current: {report.category}</option>
+                                                <option value="">Keep current: {getCategoryLabel(report.category)}</option>
                                                 {categoryOptions
                                                     .filter(([key]) => ![report.category, OfficeCategory.MOO].includes(OfficeCategory[key as keyof typeof OfficeCategory]))
                                                     .map(([key, label]) => (

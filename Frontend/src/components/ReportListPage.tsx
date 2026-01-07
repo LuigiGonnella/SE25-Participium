@@ -1,10 +1,20 @@
-import { useEffect, useState, useCallback } from "react";
-import { Link } from "react-router";
-import { Alert, Spinner, Button } from "react-bootstrap";
+import {useCallback, useEffect, useState} from "react";
+import {Link} from "react-router";
+import {Alert, Button, Spinner} from "react-bootstrap";
 import API from "../API/API.mts";
-import type { Report, User, Staff } from "../models/Models.ts";
-import { ReportStatus, isMPRO, isTOSM, isEM } from "../models/Models.ts";
-import {getReportStatusBorderColor} from "../utils/reportUtils.ts";
+import {
+    isEM,
+    isMPRO,
+    isTOSM,
+    OfficeCategory,
+    type Report,
+    ReportStatus,
+    type Staff,
+    type User
+} from "../models/Models.ts";
+import {getCategoryLabel, getReportStatusBorderColor} from "../utils/reportUtils.ts";
+import {APIError} from "../services/ErrorHandler.ts";
+import {Col, Row} from "design-react-kit";
 
 
 interface ReportListProps {
@@ -25,6 +35,10 @@ export default function ReportListPage({ user }: Readonly<ReportListProps>) {
 
     // FILTER STATE
     const [statusFilter, setStatusFilter] = useState("");
+    const [categoryFilter, setCategoryFilter] = useState("");
+    const [fromDateFilter, setFromDateFilter] = useState("");
+    const [toDateFilter, setToDateFilter] = useState("");
+    const [titleFilter, setTitleFilter] = useState("");
 
     const getStatusOptions = () => {
         if (isTOSM(user) || isEM(user)) {
@@ -43,20 +57,25 @@ export default function ReportListPage({ user }: Readonly<ReportListProps>) {
     };
 
     const loadReports = useCallback(async () => {
+        setError(undefined);
         setLoading(true);
         try {
             const filters: Record<string, string> = {};
             if (statusFilter) filters.status = statusFilter;
+            if (categoryFilter) filters.category = categoryFilter;
+            if (fromDateFilter) filters.fromDate = new Date(fromDateFilter).toISOString().slice(0,10);
+            if (toDateFilter) filters.toDate = new Date(toDateFilter).toISOString().slice(0,10);
+            if (titleFilter) filters.title = titleFilter;
 
             const data = await API.getReports(filters);
             setReports(data);
         } catch (err: unknown) {
-            const errorMessage = err instanceof Error ? err.message : "Failed to load reports";
+            const errorMessage = err instanceof APIError ? err.details : "Failed to load reports";
             setError(errorMessage);
         } finally {
             setLoading(false);
         }
-    }, [statusFilter]);
+    }, [categoryFilter, fromDateFilter, statusFilter, titleFilter, toDateFilter]);
 
     useEffect(() => {
         loadReports();
@@ -79,7 +98,7 @@ export default function ReportListPage({ user }: Readonly<ReportListProps>) {
                 prevReports.map(r => r.id === reportId ? updatedReport : r)
             );
         } catch (err: unknown) {
-            const errorMessage = err instanceof Error ? err.message : "Failed to assign report";
+            const errorMessage = err instanceof APIError ? err.details : "Failed to assign report";
             setError(errorMessage);
         } finally {
             setAssigningId(null);
@@ -96,7 +115,7 @@ export default function ReportListPage({ user }: Readonly<ReportListProps>) {
                 prevReports.map(r => r.id === report.id ? updatedReport : r)
             );
         } catch (err: unknown) {
-            const errorMessage = err instanceof Error ? err.message : "Failed to assign report to maintainer";
+            const errorMessage = err instanceof APIError ? err.details : "Failed to assign report to maintainer";
             setError(errorMessage);
         } finally {
             setAssigningToMaintainer(null);
@@ -121,31 +140,119 @@ export default function ReportListPage({ user }: Readonly<ReportListProps>) {
         return r.assignedStaff === user.username || r.assignedEM === user.username;
     });
 
+    const resetFilters = () => {
+        setStatusFilter("");
+        setCategoryFilter("");
+        setFromDateFilter("");
+        setToDateFilter("");
+        setTitleFilter("");
+    };
+
+    const areFiltersActive = statusFilter || categoryFilter || fromDateFilter || toDateFilter || titleFilter;
+
     return (
         <div className="d-flex flex-column">
-            <div className="container px-3 px-md-4 py-2 py-md-3" style={{ maxWidth: "1000px" }}>
-                <h2 className="mb-2 mb-md-3 fs-3 fs-md-2">Reports</h2>
+            <div className="container px-3 px-md-4 py-2 py-md-3" style={{ maxWidth: "1050px" }}>
+                <Row className="d-flex align-items-center">
+                    <Col className="col-8">
+                        <h2 className="mb-2 mb-md-3 fs-2">Reports</h2>
+                    </Col>
+                    {(isTOSM(user) || isEM(user)) &&
+                        <Col>
+                            <Button className="p-1 float-end fw-normal" title="Only display reports assigned to me" variant={assignedToMe ? "success" : "outline-secondary"} size="sm" type="button" onClick={() => setAssignedToMe(prevState => !prevState)} id="assignedToMeCheckbox">Assigned to me</Button>
+                        </Col>
+                    }
+                </Row>
 
                 {/* FILTER SECTION */}
                 <div className="mb-2 d-flex flex-column flex-sm-row align-items-start align-items-sm-center gap-2">
-                    <select
-                        className="form-select form-select-sm"
-                        value={statusFilter}
-                        onChange={(e) => setStatusFilter(e.target.value)}
-                        style={{ width: "auto", minWidth: "150px" }}
-                    >
-                        <option value="">All statuses</option>
-                        {getStatusOptions().map(({ value, label }) => (
-                            <option key={value} value={value}>
-                                {label}
-                            </option>
-                        ))}
-                    </select>
-                    {(isTOSM(user) || isEM(user)) &&
-                        <div className="d-flex align-items-center gap-2">
-                            <input type="checkbox" onChange={(v) => setAssignedToMe(v.target.checked)} id="assignedToMeCheckbox" />
-                            <label htmlFor="assignedToMeCheckbox" className="mb-0 small">Assigned to me</label>
-                        </div>}
+                    <label>
+                        Status:{' '}
+                        <select
+                            className="form-select form-select-sm"
+                            value={statusFilter}
+                            onChange={(e) => setStatusFilter(e.target.value)}
+                            style={{ width: "auto", minWidth: "150px" }}
+                        >
+                            <option value="">Any</option>
+                            {getStatusOptions().map(({ value, label }) => (
+                                <option key={value} value={value}>
+                                    {label}
+                                </option>
+                            ))}
+                        </select>
+                    </label>
+                    { (isMPRO(user) || isTOSM(user) && user.officeNames.length > 1) &&
+                        <label>
+                            Category:{' '}
+                            <select
+                                className="form-select form-select-sm"
+                                value={categoryFilter}
+                                onChange={(e) => setCategoryFilter(e.target.value)}
+                                style={{ width: "auto", minWidth: "150px" }}
+                            >
+                                <option value="">Any</option>
+
+                                {isMPRO(user) && Object.entries(OfficeCategory).map(([key, value]) => (
+                                    <option key={key} value={key}>
+                                        {key === 'MOO' ? 'Other' : value}
+                                    </option>
+                                ))}
+                                {(isTOSM(user) && user.officeNames.length > 1) &&
+                                    user.officeNames.map((officeName) => {
+                                        const categoryEntry = Object.entries(OfficeCategory).find(([,v]) => v===officeName.replaceAll(" Office", ""));
+                                        if (!categoryEntry) return null;
+                                        const [key, label] = categoryEntry;
+                                        return (
+                                            <option key={key} value={key}>
+                                                {getCategoryLabel(label)}
+                                            </option>
+                                        )
+                                    })
+                                }
+                            </select>
+                        </label>
+                    }
+                    <label>
+                        From:{' '}
+                        <input
+                            type="date"
+                            className="form-control form-control-sm"
+                            value={fromDateFilter}
+                            max={toDateFilter || new Date().toISOString().slice(0, 10)}
+                            onChange={(e) => setFromDateFilter(e.target.value)}
+                            style={{ width: "auto" }}
+                            placeholder="From date"
+                        />
+                    </label>
+                    <label>
+                        To:{' '}
+                        <input
+                            type="date"
+                            className="form-control form-control-sm me-2"
+                            value={toDateFilter}
+                            min={fromDateFilter}
+                            max={new Date().toISOString().slice(0, 10)}
+                            onChange={(e) => setToDateFilter(e.target.value)}
+                            style={{ width: "auto" }}
+                            placeholder="To date"
+                        />
+                    </label>
+                    <label className="flex-grow-1">
+                        Title:{' '}
+                        <input
+                            type="text"
+                            className="form-control form-control-sm"
+                            value={titleFilter}
+                            onChange={(e) => setTitleFilter(e.target.value)}
+                            placeholder="Search by title"
+                        />
+                    </label>
+                    <div>
+                        <button disabled={!areFiltersActive} className="btn btn-sm text-danger" onClick={resetFilters}>
+                            Reset
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -158,14 +265,14 @@ export default function ReportListPage({ user }: Readonly<ReportListProps>) {
 
             {/* ERROR */}
             {!loading && error && (
-                <div className="container-fluid px-3 px-md-4" style={{ maxWidth: "1400px" }}>
+                <div className="container-fluid px-3 px-md-4" style={{ maxWidth: "1050px" }}>
                     <Alert variant="danger" className="mb-2">{error}</Alert>
                 </div>
             )}
 
             {/* REPORT LIST */}
             {!loading && filteredReports.length > 0 && (
-                <div className="container-fluid px-3 px-md-4 pb-3" style={{ maxWidth: "1000px" }}>
+                <div className="container-fluid px-3 px-md-4 pb-3" style={{ maxWidth: "1050px" }}>
                     <div className="list-group gap-2">
                         {filteredReports.map((r) => (
                             <div key={r.id}>
@@ -186,7 +293,7 @@ export default function ReportListPage({ user }: Readonly<ReportListProps>) {
                                                 <div className="d-flex flex-column flex-md-row gap-2 gap-md-3 flex-wrap small text-muted">
                                                     <span>Status: <strong className="text-dark">{r.status}</strong></span>
                                                     <span className="d-none d-md-inline">•</span>
-                                                    <span>Category: <strong className="text-dark">{r.category}</strong></span>
+                                                    <span>Category: <strong className="text-dark">{getCategoryLabel(r.category)}</strong></span>
                                                     {(r.assignedStaff || r.assignedEM) && (
                                                         <>
                                                             <span className="d-none d-md-inline">•</span>
@@ -239,7 +346,7 @@ export default function ReportListPage({ user }: Readonly<ReportListProps>) {
                                                     <div className="d-flex flex-column flex-md-row gap-2 gap-md-3 flex-wrap small text-muted">
                                                         <span>Status: <strong className="text-dark">{r.status}</strong></span>
                                                         <span className="d-none d-md-inline">•</span>
-                                                        <span>Category: <strong className="text-dark">{r.category}</strong></span>
+                                                        <span>Category: <strong className="text-dark">{getCategoryLabel(r.category)}</strong></span>
                                                         {(r.assignedStaff) && (
                                                             <>
                                                                 <span className="d-none d-md-inline">•</span>
