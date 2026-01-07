@@ -951,7 +951,7 @@ describe("ReportRepository - assignEMToReport (Story 24)", () => {
         ).rejects.toThrow("cannot be assigned to reports of category");
     });
 
-    it("throws BadRequestError if EM already assigned", async () => {
+    it("allows to change EM if status is ASSIGNED", async () => {
         const report = await reportRepo.create({
             citizen,
             title: "Already EM",
@@ -968,9 +968,8 @@ describe("ReportRepository - assignEMToReport (Story 24)", () => {
 
         await reportRepo.assignEMToReport(report.id, em.username, tosm.username);
 
-        await expect(
-            reportRepo.assignEMToReport(report.id, em.username, tosm.username)
-        ).rejects.toThrow("Report is already assigned to EM");
+        const updatedReport = await reportRepo.assignEMToReport(report.id, "", tosm.username);
+        expect(updatedReport.assignedEM).toBeNull();
     });
 
     it("update report for EM to IN_PROGRESS", async () => {

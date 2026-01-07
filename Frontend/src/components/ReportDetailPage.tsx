@@ -143,6 +143,8 @@ export default function ReportDetailPage({ user }: Readonly<ReportDetailPageProp
       }
       payload.status = ReportStatus.REJECTED;
       payload.comment = commentInput.trim();
+      const key = Object.entries(OfficeCategory).find(([, v]) => v === report?.category)?.[0];
+      payload.category = key || 'MOO';
     } else if (statusInput === ReportStatus.ASSIGNED) {
       payload.status = ReportStatus.ASSIGNED;
       if (categoryInput) {

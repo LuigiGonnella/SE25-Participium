@@ -72,7 +72,7 @@ export default function CitizenProfile({ user, refresh }: Readonly<CitizenProfil
             setSuccessMessage("Profile updated successfully!");
             setProfilePicFile(null);
         } catch (error: any) {
-            setErrorMessage(error.message || "Failed to update profile");
+            setErrorMessage(error?.details || error?.message || "Failed to update profile");
         } finally {
             setIsSubmitting(false);
         }
