@@ -15,6 +15,7 @@ import { OfficeCategory } from "@dao/officeDAO";
 import { ReportRepository } from "@repositories/reportRepository";
 import path from "node:path";
 import { CitizenDAO } from "@models/dao/citizenDAO";
+import { CONFIG } from '@config/config';
 
 const getStatusKey = (status: Status): string => {
     const key = Object.keys(Status).find(
@@ -1612,6 +1613,103 @@ describe("Reports API E2E Tests", () => {
                 .expect(201);
 
             expect(res.body.photos.length).toBe(2);
+        });
+    });
+
+    describe("GET /api/v1/reports/telegram/citizen/:telegram_username - Telegram Bot: Get citizen reports", () => {
+        const TELEGRAM_BEARER = CONFIG.TELEGRAM_BOT_BEARER;
+    
+        beforeEach(async () => {
+            await TestDataSource.getRepository(CitizenDAO).update(
+                { username: DEFAULT_CITIZENS.citizen1.username },
+                { telegram_username: "@telegram_user1" }
+            );
+        });
+    
+        it("should return all reports created by the citizen linked to telegram username", async () => {
+            const res = await request(app)
+                .get("/api/v1/reports/telegram/citizen/@telegram_user1")
+                .set("authorization", `Bearer ${TELEGRAM_BEARER}`)
+                .expect(200);
+    
+            expect(Array.isArray(res.body)).toBe(true);
+    
+            const expectedIds = [testReport1.id, testReport3.id].sort((a: number, b: number) => a - b);
+            const responseIds = res.body
+                .map((r: any) => r.id as number)
+                .sort((a: number, b: number) => a - b);
+    
+            expect(responseIds).toEqual(expectedIds);
+        });
+    
+        it("should return 404 when telegram username is not linked to any citizen", async () => {
+            const res = await request(app)
+                .get("/api/v1/reports/telegram/citizen/@does_not_exist")
+                .set("authorization", `Bearer ${TELEGRAM_BEARER}`)
+                .expect(404);
+    
+            expectErrorResponse(res);
+        });
+    
+        it("should return 403 when bearer token is missing", async () => {
+            const res = await request(app)
+                .get("/api/v1/reports/telegram/citizen/@telegram_user1")
+                .expect(403);
+    
+            expect(res.body).toHaveProperty("error");
+            expect(res.body.error).toBe("Forbidden");
+        });
+    
+        it("should return 403 when bearer token is invalid", async () => {
+            const res = await request(app)
+                .get("/api/v1/reports/telegram/citizen/@telegram_user1")
+                .set("authorization", "Bearer invalid_token_here")
+                .expect(403);
+    
+            expect(res.body).toHaveProperty("error");
+            expect(res.body.error).toBe("Forbidden");
+        });
+    });
+    
+    describe("GET /api/v1/reports/telegram/report/:reportId - Telegram Bot: Get report details", () => {
+        const TELEGRAM_BEARER = CONFIG.TELEGRAM_BOT_BEARER;
+    
+        it("should return a report by valid ID", async () => {
+            const res = await request(app)
+                .get(`/api/v1/reports/telegram/report/${testReport1.id}`)
+                .set("authorization", `Bearer ${TELEGRAM_BEARER}`)
+                .expect(200);
+    
+            expect(res.body).toBeDefined();
+            expect(res.body.id).toBe(testReport1.id);
+            expect(res.body.title).toBe(testReport1.title);
+        });
+    
+        it("should return 400 for invalid report ID format", async () => {
+            const res = await request(app)
+                .get("/api/v1/reports/telegram/report/invalid")
+                .set("authorization", `Bearer ${TELEGRAM_BEARER}`)
+                .expect(400);
+    
+            expectErrorResponse(res);
+        });
+    
+        it("should return 404 for non-existent report", async () => {
+            const res = await request(app)
+                .get("/api/v1/reports/telegram/report/999999")
+                .set("authorization", `Bearer ${TELEGRAM_BEARER}`)
+                .expect(404);
+    
+            expectErrorResponse(res);
+        });
+    
+        it("should return 403 when bearer token is missing", async () => {
+            const res = await request(app)
+                .get(`/api/v1/reports/telegram/report/${testReport1.id}`)
+                .expect(403);
+    
+            expect(res.body).toHaveProperty("error");
+            expect(res.body.error).toBe("Forbidden");
         });
     });
 });
