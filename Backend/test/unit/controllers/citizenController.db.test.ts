@@ -1,8 +1,9 @@
 import { CitizenDAO } from "@dao/citizenDAO";
 import { CitizenRepository } from "@repositories/citizenRepository";
 import { initializeTestDataSource, closeTestDataSource, TestDataSource } from "../../setup/test-datasource";
-import { getAllCitizens, getCitizenByEmail, getCitizenById, getCitizenByUsername, updateCitizenProfile } from "@controllers/citizenController";
+import { getAllCitizens, getCitizenByEmail, getCitizenById, getCitizenByUsername, updateCitizenProfile, getCitizenByTelegramUsername } from "@controllers/citizenController";
 import { beforeAllE2e, DEFAULT_CITIZENS, TestDataManager } from "../../e2e/lifecycle";
+import { NotFoundError } from "@models/errors/NotFoundError";
 
 let citizenRepo: CitizenRepository;
 
@@ -89,4 +90,34 @@ describe("CitizenController - test suite", () => {
         const citizen = await getCitizenById(99999);
         expect(citizen).toBeNull();
     });
+
+    it("tests getCitizenByTelegramUsername", async () => {
+        await citizenRepo.createCitizen(
+            "newemail@example.com",
+            "newcitizen",
+            "New",
+            "User",
+            "password123",
+            false,
+        );
+
+        let telegram = "@new_telegram";
+
+        await updateCitizenProfile(
+            "newcitizen",
+            { telegram_username: telegram }
+        );
+
+        const fetchedCitizen = await getCitizenByTelegramUsername(telegram);
+        expect(fetchedCitizen).toBeDefined();
+        expect(fetchedCitizen?.telegram_username).toBe(telegram);
+        expect(fetchedCitizen?.username).toBe("newcitizen");
+    });
+    
+    it("tests getCitizenByTelegramUsername throws NotFoundError for non-existent citizen", async () => {
+        await expect(
+            getCitizenByTelegramUsername("@unknown_telegram")
+        ).rejects.toThrow(NotFoundError);
+    });
+    
 });

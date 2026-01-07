@@ -166,6 +166,10 @@ describe("ReportRepository - test suite", () => {
         await expect(reportRepo.getReportById(99999)).rejects.toThrow('Report with id \'99999\' not found');
     });
 
+    it("returns null for invalid report id", async () => {
+        await expect(reportRepo.getReportById(-1)).rejects.toThrow('Report with id \'-1\' not found');
+    });
+
     it("gets reports by citizen username", async () => {
         const citizen = await TestDataManager.getCitizen('citizen2');
         const staff = await TestDataManager.getStaff('mpro');

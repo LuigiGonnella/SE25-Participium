@@ -1,4 +1,4 @@
-import { createReport, addMessageToReport, getAllMessages, selfAssignReport, updateReportAsMPRO, assignReportToEM } from "@controllers/reportController";
+import { createReport, addMessageToReport, getAllMessages, selfAssignReport, updateReportAsMPRO, assignReportToEM, getReportsByCitizenUsername } from "@controllers/reportController";
 import { CitizenRepository } from "@repositories/citizenRepository";
 import { ReportRepository } from "@repositories/reportRepository";
 import { ReportDAO, Status } from "@dao/reportDAO";
@@ -134,6 +134,20 @@ describe("ReportController - createReport", () => {
         await expect(
             createReport(invalidBody, DEFAULT_CITIZENS.citizen1.username, fakeFiles)
         ).rejects.toThrow();
+    });
+
+    it("create a report with anonymous set to true", async () => {
+        const anonymousBody = { ...fakeBody, anonymous: true };
+        const report = await createReport(anonymousBody, DEFAULT_CITIZENS.citizen2.username, fakeFiles);
+
+        expect(report.anonymous).toBe(true);
+    });
+
+    it("create a report with anonymous set to string 'true'", async () => {
+        const anonymousBody = { ...fakeBody, anonymous: 'true' };
+        const report = await createReport(anonymousBody, DEFAULT_CITIZENS.citizen2.username, fakeFiles);
+        
+        expect(report.anonymous).toBe(true);
     });
 });
 
@@ -466,6 +480,57 @@ describe("ReportController - getAllMessages", () => {
             getAllMessages(99999, "STAFF")
         ).rejects.toThrow(NotFoundError);
     });
-        
 
+});
+
+describe("ReportController - getReportById", () => {
+    let report: ReportDAO;
+
+    it("should get a report by id", async () => {
+        const citizen = await TestDataManager.getCitizen('citizen1');
+        const newReport = await createReport(fakeBody, citizen.username, fakeFiles);
+        const fetchedReport = await reportRepo.getReportById(newReport.id);
+
+        expect(fetchedReport).toBeDefined();
+        expect(fetchedReport.id).toEqual(newReport.id);
+        expect(fetchedReport.title).toEqual(fakeBody.title);
+    });
+
+    it("should throw NotFoundError for non-existent report id", async () => {
+        await expect(
+            reportRepo.getReportById(99999)
+        ).rejects.toThrow(NotFoundError);
+    });
+
+    it("should throw NotFoundError for invalid report id", async () => {
+        await expect(
+            reportRepo.getReportById(-1)
+        ).rejects.toThrow(NotFoundError);
+    });
+    
+});
+
+describe("ReportController - getReportsByCitizenUsername", () => {
+    it("should get reports by citizen username", async () => {
+        await createReport(fakeBody, DEFAULT_CITIZENS.citizen1.username, fakeFiles);
+        const reports = await getReportsByCitizenUsername(DEFAULT_CITIZENS.citizen1.username);
+
+        expect(reports).toBeDefined();
+        expect(reports.length).toEqual(1);
+        expect(reports[0].citizenUsername).toBe(DEFAULT_CITIZENS.citizen1.username);
+        expect(reports[0].title).toBe(fakeBody.title);
+
+    });
+
+    it("should get empty array if citizen has no reports", async () => {
+        const reports = await getReportsByCitizenUsername(DEFAULT_CITIZENS.citizen1.username);
+        expect(reports).toBeDefined();
+        expect(reports.length).toEqual(0);
+    });
+
+    it("should throw NotFoundError for non-existent citizen username", async () => {
+        await expect(
+            getReportsByCitizenUsername("unknownUser")
+        ).rejects.toThrow(NotFoundError);
+    });
 });
