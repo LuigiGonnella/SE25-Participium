@@ -202,7 +202,7 @@ describe('Report Routes Tests', () => {
         it('should return 401 if user is not authenticated', async () => {
             const agent = request.agent(app);
             
-            await agent
+            const response = await agent
                 .post('/api/v1/reports')
                 .field('title', 'Test Report')
                 .field('description', 'Test Description')
@@ -212,6 +212,8 @@ describe('Report Routes Tests', () => {
                 .field('anonymous', 'false')
                 .attach('photos', Buffer.from('fake-image-data'), 'test1.jpg')
                 .expect(401);
+
+            expect(response.body).toHaveProperty('message');
         });
 
         it('should return 403 if user is STAFF (not CITIZEN)', async () => {
@@ -220,7 +222,7 @@ describe('Report Routes Tests', () => {
                 .send({ username: DEFAULT_STAFF.mpro.username, password: DEFAULT_STAFF.mpro.password })
                 .expect(200);
 
-            await agent
+            const response = await agent
                 .post('/api/v1/reports')
                 .field('title', 'Test Report')
                 .field('description', 'Test Description')
@@ -230,6 +232,8 @@ describe('Report Routes Tests', () => {
                 .field('anonymous', 'false')
                 .attach('photos', Buffer.from('fake-image-data'), 'test1.jpg')
                 .expect(403);
+
+            expect(response.body).toHaveProperty('message');
         });
 
         it('should return 400 for invalid coordinates', async () => {
@@ -677,29 +681,37 @@ describe('Report Routes Tests', () => {
 
         it('should return 403 if unauthorized', async () => {
             const agent = request.agent(app);
-            await agent.get('/api/v1/reports/telegram/report/1')
+            const response = await agent.get('/api/v1/reports/telegram/report/1')
                 .expect(403);
+
+            expect(response.body).toHaveProperty('error');
         });
 
         it('should return 404 for non-existent report', async () => {
             const agent = request.agent(app);
-            await agent.get('/api/v1/reports/telegram/report/99999')
+            const response = await agent.get('/api/v1/reports/telegram/report/99999')
                 .set('authorization', `Bearer ${CONFIG.TELEGRAM_BOT_BEARER}`)
                 .expect(404);
+
+            expect(response.body).toHaveProperty('message');
         });
 
         it('should return 400 for invalid report id', async () => {
             const agent = request.agent(app);
-            await agent.get('/api/v1/reports/telegram/report/-1')
+            const response = await agent.get('/api/v1/reports/telegram/report/-1')
                 .set('authorization', `Bearer ${CONFIG.TELEGRAM_BOT_BEARER}`)
                 .expect(400);
+
+            expect(response.body).toHaveProperty('message');
         });
 
         it('should return 404 for missing report id', async () => {
             const agent = request.agent(app);
-            await agent.get('/api/v1/reports/telegram/report/')
+            const response = await agent.get('/api/v1/reports/telegram/report/')
                 .set('authorization', `Bearer ${CONFIG.TELEGRAM_BOT_BEARER}`)
                 .expect(404);
+
+            expect(response.body).toStrictEqual({});
         });
     });
 
@@ -743,15 +755,19 @@ describe('Report Routes Tests', () => {
 
         it('should return 403 if unauthorized', async () => {
             const agent = request.agent(app);
-            await agent.get('/api/v1/reports/telegram/citizen/@someuser')
+            const response = await agent.get('/api/v1/reports/telegram/citizen/@someuser')
                 .expect(403);
+
+            expect(response.body).toHaveProperty('error');
         });
 
         it('should return 404 for non-existent citizen', async () => {
             const agent = request.agent(app);
-            await agent.get('/api/v1/reports/telegram/citizen/@unknownuser')
+            const response = await agent.get('/api/v1/reports/telegram/citizen/@unknownuser')
                 .set('authorization', `Bearer ${CONFIG.TELEGRAM_BOT_BEARER}`)
                 .expect(404);
+
+            expect(response.body).toHaveProperty('message');
         });
         
     });
