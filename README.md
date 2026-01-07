@@ -4,6 +4,8 @@
 [![React](https://img.shields.io/badge/React-19.1-61DAFB.svg)](https://reactjs.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-20-339933.svg)](https://nodejs.org/)
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED.svg)](https://www.docker.com/)
+[![MySQL](https://img.shields.io/badge/MySQL-8.0-4479A1.svg)](https://www.mysql.com/)
+[![Telegram](https://img.shields.io/badge/Telegram-Bot-0088CC.svg)](https://t.me/ParticipiumBot)
 
 **Participium** is a modern web-based platform designed to facilitate citizen engagement with municipal services. The application enables residents to report urban issues (such as broken streetlights, potholes, garbage collection problems, etc.) directly to the appropriate municipal offices through an intuitive map-based interface.
 
@@ -76,23 +78,26 @@ When a report is approved, the system assigns it to the correct office automatic
 
 ## Architecture
 
-Participium follows a **three-tier architecture**:
+Participium follows a **multi-client architecture**, allowing interaction through both a web interface and a Telegram bot:
 
 ```
-┌─────────────────┐
-│    Frontend     │  React 19 + TypeScript + Vite
-│   (Port 5173)   │  React Router, Leaflet Maps, Bootstrap Italia
-└────────┬────────┘
-         │ HTTP/REST
-┌────────▼────────┐
-│     Backend     │  Node.js 20 + Express 5 + TypeScript
-│   (Port 8080)   │  TypeORM, Passport.js, Multer
-└────────┬────────┘
-         │ SQL
-┌────────▼────────┐
-│    Database     │  MySQL 8.0
-│   (Port 3306)   │  Persistent Volume
-└─────────────────┘
+┌─────────────────┐                           ┌─────────────────┐
+│  Telegram Bot   │  Node.js + TypeScript     │    Frontend     │  React 19 + Typescript + Vite
+│   (Container)   │  Interacts with APIs      │   (Port 5173)   │  React Router, Leaflet Maps, Bootstrap Italia
+└────────┬────────┘                           └────────┬────────┘
+         │ HTTP/REST                                   │ HTTP/REST
+         │                                             │
+         └──────────────┐                 ┌────────────┘
+                        │                 │
+                 ┌──────▼─────────────────▼──────┐
+                 │          Backend              │  Node.js 20 + Express 5
+                 │        (Port 8080)            │  TypeScript, TypeORM
+                 └──────────────┬────────────────┘  Passport.js, Multer
+                                │ SQL
+                         ┌──────▼────────┐
+                         │    Database   │  MySQL 8.0
+                         │  (Port 3306)  │  Persistent Volume
+                         └───────────────┘
 ```
 
 ### Key Design Patterns
@@ -101,6 +106,7 @@ Participium follows a **three-tier architecture**:
 - **Service Layer**: Business logic encapsulation
 - **Middleware Chain**: Authentication, error handling, and request processing
 - **Custom Error Handling**: Centralized error management with specific error types
+- **Bot-as-a-Client**: The Telegram Bot functions as a separate client that consumes the same Backend APIs as the web frontend, authenticated via a secure bearer token.
 
 ---
 
@@ -126,6 +132,12 @@ Participium follows a **three-tier architecture**:
 - **bcrypt 6.0** - Password hashing
 - **Winston 3.17** - Logging framework
 - **Jest 30.2** - Testing framework
+
+### Telegram Bot
+- **Node.js 20** - Runtime environment
+- **TypeScript 5.9** - Type-safe development
+- **node-telegram-bot-api** - Telegram Bot API wrapper
+- **Bearer Authentication** - Secure bot-to-backend communication
 
 ### Database
 - **MySQL 8.0** - Relational database
@@ -164,28 +176,50 @@ git clone https://github.com/LuigiGonnella/SE25-Participium.git
 cd SE25-Participium
 ```
 
-### 2. Environment Configuration (Optional)
+### 2. Environment Configuration
 
-The application uses default configuration values suitable for Docker Compose deployment. If you need to customize settings, you can create environment files:
+#### Docker Compose (Production/Root)
+To run the full application stack using Docker Compose, you **must create a `.env` file** in the project root directory. This is required to configure external services like Email and Telegram.
 
-**Backend** (`Backend/.env`):
+**Root `.env` content:**
+
 ```env
-DB_TYPE=mysql
-DB_HOST=mysql
+RESEND_API_KEY=your_resend_api_key_here
+BOT_BEARER="your_secure_bearer_token_here"
+BOT_TOKEN=123456789:ABCdefGHIjklMNOpqrsTUVwxyz
+```
+
+- `RESEND_API_KEY`: API key for Resend email service (used for email verification)
+- `BOT_BEARER`: Bearer token used by the Telegram bot for backend authorization security
+- `BOT_TOKEN`: The API key (token) for the Telegram bot, obtained from BotFather.
+
+**Note**: _Make sure to keep these values secure and do not expose them publicly._
+
+### 3. (Optional) Local Development Environment Variables
+If you want to run the Backend, Frontend or Telegram bot services individually (without Docker), you need to create `.env` files in their respective directories.
+#### Backend `.env` (in `Backend/` directory)
+
+```env
+DB_HOST=localhost
 DB_PORT=3306
-DB_NAME=participium
 DB_USERNAME=participium
 DB_PASSWORD=participium
-PORT=8080
+DB_NAME=participium_db
+SESSION_SECRET=your_session_secret_here
+RESEND_API_KEY=your_resend_api_key_here
+TELEGRAM_BOT_BEARER=your_secure_bearer_token_here
 ```
+#### Frontend `.env` (in `Frontend/` directory)
 
-**Frontend** (`Frontend/.env`):
 ```env
-VITE_BACKEND_URL=http://localhost:8080/api/v1
-VITE_STATIC_URL=http://localhost:8080
+VITE_BACKEND_URL=http://localhost:8080
 ```
+#### Telegram Bot `.env` (in `Telegram/` directory)
 
-**Note:** The `docker-compose.yaml` file already contains these values as environment variables and build args, so creating `.env` files is optional.
+```env
+BOT_BEARER="your_secure_bearer_token_here"
+BOT_TOKEN=123456789:ABCdefGHIjklMNOpqrsTUVwxyz
+```
 
 ---
 
@@ -212,12 +246,16 @@ docker-compose up --build
 3. **Frontend container** waits for Backend to start, then:
    - Installs dependencies (`npm install`)
    - Starts the Vite dev server (`npm run dev`)
+4. **Telegram Bot container** starts and connects to the Backend API, then:
+   - Installs dependencies (`npm install`)
+   - Starts the bot (`npm run start`)
 
 #### 2. Access the Application
 
 - **Frontend (Web UI)**: http://localhost:5173
 - **Backend API**: http://localhost:8080/api/v1
 - **Database**: localhost:3306 (accessible with credentials: `participium` / `participium`)
+- **Telegram Bot**: Search for `@ParticipiumBot` on Telegram or use the link: https://t.me/ParticipiumBot
 
 #### 3. Stop the Application
 
