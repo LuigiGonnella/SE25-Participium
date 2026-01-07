@@ -113,6 +113,21 @@ describe("ReportRepository - test suite", () => {
         expect(saved?.photo3).toBeNull();
     });
 
+    it("create report with anonymous flag true", async () => {
+        const citizen = await TestDataManager.getCitizen('citizen1');
+        const report = await reportRepo.create({
+            citizen,
+            title: "Anonymous Report",
+            description: "This is an anonymous report",
+            category: OfficeCategory.RSTLO,
+            latitude: 45,
+            longitude: 7,
+            anonymous: true,
+            photo1: "/anon.jpg"
+        });
+        expect(report.anonymous).toBe(true);
+    });
+
     it("gets all reports", async () => {
         const citizen = await TestDataManager.getCitizen('citizen1');
         const staff = await TestDataManager.getStaff('mpro');
