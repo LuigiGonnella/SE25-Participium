@@ -56,7 +56,7 @@ const rememberStep = (ctx: ParticipiumContext, step?: FlowStep) => {
 };
 
 const buildCategoryKeyboard = () => [
-    ...Object.values(OfficeCategory).map((category) => [{ text: category.toString() }]),
+    ...Object.values(OfficeCategory).map((category) => [{ text: category === OfficeCategory.MOO ? "Other" : category.toString() }]),
     [{ text: "⬅️ Back" }],
 ];
 
@@ -511,7 +511,7 @@ bot.on(message("text"), verifyUserMiddleware, async (ctx) => {
             return goToStep(ctx, "category");
 
         case "category":
-            if (!Object.values(OfficeCategory).some((c) => c.toString() === text)) {
+            if (!Object.values(OfficeCategory).some((c) => c.toString() === text) && text !== "Other") {
                 return replyMarkdown(
                     ctx,
                     "❗ Invalid category. Please pick one from the list or type `back`.",
@@ -524,7 +524,7 @@ bot.on(message("text"), verifyUserMiddleware, async (ctx) => {
                     }
                 );
             }
-            ctx.session.category = text;
+            ctx.session.category = text === "Other" ? OfficeCategory.MOO : text;
             return goToStep(ctx, "photos");
 
         case "photos":

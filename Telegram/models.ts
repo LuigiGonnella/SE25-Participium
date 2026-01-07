@@ -9,7 +9,7 @@ export enum OfficeCategory {
     RSTLO = "Road Signs and Traffic Lights",
     RUFO = "Roads and Urban Furnishings",
     PGAPO = "Public Green Areas and Playgrounds",
-    MOO = "Other"
+    MOO = "Municipal Organization"
 }
 
 export interface Report {

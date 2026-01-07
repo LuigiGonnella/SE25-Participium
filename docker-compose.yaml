@@ -35,6 +35,8 @@ services:
       DB_NAME: participium
       DB_USERNAME: *db_username
       DB_PASSWORD: *db_password
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      TELEGRAM_BOT_BEARER: ${BOT_BEARER}
     ports:
       - "8080:8080"
     depends_on:
@@ -56,6 +58,20 @@ services:
     ports:
       - "5173:5173" # Anchored variables defined above (e.g., &frontend_port) cannot be used within quoted strings.
         # Values like port numbers must be written explicitly as literals, but they should remain consistent with the defined variables.
+
+  telegram:
+    image: vanni1888/participium-g15:telegram
+    container_name: telegram-bot
+    build:
+      context: ./Telegram
+    environment:
+      BOT_BEARER: ${BOT_BEARER}  
+      BOT_TOKEN: ${BOT_TOKEN}    
+      BACKEND_URL: http://backend:8080/api/v1
+    depends_on:
+      backend:
+        condition: service_started
+    restart: unless-stopped
 
 volumes:
   mysql-data:
