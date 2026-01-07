@@ -135,6 +135,20 @@ describe("ReportController - createReport", () => {
             createReport(invalidBody, DEFAULT_CITIZENS.citizen1.username, fakeFiles)
         ).rejects.toThrow();
     });
+
+    it("create a report with anonymous set to true", async () => {
+        const anonymousBody = { ...fakeBody, anonymous: true };
+        const report = await createReport(anonymousBody, DEFAULT_CITIZENS.citizen2.username, fakeFiles);
+
+        expect(report.anonymous).toBe(true);
+    });
+
+    it("create a report with anonymous set to string 'true'", async () => {
+        const anonymousBody = { ...fakeBody, anonymous: 'true' };
+        const report = await createReport(anonymousBody, DEFAULT_CITIZENS.citizen2.username, fakeFiles);
+        
+        expect(report.anonymous).toBe(true);
+    });
 });
 
 describe("ReportController - updateReportAsEM", () => {
