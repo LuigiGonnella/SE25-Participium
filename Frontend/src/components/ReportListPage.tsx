@@ -107,7 +107,7 @@ export default function ReportListPage({ user }: Readonly<ReportListProps>) {
         isTOSM(user) && report.status === ReportStatus.ASSIGNED && !report.assignedStaff;
 
     const canAssignToEM = (report: Report) =>
-        isTOSM(user) && report.status === ReportStatus.ASSIGNED && report.assignedStaff === user.username && !report.assignedEM && !report.isExternal;
+        isTOSM(user) && report.status === ReportStatus.ASSIGNED && report.assignedStaff === user.username;
 
     const filteredReports = reports.filter(r => {
         if (isMPRO(user)) {
@@ -300,7 +300,7 @@ export default function ReportListPage({ user }: Readonly<ReportListProps>) {
                                                                     onClick={() => selectExternalCategory(r)}
                                                                     disabled={assigningToMaintainer === r.id}
                                                                     className="w-100"
-                                                                >Assign to External Maintainer
+                                                                >{r.isExternal ? "Update" : "Assign"} External Maintainer
                                                                 </Button>
                                                             )}
                                                         </>

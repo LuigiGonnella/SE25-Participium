@@ -227,14 +227,13 @@ export class ReportRepository {
         if(reportToUpdate.status !== Status.ASSIGNED)
             throw new BadRequestError("Only reports with ASSIGNED status can be assigned to an EM.");
 
-        if(reportToUpdate.assignedEM)
-            throw new BadRequestError(`Report is already assigned to EM '${reportToUpdate.assignedEM.username}'`);
-
         let updateData: any = { isExternal: true }
         if (emStaff){
             if (!emStaff.offices.map(o => o.category).includes(reportToUpdate.category))
                 throw new BadRequestError(`External maintainer '${emStaff.username}' cannot be assigned to reports of category '${reportToUpdate.category}'`);
             updateData.assignedEM = emStaff;
+        } else {
+            updateData.assignedEM = null;
         }
 
         await this.repo.update(
