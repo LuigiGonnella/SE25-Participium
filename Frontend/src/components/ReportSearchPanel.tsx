@@ -18,6 +18,7 @@ interface NominatimResult {
     lon: string;
     display_name: string;
     address: {
+        town?: string;
         postcode: string;
     };
 }
@@ -77,16 +78,14 @@ export default function ReportSearchPanel({ reports, closeSearchMode, setCenter,
             const response = await fetch(
                 `https://nominatim.openstreetmap.org/search?` +
                 `q=${encodeURIComponent(searchQuery)}, Torino&` +
-                //`street=${encodeURIComponent(searchQuery)}&city=Torino&` +
                 `format=json&` +
-                `limit=5&` +
                 `viewbox=${torinoBBox.minLon},${torinoBBox.maxLat},${torinoBBox.maxLon},${torinoBBox.minLat}&` +
                 `bounded=1&` +
                 `addressdetails=1`,
             );
             
-            const data = await response.json();
-            setSearchResults(data.filter((r: NominatimResult) => checkPostalCode(Number.parseInt(r.address.postcode))));
+            const data = (await response.json()).filter((r: NominatimResult) => !r.address.town && checkPostalCode(Number.parseInt(r.address.postcode)));
+            setSearchResults(data);
             
             if (data.length > 0) {
                 const firstResult = data[0];

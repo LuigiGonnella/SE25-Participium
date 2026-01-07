@@ -249,16 +249,9 @@ export default function TurinMaskedMap({isLoggedIn, user}: Readonly<MapProps>) {
     useEffect(() => {
         const loadTurinBoundary = async () => {
             try {
-                const nominatimUrl = "https://nominatim.openstreetmap.org/search.php?q=Turin%2C+Italy&polygon_geojson=1&format=jsonv2";
-                const response = await fetch(nominatimUrl);
-                const results = await response.json();
-                
-                const feature = results.find(
-                    (f: any) => f.geojson && (f.geojson.type === "Polygon" || f.geojson.type === "MultiPolygon")
-                );
-                if (!feature) throw new Error("No polygon found for Turin");
+                const response = await fetch("/turinBoundary.json");
+                const gj = await response.json();
 
-                const gj = feature.geojson;
                 setTurinGeoJSON(gj);
 
                 const newHoles = processGeoJSONHoles(gj);

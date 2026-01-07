@@ -101,7 +101,7 @@ export function sortReportsByDistance(
 }
 
 export function checkPostalCode(postalCode: number): boolean {
-    return !Number.isNaN(postalCode) && postalCode >= 10121 && postalCode <= 10156;
+    return !Number.isNaN(postalCode) && (postalCode >= 10121 && postalCode <= 10156 || postalCode === 10100);
 }
 
 export const getCategoryLabel = (category: OfficeCategory): string => category === OfficeCategory.MOO ? 'Other' : category
