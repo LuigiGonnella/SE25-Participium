@@ -57,8 +57,8 @@ afterAll(async () => {
 
 beforeEach(async () => {
   const allStaff = await TestDataSource.getRepository(StaffDAO).find();
-  const defaultUsernames = Object.values(DEFAULT_STAFF).map((s: any) => s.username);
-  const toDelete = allStaff.filter((s: any) => !defaultUsernames.includes(s.username));
+  const defaultUsernames = new Set(Object.values(DEFAULT_STAFF).map((s: any) => s.username));
+  const toDelete = allStaff.filter((s: any) => !defaultUsernames.has(s.username));
   if (toDelete.length > 0) {
     await TestDataSource.getRepository(StaffDAO).remove(toDelete);
   }
@@ -73,7 +73,8 @@ describe("Staff Routes Tests", () => {
     it("should return 403 when authenticated as non-admin staff", async () => {
       const agent = request.agent(app);
       await loginStaff(agent, DEFAULT_STAFF.tosm_RSTLO.username, "tosm123");
-      await agent.get("/api/v1/staffs").expect(403);
+      const res = await agent.get("/api/v1/staffs").expect(403);
+      expect(res.body).toHaveProperty('message');
     });
 
     it("should return staff list when authenticated as admin", async () => {
@@ -109,7 +110,8 @@ describe("Staff Routes Tests", () => {
     it("should return 403 when authenticated as admin (wrong role)", async () => {
       const agent = request.agent(app);
       await loginStaff(agent, DEFAULT_STAFF.admin.username, "admin123");
-      await agent.get("/api/v1/staffs/external").expect(403);
+      const res = await agent.get("/api/v1/staffs/external").expect(403);
+      expect(res.body).toHaveProperty('message');
     });
 
     it("should return external staff list when authenticated as TOSM", async () => {
@@ -144,7 +146,8 @@ describe("Staff Routes Tests", () => {
     it("should return 403 when authenticated as TOSM (wrong role)", async () => {
       const agent = request.agent(app);
       await loginStaff(agent, DEFAULT_STAFF.tosm_RSTLO.username, "tosm123");
-      await agent.get("/api/v1/staffs/tosm").expect(403);
+      const res = await agent.get("/api/v1/staffs/tosm").expect(403);
+      expect(res.body).toHaveProperty('message');
     });
 
     it("should return TOSM list when authenticated as admin", async () => {
@@ -182,10 +185,11 @@ describe("Staff Routes Tests", () => {
       const agent = request.agent(app);
       await loginStaff(agent, DEFAULT_STAFF.tosm_RSTLO.username, "tosm123");
 
-      await agent
+      const res = await agent
         .patch(`/api/v1/staffs/${DEFAULT_STAFF.tosm_RSTLO.username}/offices`)
         .send({ offices: ["RSTLO"] })
         .expect(403);
+        expect(res.body).toHaveProperty('message');
     });
 
     it("should reach controller when authenticated as admin (does not return 401/403)", async () => {
@@ -197,6 +201,7 @@ describe("Staff Routes Tests", () => {
         .send({ offices: ["RSTLO"] });
 
       expect([401, 403]).not.toContain(res.status);
+      expect(res.body).toHaveProperty('message');
     });
   });
 });
