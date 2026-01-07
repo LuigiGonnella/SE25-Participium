@@ -4,6 +4,8 @@
 [![React](https://img.shields.io/badge/React-19.1-61DAFB.svg)](https://reactjs.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-20-339933.svg)](https://nodejs.org/)
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED.svg)](https://www.docker.com/)
+[![MySQL](https://img.shields.io/badge/MySQL-8.0-4479A1.svg)](https://www.mysql.com/)
+[![Telegram](https://img.shields.io/badge/Telegram-Bot-0088CC.svg)](https://t.me/ParticipiumBot)
 
 **Participium** is a modern web-based platform designed to facilitate citizen engagement with municipal services. The application enables residents to report urban issues (such as broken streetlights, potholes, garbage collection problems, etc.) directly to the appropriate municipal offices through an intuitive map-based interface.
 
@@ -76,23 +78,26 @@ When a report is approved, the system assigns it to the correct office automatic
 
 ## Architecture
 
-Participium follows a **three-tier architecture**:
+Participium follows a **multi-client architecture**, allowing interaction through both a web interface and a Telegram bot:
 
 ```
-┌─────────────────┐
-│    Frontend     │  React 19 + TypeScript + Vite
-│   (Port 5173)   │  React Router, Leaflet Maps, Bootstrap Italia
-└────────┬────────┘
-         │ HTTP/REST
-┌────────▼────────┐
-│     Backend     │  Node.js 20 + Express 5 + TypeScript
-│   (Port 8080)   │  TypeORM, Passport.js, Multer
-└────────┬────────┘
-         │ SQL
-┌────────▼────────┐
-│    Database     │  MySQL 8.0
-│   (Port 3306)   │  Persistent Volume
-└─────────────────┘
+┌─────────────────┐                           ┌─────────────────┐
+│  Telegram Bot   │  Node.js + TypeScript     │    Frontend     │  React 19 + Typescript + Vite
+│   (Container)   │  Interacts with APIs      │   (Port 5173)   │  React Router, Leaflet Maps, Bootstrap Italia
+└────────┬────────┘                           └────────┬────────┘
+         │ HTTP/REST                                   │ HTTP/REST
+         │                                             │
+         └──────────────┐                 ┌────────────┘
+                        │                 │
+                 ┌──────▼─────────────────▼──────┐
+                 │          Backend              │  Node.js 20 + Express 5
+                 │        (Port 8080)            │  TypeScript, TypeORM
+                 └──────────────┬────────────────┘  Passport.js, Multer
+                                │ SQL
+                         ┌──────▼────────┐
+                         │    Database   │  MySQL 8.0
+                         │  (Port 3306)  │  Persistent Volume
+                         └───────────────┘
 ```
 
 ### Key Design Patterns
@@ -101,6 +106,7 @@ Participium follows a **three-tier architecture**:
 - **Service Layer**: Business logic encapsulation
 - **Middleware Chain**: Authentication, error handling, and request processing
 - **Custom Error Handling**: Centralized error management with specific error types
+- **Bot-as-a-Client**: The Telegram Bot functions as a separate client that consumes the same Backend APIs as the web frontend, authenticated via a secure bearer token.
 
 ---
 
@@ -126,6 +132,12 @@ Participium follows a **three-tier architecture**:
 - **bcrypt 6.0** - Password hashing
 - **Winston 3.17** - Logging framework
 - **Jest 30.2** - Testing framework
+
+### Telegram Bot
+- **Node.js 20** - Runtime environment
+- **TypeScript 5.9** - Type-safe development
+- **node-telegram-bot-api** - Telegram Bot API wrapper
+- **Bearer Authentication** - Secure bot-to-backend communication
 
 ### Database
 - **MySQL 8.0** - Relational database
@@ -164,28 +176,50 @@ git clone https://github.com/LuigiGonnella/SE25-Participium.git
 cd SE25-Participium
 ```
 
-### 2. Environment Configuration (Optional)
+### 2. Environment Configuration
 
-The application uses default configuration values suitable for Docker Compose deployment. If you need to customize settings, you can create environment files:
+#### Docker Compose (Production/Root)
+To run the full application stack using Docker Compose, you **must create a `.env` file** in the project root directory. This is required to configure external services like Email and Telegram.
 
-**Backend** (`Backend/.env`):
+**Root `.env` content:**
+
 ```env
-DB_TYPE=mysql
-DB_HOST=mysql
+RESEND_API_KEY=your_resend_api_key_here
+BOT_BEARER="your_secure_bearer_token_here"
+BOT_TOKEN=123456789:ABCdefGHIjklMNOpqrsTUVwxyz
+```
+
+- `RESEND_API_KEY`: API key for Resend email service (used for email verification)
+- `BOT_BEARER`: Bearer token used by the Telegram bot for backend authorization security
+- `BOT_TOKEN`: The API key (token) for the Telegram bot, obtained from BotFather.
+
+**Note**: _Make sure to keep these values secure and do not expose them publicly._
+
+### 3. (Optional) Local Development Environment Variables
+If you want to run the Backend, Frontend or Telegram bot services individually (without Docker), you need to create `.env` files in their respective directories.
+#### Backend `.env` (in `Backend/` directory)
+
+```env
+DB_HOST=localhost
 DB_PORT=3306
-DB_NAME=participium
 DB_USERNAME=participium
 DB_PASSWORD=participium
-PORT=8080
+DB_NAME=participium_db
+SESSION_SECRET=your_session_secret_here
+RESEND_API_KEY=your_resend_api_key_here
+TELEGRAM_BOT_BEARER=your_secure_bearer_token_here
 ```
+#### Frontend `.env` (in `Frontend/` directory)
 
-**Frontend** (`Frontend/.env`):
 ```env
-VITE_BACKEND_URL=http://localhost:8080/api/v1
-VITE_STATIC_URL=http://localhost:8080
+VITE_BACKEND_URL=http://localhost:8080
 ```
+#### Telegram Bot `.env` (in `Telegram/` directory)
 
-**Note:** The `docker-compose.yaml` file already contains these values as environment variables and build args, so creating `.env` files is optional.
+```env
+BOT_BEARER="your_secure_bearer_token_here"
+BOT_TOKEN=123456789:ABCdefGHIjklMNOpqrsTUVwxyz
+```
 
 ---
 
@@ -212,12 +246,16 @@ docker-compose up --build
 3. **Frontend container** waits for Backend to start, then:
    - Installs dependencies (`npm install`)
    - Starts the Vite dev server (`npm run dev`)
+4. **Telegram Bot container** starts and connects to the Backend API, then:
+   - Installs dependencies (`npm install`)
+   - Starts the bot (`npm run start`)
 
 #### 2. Access the Application
 
 - **Frontend (Web UI)**: http://localhost:5173
 - **Backend API**: http://localhost:8080/api/v1
 - **Database**: localhost:3306 (accessible with credentials: `participium` / `participium`)
+- **Telegram Bot**: Search for `@ParticipiumBot` on Telegram or use the link: https://t.me/ParticipiumBot
 
 #### 3. Stop the Application
 
@@ -327,6 +365,16 @@ SE25-Participium/
 │   ├── tsconfig.json
 │   └── vite.config.ts
 │
+├── Telegram/
+│   ├── data/                 # Data used by the bot
+│   ├── API.ts                # Backend API client for the Telegram bot
+│   ├── index.ts              # Telegram bot entry point
+│   ├── models.ts             # Shared models and types
+│   ├── .env                  # Telegram bot environment variables
+│   ├── package.json
+│   ├── package-lock.json
+│   └── tsconfig.json
+|
 ├── docker-compose.yaml       # Docker Compose orchestration
 └── README.md                 # This file
 ```
@@ -345,23 +393,76 @@ SE25-Participium/
 | POST | `/api/v1/auth/login?type=STAFF` | Login as staff | No |
 | GET | `/api/v1/auth/me` | Get current user info | Yes |
 | DELETE | `/api/v1/auth/logout` | Logout | Yes |
+| POST | `/api/v1/auth/createTelegramVerification` | Create Telegram verification code | Yes |
+| POST | `/api/v1/auth/verifyTelegramUser` |  Verify Telegram user via Telegram bot | Bot auth |
+| POST | `/api/v1/auth/verify-email` | Verify email using code | No |
+| POST | `/api/v1/auth/resend-verification-email` | Resend verification email | Yes |
+
+### Citizen Endpoints
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| GET | `/api/v1/citizens` | Get all citizens | No |
+| GET | `/api/v1/citizens/id/:id` | Get citizen by ID | No |
+| GET | `/api/v1/citizens/email/:email` | Get citizen by email | No |
+| GET | `/api/v1/citizens/username/:username` | Get citizen by username | No |
+| PATCH | `/api/v1/citizens/:username` | Update citizen profile (supports profile picture upload) | Yes |
+| GET | `/api/v1/citizens/telegram/:username` | Get citizen by Telegram username (called by Telegram bot) | Bot auth |
 
 ### Report Endpoints
 
 | Method | Endpoint | Description | Auth Required | Role |
 |--------|----------|-------------|---------------|------|
 | POST | `/api/v1/reports` | Create new report | Yes | CITIZEN |
-| GET | `/api/v1/reports/public` | Get map reports (non-pending/rejected) | Yes | CITIZEN |
+| GET | `/api/v1/reports/public` | Get map reports (accessible to authenticated and unauthenticated users) | No | - |
 | GET | `/api/v1/reports` | Get all reports with filters | Yes | STAFF |
-| GET | `/api/v1/reports/:id` | Get report by ID | Yes | STAFF |
-| PATCH | `/api/v1/reports/:id/manage` | Update report (assign/reject) | Yes | MPRO |
-| PATCH | `/api/v1/reports/:id/work` | Update report (progress/resolve) | Yes | TOSM |
+| GET | `/api/v1/reports/:reportId` | Get report by ID | Yes | STAFF |
+| PATCH | `/api/v1/reports/:reportId/manage` | Update report (assign/reject) | Yes | MPRO |
+| PATCH | `/api/v1/reports/:reportId/assignSelf` | Self-assign report | Yes | TOSM |
+| PATCH | `/api/v1/reports/:reportId/assignExternal` | Assign report to external maintainer (EM) | Yes | TOSM |
+| PATCH | `/api/v1/reports/:reportId/updateStatus` | Update report status (progress/resolve/suspend, etc.) | Yes | TOSM, EM |
+| POST | `/api/v1/reports/:reportId/messages` | Add a message to report (public/private) | Yes | CITIZEN, STAFF |
+| GET | `/api/v1/reports/:reportId/messages` | Get messages of a report (filtered by user type) | Yes | CITIZEN, STAFF |
+| POST | `/api/v1/reports/telegram` | Create report from Telegram bot (multipart form-data) | Bot auth | — |
+| GET | `/api/v1/reports/telegram/citizen/:telegram_username` | Get reports by Telegram username | Bot auth | — |
+| GET | `/api/v1/reports/telegram/report/:reportId` | Get report details (Telegram bot) | Bot auth | — |
+
+### Notification Endpoints
+
+| Method | Endpoint | Description | Auth Required | Role |
+|--------|----------|-------------|---------------|------|
+| GET | `/api/v1/notifications` | Get notifications of current user | Yes | CITIZEN, STAFF |
+| PATCH | `/api/v1/notifications/:id/read` | Mark notification as read | Yes | CITIZEN, STAFF |
 
 ### Office Endpoints
 
-| Method | Endpoint | Description | Auth Required |
-|--------|----------|-------------|---------------|
-| GET | `/api/v1/offices` | Get all offices | Yes |
+| Method | Endpoint | Description | Auth Required | Role |
+|--------|----------|-------------|---------------|------|
+| GET | `/api/v1/offices` | Get all offices | Yes | ADMIN |
+
+### Staff Endpoints
+
+| Method | Endpoint | Description | Auth Required | Role |
+|--------|----------|-------------|---------------|------|
+| GET | `/api/v1/staffs` | Get all staff members | Yes | ADMIN |
+| GET | `/api/v1/staffs/tosm` | Get all TOSM staff | Yes | ADMIN |
+| GET | `/api/v1/staffs/external` | Get external maintainers | Yes | TOSM |
+| PATCH | `/api/v1/staffs/:username/offices` | Update offices of a staff member | Yes | ADMIN |
+
+---
+
+**Authentication legend:**
+- `No` → Public endpoint
+- `Yes` → Requires authenticated user session
+- `Bot auth` → Accessible only by the Telegram bot via dedicated authentication. Requires a static bearer token (`TELEGRAM_BOT_BEARER`) sent via `Authorization: Bearer <token>`
+
+### Telegram Verification Flow
+
+1. The citizen sets their Telegram username in the profile page
+2. The backend generates a verification code
+3. The citizen sends `/verify <code>` to the Telegram bot
+4. The bot validates the code using bot-authenticated endpoints
+5. The Telegram account is marked as verified
 
 ---
 
@@ -369,7 +470,7 @@ SE25-Participium/
 
 This project is developed for educational purposes as part of the Software Engineering 2 course at Politecnico di Torino.
 
-See the 'LICENSE' file for more infromations.
+See the 'LICENSE' file for more informations.
 
 ---
 

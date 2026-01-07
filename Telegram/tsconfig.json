@@ -4,5 +4,6 @@
     "types": ["node"],
     "resolveJsonModule": true,
     "esModuleInterop": true,
+    "lib": ["ES2021"]
   }
 }

@@ -6,7 +6,9 @@ export class OfficeController {
 
   static async getAllOffices(req: Request, res: Response) {
     try {
-      const isExternalParam = req.query.isExternal?.toString().toLowerCase();
+      const isExternalParam = typeof req.query.isExternal === 'string' 
+            ? req.query.isExternal.toLowerCase() 
+            : undefined;
       const isExternal = validateIsExternal(isExternalParam);
       const officeRepo = new OfficeRepository();
       const offices = await officeRepo.getAllOffices(isExternal);

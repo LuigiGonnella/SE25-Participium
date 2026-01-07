@@ -13,9 +13,9 @@ import { TestDataSource } from "../setup/test-datasource";
 import { ReportDAO, Status } from "@dao/reportDAO";
 import { OfficeCategory } from "@dao/officeDAO";
 import { ReportRepository } from "@repositories/reportRepository";
-import { NotificationDAO } from "@models/dao/notificationDAO";
-import path from "path";
+import path from "node:path";
 import { CitizenDAO } from "@models/dao/citizenDAO";
+import { CONFIG } from '@config/config';
 
 const getStatusKey = (status: Status): string => {
     const key = Object.keys(Status).find(
@@ -70,6 +70,15 @@ describe("Reports API E2E Tests", () => {
             .expect(200);
         citizenCookie = citizenLogin.headers["set-cookie"][0];
 
+        // Login as citizen2 to verify visibility from another user
+        await request(app)
+            .post("/api/v1/auth/login?type=CITIZEN")
+            .send({
+                username: DEFAULT_CITIZENS.citizen2.username,
+                password: DEFAULT_CITIZENS.citizen2.password,
+            })
+            .expect(200);
+
         // Login as admin
         const adminLogin = await request(app)
             .post('/api/v1/auth/login?type=STAFF')
@@ -123,39 +132,39 @@ describe("Reports API E2E Tests", () => {
         const citizen2 = await TestDataManager.getCitizen('citizen2');
 
         // Create test reports
-        testReport1 = await reportRepo.create(
-            citizen1,
-            "Broken Traffic Light",
-            "Traffic light at Main Street is not working",
-            OfficeCategory.RSTLO,
-            45.07,
-            7.68,
-            false,
-            "/uploads/reports/test1.jpg"
-        );
+        testReport1 = await reportRepo.create({
+            citizen: citizen1,
+            title: "Broken Traffic Light",
+            description: "Traffic light at Main Street is not working",
+            category: OfficeCategory.RSTLO,
+            latitude: 45.07,
+            longitude: 7.68,
+            anonymous: false,
+            photo1: "/uploads/reports/test1.jpg"
+        });
 
-        testReport2 = await reportRepo.create(
-            citizen2,
-            "Pothole on Road",
-            "Large pothole on Highway 101",
-            OfficeCategory.RUFO,
-            45.08,
-            7.69,
-            false,
-            "/uploads/reports/test2.jpg",
-            "/uploads/reports/test2b.jpg"
-        );
+        testReport2 = await reportRepo.create({
+            citizen: citizen2,
+            title: "Pothole on Road",
+            description: "Large pothole on Highway 101",
+            category: OfficeCategory.RUFO,
+            latitude: 45.08,
+            longitude: 7.69,
+            anonymous: false,
+            photo1: "/uploads/reports/test2.jpg",
+            photo2: "/uploads/reports/test2b.jpg"
+        });
 
-        testReport3 = await reportRepo.create(
-            citizen1,
-            "Damaged Street Sign",
-            "Stop sign is bent and unreadable",
-            OfficeCategory.RSTLO,
-            45.09,
-            7.70,
-            true, // anonymous
-            "/uploads/reports/test3.jpg"
-        );
+        testReport3 = await reportRepo.create({
+            citizen: citizen1,
+            title: "Damaged Street Sign",
+            description: "Stop sign is bent and unreadable",
+            category: OfficeCategory.RSTLO,
+            latitude: 45.09,
+            longitude: 7.7,
+            anonymous: true,
+            photo1: "/uploads/reports/test3.jpg"
+        });
     });
 
     describe("POST /api/v1/reports - Report Creation", () => {
@@ -223,6 +232,80 @@ describe("Reports API E2E Tests", () => {
 
             expect(res.body.message).toBeDefined();
             expect(res.body.message).toBe("Not authenticated");
+        });
+
+        it("should create an anonymous report and hide citizen username in listings and detail", async () => {
+            const res = await request(app)
+                .post("/api/v1/reports")
+                .set("Cookie", citizenCookie)
+                .field("title", "Anonymous Report")
+                .field("description", "This report is anonymous")
+                .field("category", "Public Lighting")
+                .field("latitude", 45.0677)
+                .field("longitude", 7.6823)
+                .field("anonymous", "true")
+                .attach("photos", sampleImage)
+                .expect(201);
+
+            expect(res.body).toBeDefined();
+            const createdId = res.body.id;
+
+            // Admin listing should not expose username
+            const listAdmin = await request(app)
+                .get("/api/v1/reports")
+                .set('Cookie', adminCookie)
+                .expect(200);
+            const foundAdmin = listAdmin.body.find((r: any) => r.id === createdId);
+            expect(foundAdmin).toBeDefined();
+            expect(foundAdmin.citizenUsername).toBeUndefined();
+
+            // Make report public (not PENDING) so it appears on the public map
+            await TestDataSource.getRepository(ReportDAO).update(
+                { id: createdId },
+                { status: Status.RESOLVED }
+            );
+
+            // Map (public) endpoint should not expose username to citizens
+            const listPublic = await request(app)
+                .get("/api/v1/reports/public")
+                .expect(200);
+            const foundPublic = listPublic.body.find((r: any) => r.id === createdId);
+            expect(foundPublic).toBeDefined();
+            expect(foundPublic.citizenUsername).toBeUndefined();
+
+            // Detail endpoint should not expose username either
+            const detail = await request(app)
+                .get(`/api/v1/reports/${createdId}`)
+                .set('Cookie', adminCookie)
+                .expect(200);
+            expect(detail.body.citizenUsername).toBeUndefined();
+        });
+
+        it("should create a non-anonymous report and expose citizen username in response and listings", async () => {
+            const res = await request(app)
+                .post("/api/v1/reports")
+                .set("Cookie", citizenCookie)
+                .field("title", "Public Report")
+                .field("description", "This report is public")
+                .field("category", "Public Lighting")
+                .field("latitude", 45.0677)
+                .field("longitude", 7.6823)
+                .field("anonymous", "false")
+                .attach("photos", sampleImage)
+                .expect(201);
+
+            expect(res.body).toBeDefined();
+            expect(res.body.citizenUsername).toBe(DEFAULT_CITIZENS.citizen1.username);
+            const createdId = res.body.id;
+
+            // Admin listing should expose username
+            const listAdmin = await request(app)
+                .get("/api/v1/reports")
+                .set('Cookie', adminCookie)
+                .expect(200);
+            const foundAdmin = listAdmin.body.find((r: any) => r.id === createdId);
+            expect(foundAdmin).toBeDefined();
+            expect(foundAdmin.citizenUsername).toBe(DEFAULT_CITIZENS.citizen1.username);
         });
     });
 
@@ -311,28 +394,28 @@ describe("Reports API E2E Tests", () => {
             expect(res.body.length).toBeGreaterThanOrEqual(0);
         });
 
-        it("should return 400 when only fromDate is provided", async () => {
+        it("should return 200 when only fromDate is provided", async () => {
             const yesterday = new Date();
             yesterday.setDate(yesterday.getDate() - 1);
 
             const res = await request(app)
                 .get(`/api/v1/reports?fromDate=${yesterday.toISOString()}`)
                 .set('Cookie', adminCookie)
-                .expect(400);
+                .expect(200);
 
-            expectErrorResponse(res);
+            expect(res.body.length).toBeGreaterThanOrEqual(0);
         });
 
-        it("should return 400 when only toDate is provided", async () => {
+        it("should return 200 when only toDate is provided", async () => {
             const tomorrow = new Date();
             tomorrow.setDate(tomorrow.getDate() + 1);
 
             const res = await request(app)
                 .get(`/api/v1/reports?toDate=${tomorrow.toISOString()}`)
                 .set('Cookie', adminCookie)
-                .expect(400);
+                .expect(200);
 
-            expectErrorResponse(res);
+            expect(res.body.length).toBeGreaterThanOrEqual(0);
         });
 
         it("should return 400 when fromDate is after toDate", async () => {
@@ -636,11 +719,7 @@ describe("Reports API E2E Tests", () => {
                 { id: testReport2.id },
                 { status: Status.ASSIGNED, assignedStaff: tosmStaff }
             );
-            // assign report to TOSM (self-assign)
-            /* await request(app)
-                .patch(`/api/v1/reports/${testReport1.id}/assignSelf`)
-                .set('Cookie', tosmCookie)
-                .expect(200); */
+
         });
 
         it("should update report status to IN_PROGRESS", async () => {
@@ -1303,7 +1382,7 @@ describe("Reports API E2E Tests", () => {
 
 
         it("should not allow to get messages if not authenticated", async () => {
-            const res = await request(app)
+            await request(app)
                 .get(`/api/v1/reports/${testReport1.id}/messages`)
                 .expect(401);
         });
@@ -1311,7 +1390,7 @@ describe("Reports API E2E Tests", () => {
     });
 
     describe("POST /api/v1/reports/telegram - Telegram Bot Report Creation", () => {
-        const TELEGRAM_BEARER = process.env.TELEGRAM_BOT_BEARER || 'O[A|dV(vPl#pl*W|y4\\0oa=)E!YL+tX==\\.@PkGXTvd#fT[AkV=t4zK}![|Oe!@m';
+        const TELEGRAM_BEARER = process.env.TELEGRAM_BOT_BEARER || String.raw`O[A|dV(vPl#pl*W|y4\0oa=)E!YL+tX==\.@PkGXTvd#fT[AkV=t4zK}![|Oe!@m`;
 
         beforeEach(async () => {
             // Update citizen1 to have telegram username
@@ -1617,6 +1696,103 @@ describe("Reports API E2E Tests", () => {
                 .expect(201);
 
             expect(res.body.photos.length).toBe(2);
+        });
+    });
+
+    describe("GET /api/v1/reports/telegram/citizen/:telegram_username - Telegram Bot: Get citizen reports", () => {
+        const TELEGRAM_BEARER = CONFIG.TELEGRAM_BOT_BEARER;
+    
+        beforeEach(async () => {
+            await TestDataSource.getRepository(CitizenDAO).update(
+                { username: DEFAULT_CITIZENS.citizen1.username },
+                { telegram_username: "@telegram_user1" }
+            );
+        });
+    
+        it("should return all reports created by the citizen linked to telegram username", async () => {
+            const res = await request(app)
+                .get("/api/v1/reports/telegram/citizen/@telegram_user1")
+                .set("authorization", `Bearer ${TELEGRAM_BEARER}`)
+                .expect(200);
+    
+            expect(Array.isArray(res.body)).toBe(true);
+    
+            const expectedIds = [testReport1.id, testReport3.id].sort((a: number, b: number) => a - b);
+            const responseIds = res.body
+                .map((r: any) => r.id as number)
+                .sort((a: number, b: number) => a - b);
+    
+            expect(responseIds).toEqual(expectedIds);
+        });
+    
+        it("should return 404 when telegram username is not linked to any citizen", async () => {
+            const res = await request(app)
+                .get("/api/v1/reports/telegram/citizen/@does_not_exist")
+                .set("authorization", `Bearer ${TELEGRAM_BEARER}`)
+                .expect(404);
+    
+            expectErrorResponse(res);
+        });
+    
+        it("should return 403 when bearer token is missing", async () => {
+            const res = await request(app)
+                .get("/api/v1/reports/telegram/citizen/@telegram_user1")
+                .expect(403);
+    
+            expect(res.body).toHaveProperty("error");
+            expect(res.body.error).toBe("Forbidden");
+        });
+    
+        it("should return 403 when bearer token is invalid", async () => {
+            const res = await request(app)
+                .get("/api/v1/reports/telegram/citizen/@telegram_user1")
+                .set("authorization", "Bearer invalid_token_here")
+                .expect(403);
+    
+            expect(res.body).toHaveProperty("error");
+            expect(res.body.error).toBe("Forbidden");
+        });
+    });
+    
+    describe("GET /api/v1/reports/telegram/report/:reportId - Telegram Bot: Get report details", () => {
+        const TELEGRAM_BEARER = CONFIG.TELEGRAM_BOT_BEARER;
+    
+        it("should return a report by valid ID", async () => {
+            const res = await request(app)
+                .get(`/api/v1/reports/telegram/report/${testReport1.id}`)
+                .set("authorization", `Bearer ${TELEGRAM_BEARER}`)
+                .expect(200);
+    
+            expect(res.body).toBeDefined();
+            expect(res.body.id).toBe(testReport1.id);
+            expect(res.body.title).toBe(testReport1.title);
+        });
+    
+        it("should return 400 for invalid report ID format", async () => {
+            const res = await request(app)
+                .get("/api/v1/reports/telegram/report/invalid")
+                .set("authorization", `Bearer ${TELEGRAM_BEARER}`)
+                .expect(400);
+    
+            expectErrorResponse(res);
+        });
+    
+        it("should return 404 for non-existent report", async () => {
+            const res = await request(app)
+                .get("/api/v1/reports/telegram/report/999999")
+                .set("authorization", `Bearer ${TELEGRAM_BEARER}`)
+                .expect(404);
+    
+            expectErrorResponse(res);
+        });
+    
+        it("should return 403 when bearer token is missing", async () => {
+            const res = await request(app)
+                .get(`/api/v1/reports/telegram/report/${testReport1.id}`)
+                .expect(403);
+    
+            expect(res.body).toHaveProperty("error");
+            expect(res.body.error).toBe("Forbidden");
         });
     });
 });

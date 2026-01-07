@@ -1,4 +1,4 @@
-import {And, Between, In, Not, Repository} from "typeorm";
+import {And, Not, Repository} from "typeorm";
 import {AppDataSource} from "@database";
 import {ReportDAO, Status} from "@dao/reportDAO";
 import {CitizenDAO} from "@dao/citizenDAO";
@@ -8,7 +8,7 @@ import {NotFoundError} from "@models/errors/NotFoundError";
 import {BadRequestError} from "@models/errors/BadRequestError";
 import {NotificationRepository} from "./notificationRepository";
 import {MessageDAO} from "@dao/messageDAO";
-import {findOrThrowNotFound} from "@utils";
+import {findOrThrowNotFound, validateReportsFilters} from "@utils";
 
 export interface ReportFilters {
     citizen_username?: string;
@@ -33,68 +33,40 @@ export class ReportRepository {
         this.messageRepo = AppDataSource.getRepository(MessageDAO);
     }
 
-    async create(
-        citizen: CitizenDAO,
-        title: string,
-        description: string,
-        category: OfficeCategory,
-        latitude: number,
-        longitude: number,
-        anonymous: boolean,
-        photo1: string,
-        photo2?: string,
-        photo3?: string
-    ): Promise<ReportDAO> {
+    async create(params: {
+        citizen: CitizenDAO;
+        title: string;
+        description: string;
+        category: OfficeCategory;
+        latitude: number;
+        longitude: number;
+        anonymous: boolean;
+        photo1: string;
+        photo2?: string;
+        photo3?: string;
+    }): Promise<ReportDAO> {
+        const { citizen, title, description, category, latitude, longitude, anonymous, photo1, photo2, photo3 } = params;
+        
         return this.repo.save({
-            citizen: citizen,
-            title: title,
-            description: description,
-            category: category,
-            latitude: latitude,
-            longitude: longitude,
-            anonymous: anonymous,
-            photo1: photo1,
-            photo2: photo2,
-            photo3: photo3
+            citizen,
+            title,
+            description,
+            category,
+            latitude,
+            longitude,
+            anonymous,
+            photo1,
+            photo2,
+            photo3
         });
     }
 
     async getReports(staffUser: StaffDAO, filters?: ReportFilters): Promise<ReportDAO[]> {
-        const where: any = {};
 
-        if (filters?.citizen_username) {
-            where.citizen = { username: filters.citizen_username };
-        }
+        const where = validateReportsFilters(staffUser, filters);
 
-        if (filters?.status){
-            where.status = filters.status;
-        }
-
-        if (filters?.title) {
-            where.title = filters.title;
-        }
-
-        if (filters?.category) {
-            where.category = filters.category;
-        }
-        if ([StaffRole.TOSM, StaffRole.EM].includes(staffUser.role)) {
-            const staffCategories = staffUser.offices.map(o => o.category);
-            if (where.category && !staffCategories.includes(where.category))
-                return [];
-            else if (!where.category)
-                where.category = In(staffCategories);
-        }
-
-
-        if (filters?.staff_username) {
-            where.assignedStaff = { username: filters.staff_username };
-        }
-
-        if (filters?.fromDate && filters?.toDate) {
-            const endDate = filters.toDate;
-            endDate.setDate(endDate.getDate() + 1);
-            where.timestamp = Between(filters.fromDate, endDate);
-        }
+        if (Array.isArray(where))
+            return where;
 
         return await this.repo.find({
             where,
@@ -225,14 +197,13 @@ export class ReportRepository {
         if(reportToUpdate.status !== Status.ASSIGNED)
             throw new BadRequestError("Only reports with ASSIGNED status can be assigned to an EM.");
 
-        if(reportToUpdate.assignedEM)
-            throw new BadRequestError(`Report is already assigned to EM '${reportToUpdate.assignedEM.username}'`);
-
         let updateData: any = { isExternal: true }
         if (emStaff){
             if (!emStaff.offices.map(o => o.category).includes(reportToUpdate.category))
                 throw new BadRequestError(`External maintainer '${emStaff.username}' cannot be assigned to reports of category '${reportToUpdate.category}'`);
             updateData.assignedEM = emStaff;
+        } else {
+            updateData.assignedEM = null;
         }
 
         await this.repo.update(

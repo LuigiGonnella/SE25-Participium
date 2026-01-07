@@ -9,7 +9,22 @@ export enum OfficeCategory {
     RSTLO = "Road Signs and Traffic Lights",
     RUFO = "Roads and Urban Furnishings",
     PGAPO = "Public Green Areas and Playgrounds",
-    MOO = "Other"
+    MOO = "Municipal Organization"
+}
+
+export interface Report {
+    id: number;
+    citizenUsername?: string;
+    timestamp?: string | Date; 
+    status: string;
+    title: string;
+    description: string;
+    category: OfficeCategory | string;
+    coordinates?: number[];
+    photos?: string[];
+    comment?: string;
+    assignedStaff?: string;
+    assignedEM?: string;
 }
 
 interface SessionData {
@@ -38,3 +53,4 @@ export const defaultSession: SessionData = {
 export interface ParticipiumContext extends Context {
     session: SessionData;
 }
+

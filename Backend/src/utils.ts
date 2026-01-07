@@ -1,11 +1,13 @@
 import { ConflictError } from "@models/errors/ConflictError";
 import { NotFoundError } from "@models/errors/NotFoundError";
-import {StaffRole} from "@dao/staffDAO";
-import {Status} from "@dao/reportDAO";
+import {StaffDAO, StaffRole} from "@dao/staffDAO";
+import {ReportDAO, Status} from "@dao/reportDAO";
 import {BadRequestError} from "@errors/BadRequestError";
 import {OfficeCategory} from "@dao/officeDAO";
 import turinBoundary from './data/turinBoundary.json';
 import * as turf from '@turf/turf';
+import {Between, FindOperator, FindOptionsWhere, In, Like} from "typeorm";
+import {ReportFilters} from "@repositories/reportRepository";
 
 export function findOrThrowNotFound<T>(
   array: T[],
@@ -122,4 +124,70 @@ export function isWithinTurin(lat: number, lon: number): boolean {
         console.error("Error checking Turin boundaries:", error);
         return false;
     }
+}
+
+export const validateReportsFilters = (staffUser: StaffDAO, filters?: ReportFilters): FindOptionsWhere<ReportDAO> | [] => {
+    const where: FindOptionsWhere<ReportDAO> = {};
+
+    if (filters?.citizen_username) {
+        where.citizen = { username: filters.citizen_username };
+    }
+
+    if (filters?.status){
+        where.status = filters.status;
+    }
+
+    if (filters?.title) {
+        where.title = Like(`%${filters.title}%`);
+    }
+
+    if (filters?.category) {
+        where.category = filters.category;
+    }
+
+    if (filters?.staff_username) {
+        where.assignedStaff = { username: filters.staff_username };
+    }
+
+    where.timestamp = validateReportDateFilters(filters);
+
+    return validateReportStaffFilters(staffUser, where);
+}
+
+const validateReportStaffFilters = (staffUser: StaffDAO, where: FindOptionsWhere<ReportDAO>): FindOptionsWhere<ReportDAO> | [] => {
+    if ([StaffRole.TOSM, StaffRole.EM].includes(staffUser.role)) {
+        const staffCategories = staffUser.offices.map(o => o.category);
+        if (where.category && !staffCategories.includes(where.category as OfficeCategory))
+            return [];
+        else if (!where.category)
+            where.category = In(staffCategories);
+
+        const allowedStatuses = [Status.ASSIGNED, Status.IN_PROGRESS, Status.SUSPENDED, Status.RESOLVED];
+        if (where.status && !allowedStatuses.includes(where.status as Status))
+            return [];
+        else if (!where.status)
+            where.status = In(allowedStatuses);
+    } else if ([StaffRole.MPRO].includes(staffUser.role)) {
+        const allowedStatuses = [Status.PENDING, Status.ASSIGNED, Status.REJECTED];
+        if (where.status && !allowedStatuses.includes(where.status as Status))
+            return [];
+        else if (!where.status)
+            where.status = In(allowedStatuses);
+    }
+    return where;
+}
+
+const validateReportDateFilters = (filters?: ReportFilters): FindOperator<Date> | undefined => {
+    if (filters?.fromDate && filters?.toDate) {
+        const endDate = filters.toDate;
+        endDate.setDate(endDate.getDate() + 1);
+        return Between(filters.fromDate, endDate);
+    } else if (filters?.fromDate) {
+        return Between(filters.fromDate, new Date());
+    } else if (filters?.toDate) {
+        const endDate = filters.toDate;
+        endDate.setDate(endDate.getDate() + 1);
+        return Between(new Date(0), endDate);
+    }
+    return undefined;
 }

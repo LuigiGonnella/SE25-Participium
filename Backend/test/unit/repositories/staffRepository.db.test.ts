@@ -1,5 +1,5 @@
 import { StaffDAO, StaffRole } from "@dao/staffDAO";
-import { OfficeDAO, OfficeCategory } from "@dao/officeDAO";
+import { OfficeCategory } from "@dao/officeDAO";
 import { StaffRepository } from "@repositories/staffRepository";
 import { OfficeRepository } from "@repositories/officeRepository";
 import { initializeTestDataSource, closeTestDataSource, TestDataSource } from "../../setup/test-datasource";
@@ -22,8 +22,8 @@ afterAll(async () => {
 beforeEach(async () => {
     // Clear only non-default staff
     const allStaff = await TestDataSource.getRepository(StaffDAO).find();
-    const defaultUsernames = Object.values(DEFAULT_STAFF).map(s => s.username);
-    const toDelete = allStaff.filter(s => !defaultUsernames.includes(s.username));
+    const defaultUsernames = new Set(Object.values(DEFAULT_STAFF).map(s => s.username));
+    const toDelete = allStaff.filter(s => !defaultUsernames.has(s.username));
     await TestDataSource.getRepository(StaffDAO).remove(toDelete);
 });
 
@@ -59,7 +59,7 @@ describe("StaffRepository - test suite", () => {
     it("should create a new staff with office", async () => {
         const office = await TestDataManager.getOffice(OfficeCategory.PLO);
         
-        const createdStaff = await staffRepo.createStaff(
+        await staffRepo.createStaff(
             "newstaff",
             "New",
             "Staff",
@@ -89,33 +89,6 @@ describe("StaffRepository - test suite", () => {
         expect(usernames).toContain(DEFAULT_STAFF.tosm_RSTLO.username);
     });
 
-    /*it("should get all staffs by role TOSM", async () => {
-        const tosms = await staffRepo.getAllStaffsByRole(StaffRole.TOSM);
-        expect(tosms.length).toBeGreaterThanOrEqual(8); // 8 default TOSM
-        expect(tosms.every(s => s.role === StaffRole.TOSM)).toBe(true);
-    });
-
-    it("should get all staffs by role EM", async () => {
-        const ems = await staffRepo.getAllStaffsByRole(StaffRole.EM);
-        expect(ems.length).toBeGreaterThanOrEqual(8); // 8 default EM
-        expect(ems.every(s => s.role === StaffRole.EM)).toBe(true);
-    }); 
-
-    it("should update default staff", async () => {
-        const updatedStaff = await staffRepo.updateStaff(
-            DEFAULT_STAFF.tosm_PLO.username,
-            { name: "Updated" }
-        );
-        
-        expect(updatedStaff.name).toBe("Updated");
-        
-        // Reset for other tests
-        await staffRepo.updateStaff(
-            DEFAULT_STAFF.tosm_PLO.username,
-            { name: "Default" }
-        );
-    }); */
-
     it("should return null for non-existent staff", async () => {
         const staff = await staffRepo.getStaffByUsername("nonexistentstaff");
         expect(staff).toBeNull();
@@ -141,7 +114,7 @@ describe("StaffRepository - test suite", () => {
             const office1 = await TestDataManager.getOffice(OfficeCategory.PLO);
             const office2 = await TestDataManager.getOffice(OfficeCategory.WO);
             
-            const createdStaff = await staffRepo.createStaff(
+            await staffRepo.createStaff(
                 "multi_office_staff",
                 "Multi",
                 "Office",
@@ -252,7 +225,7 @@ describe("StaffRepository - test suite", () => {
         it("should throw error when adding office that staff already has", async () => {
             const office = await TestDataManager.getOffice(OfficeCategory.SSO);
             
-            const staff = await staffRepo.createStaff(
+            await staffRepo.createStaff(
                 "staff_duplicate_office",
                 "Duplicate",
                 "Office",

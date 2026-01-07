@@ -183,7 +183,17 @@ const ReportForm = ({ coordinates, street, toggleReportView }: ReportFormProps) 
     return (
         <Container className="h-100 d-flex flex-column p-0">
             <Card className="h-100 d-flex flex-column">
-                <Card.Header as="h3">Create New Report <i role="button" onClick={toggleReportView} className="bi bi-x float-end"></i></Card.Header>
+                <Card.Header as="h3">
+                Create New Report{' '}
+                    <button
+                        type="button"
+                        onClick={toggleReportView}
+                        className="p-0 bg-transparent border-0 float-end"
+                        aria-label="Close"
+                    >
+                        <i className="bi bi-x"></i>
+                    </button>
+                </Card.Header>
                 <Card.Body className="flex-grow-1 overflow-auto">
                     {error && <Alert variant="danger" dismissible onClose={() => setError('')}>{error}</Alert>}
                     {success && <Alert variant="success" dismissible onClose={() => setSuccess('')}>{success}</Alert>}
@@ -302,9 +312,10 @@ const ReportForm = ({ coordinates, street, toggleReportView }: ReportFormProps) 
                                             <Col md={6}>
                                                 <div className="d-flex flex-wrap gap-2">
                                                     {previewUrls.map((url, index) => (
-                                                        <div
+                                                        <button
+                                                            type="button"
                                                             key={url}
-                                                            className="position-relative"
+                                                            className="position-relative p-0 border-0 bg-transparent"
                                                             style={{
                                                                 width: '80px',
                                                                 height: '80px',
@@ -330,18 +341,20 @@ const ReportForm = ({ coordinates, street, toggleReportView }: ReportFormProps) 
                                                                     border: '1px solid #dee2e6'
                                                                 }}
                                                             />
-                                                            <div
-                                                                className="hover-overlay position-absolute top-0 start-0 w-100 h-100 align-items-center justify-content-center"
+                                                            <button
+                                                                type="button"
+                                                                className="hover-overlay position-absolute top-0 start-0 w-100 h-100 align-items-center justify-content-center border-0"
                                                                 style={{
                                                                     backgroundColor: 'rgba(0, 0, 0, 0.5)',
                                                                     borderRadius: '4px',
-                                                                    display: 'none'
+                                                                    display: 'none',
+                                                                    padding: 0
                                                                 }}
                                                                 onClick={() => removePhoto(index)}
                                                             >
                                                                 <i className="bi bi-trash text-white" style={{ fontSize: '1.5rem' }}></i>
-                                                            </div>
-                                                        </div>
+                                                            </button>
+                                                        </button>
                                                     ))}
                                                 </div>
                                             </Col>
@@ -350,10 +363,10 @@ const ReportForm = ({ coordinates, street, toggleReportView }: ReportFormProps) 
                                 </Form.Group>
                             </Col>
 
-                            {/*<Col md={12}>
+                            <Col md={12}>
                                 <Form.Group className="mb-3">
                                     <Form.Check
-                                        id="terms"
+                                        id="anonymous"
                                         type="checkbox"
                                         name="anonymous"
                                         label="Submit report anonymously"
@@ -361,7 +374,7 @@ const ReportForm = ({ coordinates, street, toggleReportView }: ReportFormProps) 
                                         onChange={handleInputChange}
                                     />
                                 </Form.Group>
-                            </Col>*/}
+                            </Col>
                         </Row>
 
                         <div className="d-grid gap-2">

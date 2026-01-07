@@ -58,16 +58,16 @@ describe('Notification Routes Tests', () => {
     describe('GET /api/v1/notifications', () => {
         it('should return notifications for default citizen', async () => {
             const citizen = await TestDataManager.getCitizen('citizen1');
-            const report = await reportRepo.create(
+            const report = await reportRepo.create({
                 citizen,
-                "Test Report",
-                "Description",
-                OfficeCategory.RSTLO,
-                45.0,
-                7.0,
-                false,
-                "/img.jpg"
-            );
+                title: "Test Report",
+                description: "Description",
+                category: OfficeCategory.RSTLO,
+                latitude: 45,
+                longitude: 7,
+                anonymous: false,
+                photo1: "/img.jpg"
+            });
 
             await notificationRepo.createNotificationForCitizen(report, "Test Title", "Test Message");
             await notificationRepo.createNotificationForCitizen(report, "Test Title 2", "Test Message 2");
@@ -102,16 +102,16 @@ describe('Notification Routes Tests', () => {
     describe('PATCH /api/v1/notifications/:id/read', () => {
         it('should mark notification as read', async () => {
             const citizen = await TestDataManager.getCitizen('citizen1');
-            const report = await reportRepo.create(
+            const report = await reportRepo.create({
                 citizen,
-                "Test Report",
-                "Description",
-                OfficeCategory.RSTLO,
-                45.0,
-                7.0,
-                false,
-                "/img.jpg"
-            );
+                title: "Test Report",
+                description: "Description",
+                category: OfficeCategory.RSTLO,
+                latitude: 45,
+                longitude: 7,
+                anonymous: false,
+                photo1: "/img.jpg"
+            });
 
             const notification = await notificationRepo.createNotificationForCitizen(
                 report,
@@ -124,7 +124,7 @@ describe('Notification Routes Tests', () => {
                 .send({ username: DEFAULT_CITIZENS.citizen1.username, password: 'cit123' })
                 .expect(200);
 
-            const response = await agent
+            await agent
                 .patch(`/api/v1/notifications/${notification.id}/read`)
                 .expect(200);
 

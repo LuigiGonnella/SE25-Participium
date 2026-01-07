@@ -1,1 +1,11 @@
+:root {
+    --bs-primary-light: #5390ff !important;
+}
 
+.card.d-flex::after {
+    content: none !important;
+}
+
+.bg-primary-light {
+    background-color: var(--bs-primary-light);
+}

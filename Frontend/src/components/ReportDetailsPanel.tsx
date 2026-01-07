@@ -2,7 +2,7 @@ import { Card, Container } from "react-bootstrap";
 import type { Report, Message } from "../models/Models";
 import { useEffect, useState } from "react";
 import API, {STATIC_URL} from "../API/API.mts";
-import {convertToDMS, getReportStatusColor} from "../utils/reportUtils.ts";
+import {convertToDMS, getCategoryLabel, getReportStatusColor} from "../utils/reportUtils.ts";
 
 interface ReportDetailsPanelProps {
     report: Report;
@@ -61,7 +61,15 @@ export default function ReportDetailsPanel({ report, onClose }: Readonly<ReportD
             <Card className="h-100 d-flex flex-column">
 
                 <Card.Header as="h3">
-                    Report Details<i role="button" onClick={onClose} className="bi bi-x float-end"></i>
+                    Report Details{' '}
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="p-0 bg-transparent border-0 float-end"
+                        aria-label="Close"
+                    >
+                    <i className="bi bi-x"></i>
+                    </button>
                 </Card.Header>
 
                 <Card.Body className="flex-grow-1 overflow-auto">
@@ -69,7 +77,7 @@ export default function ReportDetailsPanel({ report, onClose }: Readonly<ReportD
                     <h3 className="mb-3">{report.title}</h3>
 
                     <p><strong>Description:</strong><br />{report.description}</p>
-                    <p><strong>Category:</strong> {report.category}</p>
+                    <p><strong>Category:</strong> {getCategoryLabel(report.category)}</p>
                     <p><strong>Street:</strong> {streetName}</p>
                     <p><strong>Coordinates:</strong> {convertToDMS(report.coordinates[0], true)}, {convertToDMS(report.coordinates[1], false)}</p>
                     <p><strong>Status: </strong>

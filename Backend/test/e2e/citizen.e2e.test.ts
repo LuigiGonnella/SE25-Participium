@@ -207,8 +207,6 @@ describe("Citizen API E2E Tests", () => {
                 "User",
                 await bcrypt.hash("password123", 10),
                 true,
-                undefined,
-                undefined
             );
 
             const res = await request(app)

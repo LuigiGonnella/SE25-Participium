@@ -13,7 +13,6 @@ async function startServer() {
     await initializeDatabase();
     server = app.listen(CONFIG.APP_PORT, () => {
       logInfo(`Server started on http://localhost:${CONFIG.APP_PORT}`);
-      //logInfo(`Swagger UI available at http://localhost:${CONFIG.APP_PORT}${CONFIG.ROUTES.V1_SWAGGER}`);
       logInfo(`DB : ${CONFIG.DB_NAME}`);
     });
   } catch (error) {

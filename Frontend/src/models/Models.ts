@@ -27,16 +27,16 @@ export function isStaff(user: User | undefined): user is Staff {
     return user !== undefined && 'type' in user && user.type === 'STAFF';
 }
 
-export function isMPRO(user: User | undefined): user is Staff {
-    return isStaff(user) && user.role ===  'Municipal Public Relations Officer';
+export function isMPRO(user: User | undefined): user is Staff & { role: 'Municipal Public Relations Officer' } {
+    return isStaff(user) && user.role === StaffRole.MPRO;
 }
 
-export function isTOSM(user: User | undefined): user is Staff {
-    return isStaff(user) && user.role === 'Technical Office Staff Member';
+export function isTOSM(user: User | undefined): user is Staff & { role: 'Technical Office Staff Member' } {
+    return isStaff(user) && user.role === StaffRole.TOSM;
 }
 
-export function isEM(user: User | undefined): user is Staff {
-    return isStaff(user) && user.role === 'External Maintainer';
+export function isEM(user: User | undefined): user is Staff & { role: 'External Maintainer' } {
+    return isStaff(user) && user.role === StaffRole.EM;
 }
 
 export function isCitizen(user: User | undefined): user is Citizen {
@@ -107,7 +107,6 @@ export const ROLE_OFFICE_MAP = {
 
 // @ts-ignore
 export enum OfficeCategory {
-    MOO = "Municipal Organization",
     WSO = "Water Supply",
     ABO = "Architectural Barriers",
     SSO = "Sewer System",
@@ -116,6 +115,7 @@ export enum OfficeCategory {
     RSTLO = "Road Signs and Traffic Lights",
     RUFO = "Roads and Urban Furnishings",
     PGAPO = "Public Green Areas and Playgrounds",
+    MOO = "Municipal Organization",
 }
 
 // @ts-ignore

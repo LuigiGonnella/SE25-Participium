@@ -2,15 +2,11 @@ import '../../setup/mockEmailService';
 import { Response, NextFunction } from 'express';
 import { login, register, verifyEmailUser } from '@controllers/authController';
 import { CitizenDAO } from '@dao/citizenDAO';
-import { StaffDAO } from '@dao/staffDAO';
-import { OfficeDAO, OfficeCategory } from '@dao/officeDAO';
-import { ReportDAO } from '@dao/reportDAO';
-import { NotificationDAO } from '@dao/notificationDAO';
+import { OfficeCategory } from '@dao/officeDAO';
 import bcrypt from 'bcrypt';
 import passport from 'passport';
 import { configurePassport } from '@config/passport';
-import { MessageDAO } from '@models/dao/messageDAO';
-import { beforeAllE2e, beforeEachE2e, DEFAULT_CITIZENS, DEFAULT_STAFF } from "../../e2e/lifecycle";
+import { beforeAllE2e, DEFAULT_STAFF } from "../../e2e/lifecycle";
 import { PendingVerificationDAO } from '@dao/pendingVerificationDAO';
 import { initializeTestDataSource, closeTestDataSource, TestDataSource } from "../../setup/test-datasource";
 import { PendingVerificationRepository } from '@repositories/pendingVerificationRepository';
@@ -76,173 +72,6 @@ describe('AuthController - login', () => {
     });
 });
 
-// NOTE: The following register tests are commented out because the register function
-// signature has changed to accept individual parameters instead of req/res
-// These tests need to be rewritten for the new signature
-/*
-describe('AuthController - register', () => {
-    it('should register a new citizen successfully', async () => {
-        const req = {
-            body: {
-                email: 'newuser@example.com',
-                username: 'newuser',
-                name: 'New',
-                surname: 'User',
-                password: 'password123',
-                receive_emails: true,
-                telegram_username: '@newuser'
-            }
-        } as any;
-        const res = {
-            status: jest.fn().mockReturnThis(),
-            json: jest.fn()
-        } as any;
-
-        await register(
-          req.body.email,
-          req.body.username,
-          req.body.name,
-          req.body.surname,
-          req.body.password,
-          req.body.receive_emails,
-          undefined,
-          req.body.telegram_username
-      );
-
-        expect(res.status).toHaveBeenCalledWith(201);
-        expect(res.json).toHaveBeenCalledWith(
-            expect.objectContaining({
-                email: 'newuser@example.com',
-                username: 'newuser'
-            })
-        );
-    });
-
-    it('should fail when registering with existing default citizen email', async () => {
-        const req = {
-            body: {
-                email: DEFAULT_CITIZENS.citizen1.email,
-                username: 'differentusername',
-                name: 'Test',
-                surname: 'User',
-                password: 'password123'
-            }
-        } as any;
-        const res = {
-            status: jest.fn().mockReturnThis(),
-            json: jest.fn()
-        } as any;
-
-        await register(
-          req.body.email,
-          req.body.username,
-          req.body.name,
-          req.body.surname,
-          req.body.password,
-          req.body.receive_emails,
-          undefined,
-          req.body.telegram_username
-      );
-
-        expect(res.status).toHaveBeenCalledWith(expect.any(Number));
-        expect(res.status).not.toHaveBeenCalledWith(201);
-    });
-
-    it('should fail when registering with existing default citizen username', async () => {
-        const req = {
-            body: {
-                email: 'newemail@example.com',
-                username: DEFAULT_CITIZENS.citizen1.username,
-                name: 'Test',
-                surname: 'User',
-                password: 'password123'
-            }
-        } as any;
-        const res = {
-            status: jest.fn().mockReturnThis(),
-            json: jest.fn()
-        } as any;
-
-        await register(
-          req.body.email,
-          req.body.username,
-          req.body.name,
-          req.body.surname,
-          req.body.password,
-          req.body.receive_emails,
-          undefined,
-          req.body.telegram_username
-      );
-
-        expect(res.status).toHaveBeenCalledWith(expect.any(Number));
-        expect(res.status).not.toHaveBeenCalledWith(201);
-    });
-
-    it('should fail when required fields are missing', async () => {
-        const req = {
-            body: {
-                email: 'test@example.com',
-                // missing username, name, surname, password
-            }
-        } as any;
-        const res = {
-            status: jest.fn().mockReturnThis(),
-            json: jest.fn()
-        } as any;
-
-        await register(
-          req.body.email,
-          req.body.username,
-          req.body.name,
-          req.body.surname,
-          req.body.password,
-          req.body.receive_emails,
-          undefined,
-          req.body.telegram_username
-      );
-
-        expect(res.status).toHaveBeenCalledWith(400);
-    });
-
-    it('should hash password before saving', async () => {
-        const req = {
-            body: {
-                email: 'hashtest@example.com',
-                username: 'hashuser',
-                name: 'Hash',
-                surname: 'Test',
-                password: 'plainpassword123',
-                receive_emails: false
-            }
-        } as any;
-        const res = {
-            status: jest.fn().mockReturnThis(),
-            json: jest.fn()
-        } as any;
-
-        await register(
-          req.body.email,
-          req.body.username,
-          req.body.name,
-          req.body.surname,
-          req.body.password,
-          req.body.receive_emails,
-          undefined,
-          req.body.telegram_username
-      );
-
-        const savedCitizen = await localDataSource
-            .getRepository(CitizenDAO)
-            .findOneBy({ username: req.body.username});
-
-        expect(savedCitizen).toBeDefined();
-        expect(savedCitizen?.password).not.toBe('plainpassword123');
-        
-        const isMatch = await bcrypt.compare('plainpassword123', savedCitizen!.password);
-        expect(isMatch).toBe(true);
-    });
-});
-*/
 
 describe("AuthController - session persistence", () => {
   it("should save user in session after login", (done) => {
@@ -311,17 +140,6 @@ describe("AuthController - register", () => {
     telegram_username: "newcitizen_telegram",
   };
 
-  const fakeMulterFile = {
-    fieldname: "profilePicture",
-    originalname: "test.png",
-    encoding: "7bit",
-    mimetype: "image/png",
-    size: 1234,
-    buffer: Buffer.from("fake image data"),
-    destination: "/tmp",
-    filename: "test.png",
-    path: "/tmp/test.png",
-  } as Express.Multer.File;
 
   beforeEach(async () => {
     const citizenRepo = TestDataSource.getRepository(CitizenDAO);
@@ -336,8 +154,6 @@ describe("AuthController - register", () => {
       newCitizen.surname,
       newCitizen.password,
       newCitizen.receive_emails,
-      fakeMulterFile,
-      newCitizen.telegram_username
     );
 
     const citizenRepo = TestDataSource.getRepository(CitizenDAO);
@@ -351,15 +167,24 @@ describe("AuthController - register", () => {
   });
 
   it("should throw an error if username already exists", async () => {
+    const result = await register(
+      newCitizen.email,
+      "duplicateuser",
+      newCitizen.name,
+      newCitizen.surname,
+      newCitizen.password,
+      newCitizen.receive_emails,
+    );
+
     const citizenRepo = TestDataSource.getRepository(CitizenDAO);
-    const existing = await citizenRepo.save({
-      email: "existing@example.com",
-      username: "duplicateuser",
-      name: "Existing",
-      surname: "User",
-      password: await bcrypt.hash("password123", 10),
-      receive_emails: true,
-    });
+    const saved = await citizenRepo.findOneBy({ username: "duplicateuser" });
+
+    expect(result).toBeDefined();
+    expect(saved).not.toBeNull();
+    expect(saved?.username).toBe("duplicateuser");
+    expect(saved?.email).toBeNull(); // Email is null until verified
+    expect(saved?.password).not.toBe(newCitizen.password);
+
 
     // Verify the citizen was actually saved
     const found = await citizenRepo.findOne({ where: { username: "duplicateuser" }});
@@ -373,8 +198,6 @@ describe("AuthController - register", () => {
         "Doe",
         "somepassword",
         true,
-        fakeMulterFile,
-        ""
       )
     ).rejects.toThrow();
   });
@@ -388,8 +211,6 @@ describe("AuthController - register", () => {
         "Email",
         "password",
         false,
-        fakeMulterFile,
-        ""
       )
     ).rejects.toThrow();
   });

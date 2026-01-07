@@ -90,7 +90,6 @@ function AdminTOSMPage() {
         <Container className="py-4">
             <h2 className="mb-4">Technical Office Staff Members</h2>
 
-            {error && <Alert variant="danger">{error}</Alert>}
             {success && <Alert variant="success">{success}</Alert>}
 
                 <Table responsive bordered hover>
@@ -167,7 +166,7 @@ function AdminTOSMPage() {
                                     </Form.Group>
                                 </Col>
 
-                                {index > 0 && (
+                                {filteredOffices.length > availableOffices.length && (
                                     <Col xs={2} className="px-0 px-lg-3">
                                         <Button
                                             className="px-3 py-2"
@@ -208,12 +207,21 @@ function AdminTOSMPage() {
                     )}
                 </ModalBody>
                 <ModalFooter>
-                    <Button variant="secondary" onClick={handleClose}>
-                        Cancel
-                    </Button>
-                    <Button variant="success" onClick={handleSave}>
-                        Save
-                    </Button>
+                    <Row className="w-100">
+                        {error && <Alert variant="danger">{error}</Alert>}
+                    </Row>
+                    <Row>
+                        <Col>
+                            <Button variant="secondary" onClick={handleClose}>
+                                Cancel
+                            </Button>
+                        </Col>
+                        <Col>
+                            <Button disabled={officeNames.join(',') === selected?.officeNames.join(',')} variant="success" onClick={handleSave}>
+                                Save
+                            </Button>
+                        </Col>
+                    </Row>
                 </ModalFooter>
             </Modal>
         </Container>
