@@ -64,43 +64,44 @@ sections:
   - Strategy adopted: Feature-First, Pre-Testing Refactoring
   - Total hours estimated estimated at sprint planning: 19h
   - Total hours spent: 13h
-
-
+                                                                                                                              
 File                               | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s                                                                                                                                                              
------------------------------------|---------|----------|---------|---------|---------------------------------------------------------------------------
-All files                          |   82.43 |    73.59 |    82.6 |   82.35 |                                                                          
- src                               |   73.45 |    65.85 |   84.61 |   73.87 |                                                                          
-  utils.ts                         |   73.45 |    65.85 |   84.61 |   73.87 | 37,49,63,68,71,76,110-114,149,159-169,173,182-184,186,188-190            
- src/controllers                   |   79.48 |    74.21 |   76.59 |   79.42 |                                                                          
-  authController.ts                |   65.65 |    53.65 |   53.84 |   65.65 | 20-28,37-43,79,82-87,109-127,185,194-198,202-206                         
-  citizenController.ts             |   76.59 |    66.66 |   66.66 |   76.59 | 44-52,62-67                                                              
-  notificationController.ts        |     100 |      100 |     100 |     100 |                                                                          
-  officeController.ts              |   81.81 |       50 |     100 |   81.81 | 17-18                                                                    
-  reportController.ts              |   88.39 |    83.63 |   89.47 |   88.39 | 25,49,106,113-114,133-134,150,155,158,170,176,179                        
-  staffController.ts               |   87.09 |      100 |     100 |   87.09 | 25-26,42-43                                                              
- src/middlewares                   |   93.75 |     90.9 |     100 |   93.54 |                                                                          
-  authMiddleware.ts                |   92.59 |     90.9 |     100 |    92.3 | 24,40                                                                    
-  errorMiddleware.ts               |     100 |      100 |     100 |     100 |                                                                          
- src/repositories                  |   94.32 |    84.32 |   91.89 |   94.36 |                                                                          
-  citizenRepository.ts             |   93.18 |    73.68 |     100 |   93.02 | 29,118,130                                                               
-  notificationRepository.ts        |     100 |      100 |     100 |     100 |                                                                          
-  officeRepository.ts              |   94.44 |       75 |     100 |   94.44 | 129                                                                      
-  pendingVerificationRepository.ts |    87.5 |       80 |   57.14 |    87.5 | 29,46,93-102                                                             
-  reportRepository.ts              |   95.77 |     87.2 |      96 |   95.71 | 69,81,235,267,295,325                                                    
-  staffRepository.ts               |   94.05 |       84 |      90 |   94.38 | 69,93,149,167,181                                                        
- src/routes                        |   71.62 |    53.01 |   67.64 |   71.67 |                                                                          
-  authRoutes.ts                    |   41.42 |       20 |      20 |   41.42 | 20-49,54-65,75,78,83,88-92,97,101-105,110-115,135-140                    
-  citizenRoutes.ts                 |   81.35 |     82.6 |   83.33 |   82.14 | 22,37,52,62,67,102,107-111                                               
-  notificationRoutes.ts            |   93.75 |      100 |     100 |   93.75 | 13                                                                       
-  reportRoutes.ts                  |   77.86 |     52.5 |   85.71 |   77.86 | 35,39,43,47,51,55,59,86,91-96,122,128,143,158,167,188,195,209,226,231-240
-  staffRoutes.ts                   |     100 |      100 |     100 |     100 |                                                                          
- src/services                      |   92.85 |    66.66 |   83.33 |   92.85 |                                                                          
-  errorService.ts                  |     100 |    44.44 |     100 |     100 | 9-19                                                                     
-  mapperService.ts                 |   88.88 |      100 |   81.81 |   88.88 | 64-69                                                                    
------------------------------------|---------|----------|---------|---------|---------------------------------------------------------------------------
+-----------------------------------|---------|----------|---------|---------|--------------------------------------------------
+All files                          |   90.19 |    84.71 |   89.72 |   90.09 |                                                 
+ src                               |   89.65 |    79.76 |   85.71 |    90.2 |                                                 
+  app.ts                           |   96.87 |       50 |       0 |   96.87 | 67                                              
+  utils.ts                         |   87.61 |    80.48 |    92.3 |   88.28 | 112,149,159-169,173                             
+ src/controllers                   |   84.61 |    79.68 |   87.23 |   84.56 |                                                 
+  authController.ts                |   65.65 |    56.09 |   53.84 |   65.65 | 20-28,37-43,79,82-87,109-127,185,194-198,202-206
+  citizenController.ts             |   95.74 |    83.33 |     100 |   95.74 | 46,65                                           
+  notificationController.ts        |     100 |      100 |     100 |     100 |                                                 
+  officeController.ts              |   81.81 |      100 |     100 |   81.81 | 17-18                                           
+  reportController.ts              |   94.64 |    89.09 |     100 |   94.64 | 25,49,106,150,176,179                           
+  staffController.ts               |   87.09 |      100 |     100 |   87.09 | 25-26,42-43                                     
+ src/middlewares                   |   93.75 |     90.9 |     100 |   93.54 |                                                 
+  authMiddleware.ts                |   92.59 |     90.9 |     100 |    92.3 | 24,40                                           
+  errorMiddleware.ts               |     100 |      100 |     100 |     100 |                                                 
+ src/repositories                  |   96.21 |    87.56 |   94.59 |   96.05 |                                                 
+  citizenRepository.ts             |   95.45 |    84.21 |     100 |   95.34 | 29,118                                          
+  notificationRepository.ts        |     100 |      100 |     100 |     100 |                                                 
+  officeRepository.ts              |     100 |      100 |     100 |     100 |                                                 
+  pendingVerificationRepository.ts |    87.5 |       80 |   57.14 |    87.5 | 29,46,93-102                                    
+  reportRepository.ts              |   98.59 |    90.69 |     100 |   98.57 | 69,295                                          
+  staffRepository.ts               |   95.04 |       84 |      95 |   94.38 | 69,93,149,167,181                               
+ src/routes                        |   88.17 |    92.77 |   85.29 |   88.05 |                                                 
+  authRoutes.ts                    |   72.85 |       95 |      60 |   72.85 | 54-65,90,101-105,110-115,135-140                
+  citizenRoutes.ts                 |   83.05 |    95.65 |   83.33 |   82.14 | 22,37,52,62,67,102,107-111                      
+  notificationRoutes.ts            |   93.75 |      100 |     100 |   93.75 | 13                                              
+  officeRoutes.ts                  |     100 |      100 |     100 |     100 |                                                 
+  reportRoutes.ts                  |   96.18 |       90 |     100 |   96.18 | 43,96,143,158,226                               
+  staffRoutes.ts                   |     100 |      100 |     100 |     100 |                                                 
+ src/services                      |   92.85 |    66.66 |   83.33 |   92.85 |                                                 
+  errorService.ts                  |     100 |    44.44 |     100 |     100 | 9-19                                            
+  mapperService.ts                 |   88.88 |      100 |   81.81 |   88.88 | 64-69                                           
+-----------------------------------|---------|----------|---------|---------|--------------------------------------------------
 
-Test Suites: 18 passed, 18 total
-Tests:       271 passed, 271 total
+Test Suites: 23 passed, 23 total
+Tests:       453 passed, 453 total
 
 
 ## ASSESSMENT
