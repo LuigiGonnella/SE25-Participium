@@ -34,6 +34,8 @@ export default function ReportSearchPanel({ reports, closeSearchMode, setCenter,
     const [statusFilter, setStatusFilter] = useState<string>("");
     const [categoryFilter, setCategoryFilter] = useState<string>("");
     const [filteredReports, setFilteredReports] = useState<(Report & {distance: number, distanceFormatted: string})[]>([]);
+    const recentReports = reports;
+    recentReports.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
     useEffect(() => {
         if (!selectedLocation) {
@@ -98,6 +100,8 @@ export default function ReportSearchPanel({ reports, closeSearchMode, setCenter,
                     name: firstResult.display_name
                 });
 
+            } else {
+                setSelectedLocation({lat: 0, lon: 0, name: "No results found"});
             }
         } catch (error) {
             console.error('Search error: ', error);
@@ -107,9 +111,13 @@ export default function ReportSearchPanel({ reports, closeSearchMode, setCenter,
     };
 
     useEffect(() => {
-        if (selectedLocation) {
+        if (selectedLocation && selectedLocation.name !== "No results found") {
             setCenter([selectedLocation.lat, selectedLocation.lon]);
-            setZoom(16 - Math.log2(kmRadius));
+            if (kmRadius < 0.5) {
+                setZoom(18 - kmRadius * 2)
+            } else {
+                setZoom(16 - Math.log2(kmRadius));
+            }
         }
     }, [selectedLocation, kmRadius, setCenter, setZoom]);
 
@@ -165,7 +173,41 @@ export default function ReportSearchPanel({ reports, closeSearchMode, setCenter,
 
                 <Card.Body className="flex-grow-1 overflow-auto">
                     {isSearching && <p>Searching...</p>}
-                    {!isSearching && !selectedLocation && <p>Enter an address to search.</p>}
+                    {!isSearching && !selectedLocation && <>
+                    <h6>Most recent reports:</h6>
+                        { reports.length <= 0 ? (<div className="w-100 h-50 text-center align-content-center"><p>There are no reports yet.</p></div>) : (
+                        <ul className="list-group">
+                            {recentReports.map((result) => (
+                                <li
+                                    key={result.id}
+                                    className="list-group-item list-group-item-action border-1 rounded-2 p-0"
+                                >
+                                    <button
+                                        type="button"
+                                        className="w-100 bg-transparent border-0 text-start p-3"
+                                        onClick={() => {
+                                            setCenter([result.coordinates[0], result.coordinates[1]]);
+                                            setZoom(18);
+                                            setSelectedReport(result);
+                                        }}
+                                    >
+                                        {result.title}{' '}
+                                        <span className={`badge ${getReportStatusColor(result.status)}`}>
+                                            {result.status}
+                                        </span>
+                                        <br />
+                                        <small className="text-muted">
+                                            {result.category}
+                                            <span className="text-muted float-end">{new Date(result.timestamp).toLocaleDateString()}</span>
+                                            <br />
+                                            by {getUsername(result)}
+                                        </small>
+                                    </button>
+                                </li>
+
+                            ))}
+                        </ul>)}
+                    </>}
                     {!isSearching && selectedLocation && searchResults.length === 0 && <p>Address not found.</p>}
                     {!isSearching && searchResults.length > 0 && (
                         <>
@@ -183,10 +225,19 @@ export default function ReportSearchPanel({ reports, closeSearchMode, setCenter,
                                     <input
                                         type="range"
                                         id="radiusRange"
-                                        min={1}
-                                        max={10}
+                                        min={0.1}
+                                        max={5.1}
+                                        step={kmRadius <= 0.9 ? 0.1 : 1}
                                         value={kmRadius}
-                                        onChange={(e) => setKmRadius(Number(e.target.value))}
+                                        onChange={(e) => {
+                                            let value = Number(e.target.value);
+                                        
+                                            if (value >= 1) {
+                                                value = Math.round(value);
+                                            }
+                                        
+                                            setKmRadius(value);
+                                        }}
                                         className="form-range pt-2"
                                     /></label>&nbsp;
                                     <div>
@@ -222,7 +273,7 @@ export default function ReportSearchPanel({ reports, closeSearchMode, setCenter,
                             <hr />
                             <h6>Search Results ({filteredReports.length}):</h6>
                             { filteredReports.length <= 0 ? (<div className="w-100 h-50 text-center align-content-center"><p>No reports found with the selected filters.</p></div>) : (
-                            <ul className="list-group gap-3">
+                            <ul className="list-group">
                                 {selectedLocation && filteredReports.map((result) => (
                                     <li
                                         key={result.id}
