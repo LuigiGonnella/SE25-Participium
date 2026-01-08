@@ -24,6 +24,7 @@ Developed as part of the Software Engineering 2 course at **Politecnico di Torin
 - [Testing](#testing)
 - [Project Structure](#project-structure)
 - [API Documentation](#api-documentation)
+- [Default Users](#default-users)
 - [License](#license)
 - [Support](#support)
 
@@ -463,6 +464,71 @@ SE25-Participium/
 3. The citizen sends `/verify <code>` to the Telegram bot
 4. The bot validates the code using bot-authenticated endpoints
 5. The Telegram account is marked as verified
+
+---
+
+## Default Users
+
+For testing purposes, the application comes with pre-defined default users. These users are created automatically when the database is initialized.
+
+### Citizens
+| Username |   Name   | Surname | Password | Email                | Email notifications |
+| -------- |-------- | ------- | -------- | -------------------- | ------------------- |
+| cit_1    | Default1 | Citizen | cit123   | example1@example.com | false               |
+| cit_2    | Default2 | Citizen | cit123   | example2@example.com | false               |
+| cit_3    | Default3 | Citizen | cit123   | example3@example.com | false               |
+
+### Internal Offices
+| Name                                      | Category | Description                                                                       |
+| ----------------------------------------- | -------- | :-------------------------------------------------------------------------------- |
+| Municipal Organization Office             | MOO      | Office responsible for municipal administration and management                    |
+| Water Supply Office                       | WSO      | Technical office responsible for water supply and management                      |
+| Architectural Barriers Office             | ABO      | Technical office responsible for removing architectural barriers in public spaces |
+| Sewer System Office                       | SSO      | Technical office responsible for sewer system maintenance and management          |
+| Public Lighting Office                    | PLO      | Technical office responsible for public lighting infrastructure                   |
+| Waste Office                              | WO       | Technical office responsible for waste management and street cleaning             |
+| Road Signs and Traffic Lights Office      | RSTLO    | Technical office responsible for road signs and traffic lights maintenance        |
+| Roads and Urban Furnishings Office        | RUFO    | Technical office responsible for road maintenance and urban furnishings           |
+| Public Green Areas and Playgrounds Office | PGAPO     | Technical office responsible for public green areas and playgrounds               |
+
+### External Offices
+| Name                                      | Category | Description                                                                       |
+| ----------------------------------------- | -------- | --------------------------------------------------------------------------------- |
+| External Company - Municipal Organization Office             | MOO      | Office responsible for municipal administration and management                    |
+| External Company - Water Supply Office                       | WSO      | Technical office responsible for water supply and management                      |
+| External Company - Architectural Barriers Office             | ABO      | Technical office responsible for removing architectural barriers in public spaces |
+| External Company - Sewer System Office                       | SSO      | Technical office responsible for sewer system maintenance and management          |
+| External Company - Public Lighting Office                    | PLO      | Technical office responsible for public lighting infrastructure                   |
+| External Company - Waste Office                              | WO       | Technical office responsible for waste management and street cleaning             |
+| External Company - Road Signs and Traffic Lights Office      | RSTLO    | Technical office responsible for road signs and traffic lights maintenance        |
+| External Company - Roads and Urban Furnishings Office        | RUFO    | Technical office responsible for road maintenance and urban furnishings           |
+| External Company - Public Green Areas and Playgrounds Office | PGAPO     | Technical office responsible for public green areas and playgrounds               |
+
+### Staff Members
+| Username | Name | Surname | Password | Role | Office |
+| -------- | ---- | ------- | -------- | ---- | ---------------- |
+| admin | Default | Admin |  admin123 | Admin | - |
+| mpro | Default | MPRO | mpro123 | Municipal Public Relations Officer | Municipal Public Relations Office |
+| tosm_WSO | Default | TOSM WSO | tosm123 | Technical Office Staff Member | Water Supply Office |
+| tosm_ABO | Default | TOSM ABO | tosm123 | Technical Office Staff Member | Architectural Barriers Office |
+| tosm_SSO | Default | TOSM SSO | tosm123 | Technical Office Staff Member | Sewer System Office |
+| tosm_PLO | Default | TOSM PLO | tosm123 | Technical Office Staff Member | Public Lighting Office |
+| tosm_WO | Default | TOSM WO | tosm123 | Technical Office Staff Member | Waste Office |
+| tosm_RSTLO | Default | TOSM RSTLO | tosm123 | Technical Office Staff Member | Road Signs and Traffic Lights Office |
+| tosm_RUFO | Default | TOSM RUFO | tosm123 | Technical Office Staff Member | Roads and Urban Furnishings Office |
+| tosm_PGAPO | Default | TOSM PGAPO | tosm123 | Technical Office Staff Member | Public Green Areas and Playgrounds Office |
+
+### External Maintainers
+| Username | Name    | Surname  | Password | Office                           |
+| -------- | ------- | -------- | -------- | ----------------------------------------- |
+| em_WSO   | Default | EM WSO   | em123    | External Company - Water Supply Office                       |
+| em_ABO   | Default | EM ABO   | em123    | External Company - Architectural Barriers Office             |
+| em_SSO   | Default | EM SSO   | em123    | External Company - Sewer System Office                       |
+| em_PLO   | Default | EM PLO   | em123    | External Company - Public Lighting Office                    |
+| em_WO   | Default | EM WO   | em123    | External Company - Waste Office                              |
+| em_RSTLO | Default | EM RSTLO | em123    | External Company - Road Signs and Traffic Lights Office      |
+| em_RUFO  | Default | EM RUFO  | em123    | External Company - Roads and Urban Furnishings Office        |
+| em_PGAPO | Default | EM PGAPO | em123    | External Company - Public Green Areas and Playgrounds Office |
 
 ---
 
