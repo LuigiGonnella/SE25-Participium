@@ -12,9 +12,9 @@ sections:
 
 ### Macro statistics
 
-- Number of stories committed vs done :
-- Total points committed vs done :
-- Nr of hours planned vs spent (as a team) :
+- Number of stories committed vs done : 5 vs 5
+- Total points committed vs done : 29 vs 29
+- Nr of hours planned vs spent (as a team) : 100h 00m vs 87h 15m
 
 **Remember**  a story is done ONLY if it fits the Definition of Done:
  
@@ -27,16 +27,21 @@ sections:
 
 ### Detailed statistics
 
-| Story  | # Tasks | Points | Hours est. | Hours actual |
-|--------|---------|--------|------------|--------------|
-| _#0_   |         |    -   |            |              |
-| n      |         |        |            |              |
+| Story | # Tasks | Points | Hours est. | Hours actual |
+| :---: | :-----: | :----: | :--------: | :----------: |
+| _#0_  |   14    |   -    |            |              |
+|  28   |    4    |   3    |   5h 30m   |    5h 35m    |
+|  15   |    6    |   2    |   6h 00m   |    5h 30m    |
+|  30   |    4    |   8    |  10h 00m   |   10h 20m    |
+|  13   |    6    |   8    |   8h 00m   |    8h 05m    |
+|  14   |    2    |   8    |   3h 00m   |    3h 20m    |
    
 
 > place technical tasks corresponding to story `#0` and leave out story points (not applicable in this case)
 
-- Hours per task (average, standard deviation)
-- Total task estimation error ratio: sum of total hours estimation / sum of total hours spent -1
+- Hours per task (estimated): 2h 47m average, σ = 3h 17m
+- Hours per task (done): 2h 25m average, σ = 2h 16m
+- Total task estimation error ratio: sum of total hours estimation / sum of total hours spent -1 = -0.13 (13.0% overestimation)
 
   
 ## QUALITY MEASURES 
@@ -102,7 +107,7 @@ Tests:       271 passed, 271 total
 
 - What caused your errors in estimation (if any)?
 
-  The main errors in the estimation were the refactor tasks.
+  The main errors were caused by the estimation of the refactor tasks.
 
 - What lessons did you learn (both positive and negative) in this sprint?
 
